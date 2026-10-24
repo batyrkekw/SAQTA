@@ -1,6 +1,6 @@
 # SAQTA public demo deployment
 
-The previous SAQTA release is publicly deployed with **Vercel frontend + Render API + Render PostgreSQL**. The live demo contains synthetic records and has no authentication. This working tree restructures the product into Forecast/Save/About and adds new forecast and import tools. **Deployment of this update is pending verification**; the historical live results below do not establish that its new code or migration is deployed.
+The unified SAQTA product is publicly deployed with **Vercel frontend + Render API + Render PostgreSQL**. The synthetic demo has no authentication. Code release `416220352ee4a8852035a0eb5fc4581fda85299f` was verified on **24 October 2026**, including the additive PostgreSQL import migration and **45/45 public API/integration checks**. Earlier release evidence is preserved separately below.
 
 ## Verified public resources
 
@@ -15,7 +15,7 @@ Verified on **24 October 2026**, Asia/Qyzylorda:
 | Vercel | Hobby; project `saqta`, ID `prj_K9Y6Ktc9gcQXtrVZMKk6ztAlxH8G`; team `SAQTA`, slug `saqta`, ID `team_jIqAQnVKdgLP3olkd0ixClMt` |
 | First Vercel production deployment | `dpl_2XcBoyGR4KXT9NQ7Edu3HzZpVbF2`, `READY`; build completed in 74 seconds |
 | Render API | `srv-dbe7canavr4c739u60vg`, free Docker web service, Frankfurt |
-| Render API deployment | `dep-dbe7cavavr4c739u63ag`, `LIVE` at 14:12:41 Asia/Qyzylorda (09:12:41 UTC) |
+| First Render API deployment | `dep-dbe7cavavr4c739u63ag`, `LIVE` at 14:12:41 Asia/Qyzylorda (09:12:41 UTC) |
 | Render PostgreSQL | `dpg-dbe77a3rjlhs73emj1f0-a`, PostgreSQL 17, free, Frankfurt; external IP allowlist empty |
 | Initial application source | Commit `af21fef1eb7f3f570f1ec05f9286e623ce9fb372` |
 
@@ -27,9 +27,28 @@ The database was created on 24 October 2026 and expires **23 November 2026 at 14
 
 ## Existing service configuration
 
+### Verified unified-product code release
+
+| Resource/check | Executed result |
+|---|---|
+| Code source | `416220352ee4a8852035a0eb5fc4581fda85299f` |
+| Render deployment | `dep-dbe8h6e7bikc73avev20`, LIVE at **15:31:14 Asia/Qyzylorda (10:31:14 UTC)** |
+| PostgreSQL migration | Logs confirmed `PostgresqlImpl`, `ee2260d736c6` → `c83f42d78b91`; prior records retained, no reset |
+| First Vercel release for this code | `dpl_DEVVTSiiKUTsFejT6PLTQzmb9nKJ`, READY; 91-second build |
+| Immutable frontend | [saqta-pxvi9z5om-saqta.vercel.app](https://saqta-pxvi9z5om-saqta.vercel.app), production alias [saqta-batyrkekw.vercel.app](https://saqta-batyrkekw.vercel.app) |
+| Provider HTTP/privacy check | 10 requested resources returned 200; all 5 legacy paths returned expected 307 targets; 3 downloadable document SHA256 values matched that approved source; tested private/internal/Excel paths returned 404 |
+| Public integration | **45/45 passed**, exit 0: new product 14/14, retained compatibility 22/22, targeted PostgreSQL order race 9/9; sequence completed **15:38:47 Asia/Qyzylorda (10:38:47 UTC)** |
+| Public browser checks completed | Forecast generation and expanded numeric input/formula explanation; historical backtest metrics/source warnings; exact paid-plan modal; compact three-item navigation and close-on-link behavior |
+
+The reports are ignored local artifacts: `artifacts/vercel-restructure-release.json`, `artifacts/product-update-live.json`, `artifacts/product-update-live-legacy.json`, `artifacts/product-update-pg-order-race.json`. Public API checks used generated synthetic fixtures only. They verified CSV/XLSX preview/commit/repeat handling, whole-batch rejection, one effective commit for simultaneous identical imports, independent backtest/explanation arithmetic, and order reservation consistency. Both import requests returned 200 in the observed schedule: one imported one row, the other reported one duplicate; the ledger increased exactly once.
+
+The single-unit order race returned one 201 and one 409, storing only order 26. Cancellation and listing deactivation restored stock with zero impact deltas. QA products 7/8 and listings 21/22 were deactivated and QA stock reconciled; traces remain. No real workbook upload, existing-data reset or deletion occurred. Zero impact deltas apply only to the final order-race suite: the broader integration suites retain labeled synthetic ledger, collection and write-off records, so demo aggregates can include QA activity. Cleanup deactivates QA entities and reconciles their stock; it does not erase traces or restore every aggregate.
+
+These identifiers record the **first verified code release**. Later documentation and wording refreshes retain this backend implementation. Check the production alias and release evidence for the current frontend deployment; the hashes above identify the first approved snapshot. This is not a broad load test.
+
 ### Update order for the unified product
 
-Current local checks are complete: 86 backend tests, 63 frontend tests across 12 files, Ruff, strict TypeScript, zero-warning ESLint and the production frontend build (12 static pages). Fresh SQLite migrations through c83f42d78b91 and synthetic seeding passed. These results do not verify the updated public deployment or its PostgreSQL migration; those release checks remain pending.
+Current local checks are complete: 86 backend tests, 63 frontend tests across 12 files, Ruff, strict TypeScript, zero-warning ESLint and the production frontend build (12 static pages). Fresh SQLite migrations through c83f42d78b91 and synthetic seeding passed. Separate public checks confirmed the updated PostgreSQL migration, deployed endpoints and 45/45 API/integration checks; their evidence is recorded below and in VERIFICATION.md.
 
 The new source keeps the existing Next.js/FastAPI/PostgreSQL stack. It uses Forecast's five internal views, free Save publication and About; legacy URLs redirect into Forecast. Prices/quotas are preliminary configuration, not enforced subscriptions. Payment is not connected.
 
@@ -56,7 +75,7 @@ The service is linked to `batyrkekw/SAQTA`, branch `main`, with automatic deploy
 * `CORS_ORIGINS=https://saqta-batyrkekw.vercel.app`
 * `DATABASE_URL`: provider-managed private PostgreSQL connection, stored only in the Render environment
 
-The Docker command runs `alembic upgrade head`, guarded `python -m app.bootstrap`, then Uvicorn on `$PORT`. The previous deployment logs confirmed the PostgreSQL dialect, migration through ee2260d736c6 and successful demo initialization. The update additionally requires c83f42d78b91 before import commits can work. Bootstrap fills an empty demo once, preserves existing records, and refuses real-data workspaces. Never add `--reset` to startup.
+The Docker command runs `alembic upgrade head`, guarded `python -m app.bootstrap`, then Uvicorn on `$PORT`. The unified-product deployment logs confirmed PostgresqlImpl and upgrade ee2260d736c6 → c83f42d78b91. Guarded bootstrap preserved prior records without reset. Bootstrap fills an empty demo once, preserves existing records, and refuses real-data workspaces. Never add `--reset` to startup.
 
 Push reviewed backend changes to `main` to trigger a release, then inspect its build/runtime logs, wait for `LIVE`, and run the smoke checks below. Root documentation changes do not trigger an API rebuild with this service root configuration. For multiple replicas, move migrations to a single release/predeploy step. [Render monorepo root behavior](https://render.com/docs/monorepo-support)
 

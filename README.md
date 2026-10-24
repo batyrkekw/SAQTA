@@ -6,7 +6,7 @@ SAQTA is a working food waste prevention MVP for bakeries, originating in Kazakh
 
 **SAQTA Forecast** supports production decisions before surplus occurs. **SAQTA Save** offers eligible remaining products for discounted pickup, with free publication and no publication commission. Forecasts are decision aids; unsold products are not automatically waste.
 
-The existing public synthetic demo is [SAQTA](https://saqta-batyrkekw.vercel.app), with [API documentation](https://saqta-api.onrender.com/docs) and [health status](https://saqta-api.onrender.com/api/health). Its previous release was verified on **24 October 2026**. This working tree adds the unified product, pricing, import preview and new forecast tools; deployment and live verification of this update are tracked separately in `docs/VERIFICATION.md`. An existing live URL does not establish that the update is deployed.
+The updated public synthetic demo is [SAQTA](https://saqta-batyrkekw.vercel.app), with [API documentation](https://saqta-api.onrender.com/docs) and [health status](https://saqta-api.onrender.com/api/health). The unified Forecast/Save/About release was deployed and verified on **24 October 2026**: **45/45 public API/integration checks passed** against PostgreSQL, including new imports/backtesting and the marketplace concurrency case. Public browser checks confirmed numeric forecast explanations, backtest metrics/source warnings, the exact paid-plan notice and compact three-item navigation. Details and remaining verification boundaries are in `docs/VERIFICATION.md`.
 
 The public demo has **no authentication or tenant isolation**. Never upload private bakery files, respondent answers or customer information to it. A separate real-data workspace also requires access controls before private use.
 
@@ -304,7 +304,7 @@ npm run typecheck
 npm run build
 ```
 
-Tests cover calculations, future-data exclusion, chronological comparison, insufficient/zero-demand history, inventory and order transactions, overselling, import validation/rollback/deduplication, source separation, explanations and UI behavior. The current source passed **86 backend tests**, **63 frontend tests across 12 files**, Ruff, ESLint with zero warnings, strict TypeScript and the production frontend build (**12 static pages**). Fresh SQLite upgraded through all three migrations to `c83f42d78b91` and the 42-day synthetic seed loaded. Local browser forecast generation and numeric explanations worked. One upstream Starlette/AnyIO deprecation warning remains. Updated PostgreSQL migration, public deployment and live integration are still pending; `docs/VERIFICATION.md` records the distinction. A successful local check does not establish deployment or PostgreSQL verification.
+Tests cover calculations, future-data exclusion, chronological comparison, insufficient/zero-demand history, inventory and order transactions, overselling, import validation/rollback/deduplication, source separation, explanations and UI behavior. The current source passed **86 backend tests**, **63 frontend tests across 12 files**, Ruff, ESLint with zero warnings, strict TypeScript and the production frontend build (**12 static pages**). Fresh SQLite upgraded through all three migrations to `c83f42d78b91` and the 42-day synthetic seed loaded. Local browser forecast generation and numeric explanations worked. One upstream Starlette/AnyIO deprecation warning remains. The updated Render API was separately verified after PostgreSQL migration `ee2260d736c6` → `c83f42d78b91`, preserving existing records. The Vercel production release and **45/45 public checks** passed: new product integration 14/14, preserved compatibility 22/22 and a targeted order race 9/9. Public browser forecast, backtest, savings calculation, pricing notice, compact navigation and Save announcement generation/editing/copy/publication checks passed. Labeled synthetic QA ledger/collection/write-off records remain for traceability, so demo aggregates can include verification activity; QA entities were deactivated and their stock reconciled, without deleting records. `docs/VERIFICATION.md` separates these executed checks from broader unverified behavior.
 
 ## Deployment
 
@@ -317,7 +317,7 @@ docker compose up --build -d
 docker compose exec backend python -m app.seed
 ```
 
-Docker Compose was not executed on the current Windows machine. Existing previous-release Render container/PostgreSQL checks are separate from local verification.
+Docker Compose was not executed on the current Windows machine. Render container/PostgreSQL deployment and live checks were executed separately from the local verification.
 
 The Vercel frontend uses **Root Directory `frontend`**, Node 24, `npm ci`, `npm run build`, outside-root source access and build-time `NEXT_PUBLIC_API_URL=https://YOUR-API-HOST/api`. The Render Docker backend uses its private PostgreSQL `DATABASE_URL`, exact frontend `CORS_ORIGINS`, `/api/health`, and starts with migrations → guarded bootstrap → Uvicorn on `$PORT`. Never reset during startup. `render.yaml` and `backend/railway.json` support fresh Render/Railway setup.
 

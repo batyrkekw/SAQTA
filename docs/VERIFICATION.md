@@ -1,10 +1,10 @@
 # SAQTA verification record
 
-All times in this report use **24 October 2026, Asia/Qyzylorda** unless explicitly marked UTC. Local runtime: Python 3.12.5, Node.js 25.2.1, Windows PowerShell. The previous public service uses Node 24, a Python 3.12 container and Render PostgreSQL 17.
+All times in this report use **24 October 2026, Asia/Qyzylorda** unless explicitly marked UTC. Local runtime: Python 3.12.5, Node.js 25.2.1, Windows PowerShell. The public service uses Node 24, a Python 3.12 container and Render PostgreSQL 17.
 
 ## Current unified-product update: release status
 
-**Local tests, lint, type checking, production build, SQLite migrations and seed checks have passed for this update. Updated public deployment, live integration and PostgreSQL migration verification remain pending.** The stable public URL already exists from a previous release; its historical checks below are not proof that new code is live. Do not treat pending rows as passed.
+**The unified-product code release is deployed and verified.** Local tests/build, PostgreSQL migration and **45/45 public API/integration checks** passed. Public browser checks below are limited to the flows actually completed; broader coverage is not inferred. Release identifiers below distinguish the first verified code release from later documentation and wording refreshes.
 
 | Current-source check | Actual status at this documentation update |
 |---|---|
@@ -18,16 +18,49 @@ All times in this report use **24 October 2026, Asia/Qyzylorda** unless explicit
 | Full frontend types/lint | TypeScript passed; ESLint passed with zero warnings |
 | Production frontend build for update | Passed; generated 12 static pages. An initial Windows EBUSY lock was resolved by stopping the previously owned Node process and rerunning the build successfully |
 | SQLite migrations and seed | Fresh database upgraded through all 3 revisions to c83f42d78b91; reproducible 42-day synthetic seed verified |
-| Additive PostgreSQL migration c83f42d78b91 | Updated existing public database upgrade verification remains pending |
+| Additive PostgreSQL migration c83f42d78b91 | Render runtime logs confirmed PostgresqlImpl and ee2260d736c6 → c83f42d78b91; guarded bootstrap retained prior records, without reset |
 | Local API integration | 14/14 new product checks and 22/22 preserved compatibility checks passed using generated synthetic fixtures; CSV/XLSX, atomic rejection, repeat/concurrent import deduplication, backtest and explanation independently checked |
 | Local browser | Forecast numeric input samples/formula, backtest, exact paid-plan notice, savings example (75,000 × 50% − 15,000 = 22,500 KZT), and Save text generation/copy/explicit insertion worked in the production frontend |
-| CSV/XLSX inspect/preview/commit at public origin | Pending updated API deployment and explicit synthetic-only checks |
-| Public unified Forecast/Save/About browser flows | Pending updated frontend deployment and browser checks |
+| Public API/integration | 45/45 passed, exit 0: new product checks 14/14, compatibility 22/22, targeted PostgreSQL order race 9/9 |
+| CSV/XLSX at public origin | Generated synthetic fixtures passed inspection, mapped preview, explicit commit, atomic rejection, repeat deduplication and simultaneous-import exact-one-increment checks |
+| Public browser flows completed | Numeric forecast generation/expanded explanation, historical backtest metrics/source warnings, exact paid-plan modal, compact Forecast/Save/About navigation and close-on-link behavior passed |
+| Additional public hydrated browser flows | Savings example returned 22,500 KZT; Save generation, editing, copy, explicit insertion and publication persisted the reviewed text. Test listing 23 was deactivated and available seed stock restored to 15 |
 | Real-data forecast quality | Not established: questionnaire answers do not supply a daily forecasting ledger |
 
-New code includes actual rolling historical forecasts, MAE/WAPE and simple-baseline comparison; per-day input samples and production formulas; manual scenario savings starting at 0%; preliminary pricing with exact informational connection notice; and deterministic Save announcement text. Their local presence is distinct from deployed availability.
+New code includes actual rolling historical forecasts, MAE/WAPE and simple-baseline comparison; per-day input samples and production formulas; manual scenario savings starting at 0%; preliminary pricing with exact informational connection notice; and deterministic Save announcement text. The new endpoints and synthetic calculations were also checked at the public PostgreSQL-backed origin.
 
-The complete backend/frontend commands are in README.md. Local final counts above were supplied from executed root integration checks. New public release IDs and live evidence should replace remaining pending statuses only after actual execution. No real source file may be used as a public import test.
+The complete backend/frontend commands are in README.md. Local final counts above were supplied from executed root integration checks. The new public release and API evidence below were added after actual execution. Later documentation/wording deployment evidence must be recorded separately. No real source file may be used as a public import test.
+
+## Unified-product public release: executed evidence
+
+The first verified code source is `416220352ee4a8852035a0eb5fc4581fda85299f`. Render deployment `dep-dbe8h6e7bikc73avev20` reached LIVE at **15:31:14 (10:31:14 UTC)**. Runtime logs confirmed PostgreSQL dialect, migration `ee2260d736c6` → `c83f42d78b91`, guarded bootstrap preserving records and healthy connected database; the new backtest route returned 200.
+
+Vercel deployment `dpl_DEVVTSiiKUTsFejT6PLTQzmb9nKJ` reached READY after a 91-second build. Its immutable URL is [saqta-pxvi9z5om-saqta.vercel.app](https://saqta-pxvi9z5om-saqta.vercel.app); [saqta-batyrkekw.vercel.app](https://saqta-batyrkekw.vercel.app) serves the production alias. At this first release, 10 requested resources returned 200, five legacy paths returned the exact expected 307 redirect, and three downloadable documentation SHA256 values matched the approved source. Tested internal/private/Excel URLs returned 404. Evidence: ignored `artifacts/vercel-restructure-release.json`. A later documentation/wording refresh is separate; these hashes identify the first approved source, not unverified later text.
+
+| Updated public API suite | Executed result |
+|---|---|
+| New product integration | **14/14 passed**, exit 0, finished 15:37:41 (10:37:41 UTC); `artifacts/product-update-live.json` |
+| Preserved compatibility | **22/22 passed**, exit 0, finished 15:38:12 (10:38:12 UTC); `artifacts/product-update-live-legacy.json` |
+| Targeted PostgreSQL order race | **9/9 passed**, exit 0, finished 15:38:47 (10:38:47 UTC); `artifacts/product-update-pg-order-race.json` |
+| Combined sequence | **45 passed, 0 failed**; generated synthetic fixtures only |
+
+The new-product suite verified public navigation/redirects, persisted demo origin, no internal planning endpoint in public OpenAPI, independent chronological backtest recomputation, insufficient-history null metrics, real-origin rejection before workbook parsing, CSV and XLSX sheet/mapping preview, confirmation/token guards, atomic invalid-batch rejection, repeated semantic-row deduplication and exact explanation formulas. It never read or sent the real private workbook.
+
+Two simultaneous identical import requests both returned 200 in the observed schedule: one imported one row and one reported one duplicate. Exactly one record/stock increment persisted. This demonstrates the observed effective deduplication; it does not claim that this schedule returned a 409 conflict.
+
+The order race requested one unit twice: A returned 409 and B returned 201, with only order 26 stored. Cancellation and listing deactivation restored original seed stock, and **this race alone** had zero impact deltas. QA products 7/8 and listings 21/22 were deactivated with QA stock reconciled to zero. The new-product and compatibility suites retain labeled synthetic production, sales/collection, write-off and import-audit rows for traceability. Consequently demo aggregates can include verification records; cleanup did not delete audit rows or restore every metric to its pre-test value. No database reset or deletion occurred.
+
+### Updated public browser checks completed
+
+* Forecast for seeded product/location 1 returned demand **58**, buffer **10%** → **64**, available inventory **15**, recommended production **49**. Expanded sources showed 18–24 October recent mean **54.57**, previous Sundays mean **62.25**, weights **0.6/0.4**, and `max(0, ceil(58 × 1.1) − 15) = 49`.
+* Backtest displayed **42** observed history dates and **7** held-out observations: SAQTA MAE **5.53**, WAPE **10.13%**; simple comparison MAE **6.29**, WAPE **11.52%**. Synthetic-origin and reliability limitations were visible. These are demonstration metrics, not real bakery accuracy.
+* Paid-plan selection displayed the exact requested «Подключение тарифов» notice without payment/subscription activation. Compact navigation displayed Forecast, Save and About and closed after following a link.
+
+* The public savings calculator returned `75,000 × 50% − 15,000 = 22,500 KZT`, with the assumed reduction initially 0% and revenue/gross profit displayed separately.
+* The public Save form generated text using entered fields, allowed editing/copying and explicit insertion, then published the exact edited synthetic description. API readback confirmed listing 23; UI deactivation left it inactive with available seed stock restored to 15. No order or real payment was made for this browser test.
+* The public import form started without an assumed file origin. Selecting real bakery data in DEMO displayed the refusal and left file selection/acknowledgement disabled; no file was chosen or transmitted.
+
+Other local production-browser checks passed as listed above. No full mobile/cross-browser or accessibility certification is implied. The compact live-browser layout and its collapsible navigation were exercised; this is not a device-matrix test.
 
 ## Previous release: executed local checks
 
@@ -79,8 +112,8 @@ The previous browser report is ignored `artifacts/browser-live-verification.json
 
 ## Boundaries and remaining verification
 
-* Local automated database checks use SQLite. Earlier public checks exercised PostgreSQL stock/orders and one race; new import migration/transactions require updated PostgreSQL verification.
-* Docker is unavailable locally. Render built/ran the earlier API container; local image builds and Docker Compose startup were not executed.
+* Local automated database checks use SQLite. The updated public PostgreSQL migration, import transactions/deduplication and a targeted two-order race were verified separately. This is not broader concurrency or load-test coverage.
+* Docker is unavailable locally. Render built/ran the updated API container; local image builds and Docker Compose startup were not executed.
 * The free PostgreSQL database was provisioned to expire **23 November 2026 at 14:00:24 Asia/Qyzylorda** and had no backups at verification. Recheck current provider state; this is a temporary demonstration tier.
 * Earlier browser checks used desktop in-app browsing. They do not certify mobile, cross-browser accessibility, load handling or full security.
 * There is no authentication, tenancy isolation, payment processor, enforced subscription quota or automatic paid-plan notification. No real confidential data belongs in the shared public deployment.

@@ -2,7 +2,7 @@
 
 Local base: `http://127.0.0.1:8000/api`. The frontend API base is configured through `NEXT_PUBLIC_API_URL`, including `/api`. FastAPI publishes `/docs` and `/openapi.json` at the backend origin.
 
-This document describes the current source tree. The previous public release exists; availability of newly added endpoints at a live origin must be confirmed separately after deployment. See `VERIFICATION.md`.
+This contract is implemented by the unified-product code release 416220352ee4a8852035a0eb5fc4581fda85299f, deployed to the existing public API/frontend on 24 October 2026. The new import/backtest endpoints and retained API behavior passed targeted PostgreSQL integration checks. See `VERIFICATION.md` for executed results and limits.
 
 ## Conventions and source separation
 

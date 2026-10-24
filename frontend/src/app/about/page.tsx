@@ -9,7 +9,7 @@ export const metadata = { title: "О проекте SAQTA" };
 export default function AboutPage() {
   return <><ProductHeader/><main id="main" className="mx-auto max-w-5xl px-6 pb-20 pt-10">
     <div className="flex items-center gap-4"><Image src="/brand/saqta-symbol.svg" width={56} height={56} alt=""/><p className="eyebrow">Создано в Казахстане · начинаем с пекарен Астаны</p></div>
-    <h1 className="mt-7 max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-[#123C2F] md:text-4xl">Сохранять еду начинается<br className="hidden sm:block"/> с хорошего плана.</h1>
+    <h1 className="mt-7 max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-[#123C2F] md:text-4xl">Сохранение еды начинается<br className="hidden sm:block"/> с хорошего плана.</h1>
     <p className="mt-6 max-w-3xl text-base leading-8 text-[#5D6B62]">SAQTA — технология для пекарен, которым нужно точнее планировать выпечку и находить покупателей для подходящих остатков. Название вдохновлено казахским «сақта»: сохранять, беречь, защищать.</p>
     <div className="mt-10 grid gap-5 md:grid-cols-2">
       <section className="card p-7"><ChartNoAxesCombined className="text-[#237A57]" size={28}/><h2 className="mt-5 text-xl font-semibold text-[#123C2F]">SAQTA Forecast</h2><p className="mt-4 text-sm leading-7 text-[#5D6B62]">Платное направление продукта: история продаж, объяснимый прогноз, рекомендация с учётом остатков и проверка на прошлых днях. Сценарный калькулятор помогает оценить возможное сокращение затрат на списания.</p><Link href="/forecast" className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-[#237A57]">Открыть прогнозирование<ArrowRight size={16}/></Link></section>
