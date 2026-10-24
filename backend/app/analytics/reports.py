@@ -50,7 +50,7 @@ def inventory_report(db: Session, location_id=None, start_date=None, end_date=No
     return result
 
 
-def dashboard(db: Session, location_id=None, start_date=None, end_date=None):
+def dashboard(db: Session, location_id=None, start_date=None, end_date=None, loss_reduction_percent=None):
     start, end = period(start_date, end_date)
     production = filtered_records(db, ProductionRecord, location_id, start, end)
     sales = filtered_records(db, SalesRecord, location_id, start, end)
@@ -96,7 +96,8 @@ def dashboard(db: Session, location_id=None, start_date=None, end_date=None):
                "unsold": sum(stock.values()), "written_off": sum(r.quantity for r in waste),
                "waste_kg": round(sum(r.quantity * r.weight_grams for r in waste) / 1000, 3),
                "loss_kzt": losses, "forecast_demand": next_demand,
-               "potential_savings_kzt": round(losses * 0.2), "active_listings": len(list(db.scalars(active)))}
+               "potential_savings_kzt": (losses * loss_reduction_percent + 50) // 100 if loss_reduction_percent is not None else 0,
+               "active_listings": len(list(db.scalars(active)))}
     recommendations = []
     if stock:
         product_id = max(stock, key=stock.get)
@@ -111,7 +112,9 @@ def dashboard(db: Session, location_id=None, start_date=None, end_date=None):
             "best_sellers": [{"name": products[k].name, "quantity": v} for k, v in sorted(best.items(), key=lambda x: -x[1])[:5]],
             "surplus_products": [{"name": products[k].name, "quantity": v} for k, v in sorted(stock.items(), key=lambda x: -x[1])[:5]],
             "recommendations": recommendations,
-            "savings_methodology": "Сценарная оценка: 20% записанных списаний × зафиксированная себестоимость. Не достигнутая экономия и не гарантия результата. Товары без себестоимости учитываются как 0 ₸. Остаток и активные предложения — текущие; прогноз — на день после конца выбранного периода."}
+            "savings_scenario": {"configured": loss_reduction_percent is not None, "loss_reduction_percent": loss_reduction_percent},
+            "savings_methodology": (f"Сценарное допущение пользователя: {loss_reduction_percent}% учтённых затрат на списания. Это потенциальная экономия себестоимости, не достигнутый результат и не выручка."
+                if loss_reduction_percent is not None else "Сценарий сокращения потерь не задан. Нулевое значение legacy-поля potential_savings_kzt сохраняет формат API и не является измерением экономии. Задайте процент в калькуляторе или параметре loss_reduction_percent.")}
 
 
 def impact(db: Session, location_id=None, start_date=None, end_date=None):

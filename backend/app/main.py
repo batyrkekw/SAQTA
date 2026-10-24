@@ -7,11 +7,15 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.api.routes import router
+from app.api.forecast_tools import router as forecast_tools_router
+from app.api.imports import router as imports_router
 from app.core.config import get_settings
 
 app = FastAPI(title="SAQTA API", version="1.0.0", description="Прогноз спроса, учёт пекарни и демо-витрина SAQTA Save. Без аутентификации; только изолированное демо.")
 app.add_middleware(CORSMiddleware, allow_origins=get_settings().cors_origins, allow_credentials=False, allow_methods=["GET", "POST", "PATCH", "OPTIONS"], allow_headers=["Content-Type"])
 app.include_router(router)
+app.include_router(forecast_tools_router)
+app.include_router(imports_router)
 
 
 @app.exception_handler(RequestValidationError)
@@ -28,5 +32,5 @@ async def integrity_error(request: Request, exc: IntegrityError):
 
 @app.exception_handler(SQLAlchemyError)
 async def database_error(request: Request, exc: SQLAlchemyError):
-    logging.getLogger("saqta").exception("Database operation failed")
+    logging.getLogger("saqta").error("Database operation failed: %s", type(exc).__name__)
     return JSONResponse(status_code=503, content={"detail": "База данных временно недоступна. Повторите запрос позже."})

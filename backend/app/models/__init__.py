@@ -137,3 +137,6 @@ class ApplicationSettings(TimestampMixin, Base):
     workspace_mode: Mapped[str] = mapped_column(String(10), default="demo", server_default="demo")
     safety_buffer_percent: Mapped[int] = mapped_column(Integer, default=10)
     __table_args__ = (CheckConstraint("safety_buffer_percent >= 0 AND safety_buffer_percent <= 100", name="buffer_range"), CheckConstraint("workspace_mode IN ('demo', 'real')", name="workspace_mode_valid"))
+
+
+from app.models.imports import ImportBatch, ImportFingerprint  # noqa: E402,F401

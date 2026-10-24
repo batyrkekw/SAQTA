@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowDown, ArrowRight, ArrowUpRight, BarChart3, Check, ChevronRight, CircleCheck, Clock3, Database, Leaf, Package, ScanLine, ShieldCheck, Sparkles, Store, TrendingUp } from "lucide-react";
 import LandingAnalytics from "@/components/landing-analytics";
+import { ProductHeader } from "@/components/product-header";
 
 function BreadIllustration() {
   return (
@@ -42,16 +43,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#F7F7F2] text-[#202622]">
       <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-white focus:p-4">Перейти к содержимому</a>
-      <header className="mx-auto flex h-24 max-w-[1360px] items-center justify-between gap-6 px-6 md:px-12">
-        <Link href="/" aria-label="SAQTA — главная"><Image src="/brand/saqta-logo.svg" width={146} height={32} alt="SAQTA" priority /></Link>
-        <nav className="hidden items-center gap-8 text-sm font-medium text-[#526258] md:flex" aria-label="Основная навигация">
-          <a href="#product" className="transition-colors hover:text-[#237A57]">Продукт</a>
-          <a href="#how-it-works" className="transition-colors hover:text-[#237A57]">Как это работает</a>
-          <Link href="/save" className="transition-colors hover:text-[#237A57]">SAQTA Save</Link>
-          <Link href="/economics" className="transition-colors hover:text-[#237A57]">Экономика</Link>
-        </nav>
-        <Link href="/dashboard" className="inline-flex items-center gap-2 rounded-full border border-[#123C2F]/20 px-4 py-2.5 text-sm font-semibold text-[#123C2F] transition hover:bg-[#123C2F] hover:text-white md:px-5">Открыть демо <ArrowUpRight size={16} /></Link>
-      </header>
+      <ProductHeader />
 
       <main id="main">
         <section className="relative mx-auto grid max-w-[1360px] items-center gap-8 px-6 pb-14 pt-8 md:px-12 md:pb-20 lg:grid-cols-[1.08fr_1fr] lg:gap-6 lg:pt-14">
@@ -60,7 +52,7 @@ export default function Home() {
             <h1 className="text-[clamp(2.75rem,5.3vw,4.6rem)] font-semibold leading-[1.06] tracking-[-.065em] text-[#123C2F]">Хороший хлеб.<br />Точный план.<br /><span className="relative inline-block">Меньше лишнего.<svg viewBox="0 0 430 13" className="absolute -bottom-3 left-0 h-3 w-full text-[#B9DD72]" aria-hidden="true"><path d="M3 8C116 1 267 1 425 7" fill="none" stroke="currentColor" strokeWidth="8" strokeLinecap="round" /></svg></span></h1>
             <p className="mt-9 max-w-[445px] text-base leading-7 text-[#5D6B62] md:text-lg">Планируйте выпечку на основе спроса, замечайте излишки заранее и продавайте подходящие остатки через SAQTA Save.</p>
             <div className="mt-8 flex flex-wrap items-center gap-4">
-              <Link href="/dashboard" className="inline-flex items-center gap-5 rounded-full bg-[#123C2F] px-6 py-4 text-sm font-semibold text-white transition hover:bg-[#237A57]">Посмотреть в действии <ArrowUpRight size={18} /></Link>
+              <Link href="/forecast" className="inline-flex items-center gap-5 rounded-full bg-[#123C2F] px-6 py-4 text-sm font-semibold text-white transition hover:bg-[#237A57]">Посмотреть в действии <ArrowUpRight size={18} /></Link>
               <a href="#how-it-works" className="inline-flex items-center gap-2 px-2 py-3 text-sm font-medium text-[#123C2F]">Как работает SAQTA <ArrowDown size={15} /></a>
             </div>
             <p className="mt-5 flex items-center gap-2 text-xs text-[#6A786E]"><CircleCheck size={14} /> Рабочее демо на синтетических данных · Без регистрации</p>
@@ -110,7 +102,7 @@ export default function Home() {
               <p className="mt-4 max-w-[360px] text-sm leading-6 text-[#5D6B62]">Разместите доступную продукцию со скидкой, укажите время самовывоза и управляйте заказами в одном месте.</p>
               <div className="mt-7 grid grid-cols-3 gap-2 border-t border-[#D5DECE] pt-6 text-[#123C2F]">{[{ icon: Package, label: "Разместите" }, { icon: ScanLine, label: "Примите заказ" }, { icon: Clock3, label: "Передайте" }].map(({ icon: Icon, label }) => <div key={label}><Icon size={22} strokeWidth={1.5} /><p className="mt-3 text-xs font-medium">{label}</p></div>)}</div>
               <Link href="/save" className="mt-8 inline-flex items-center gap-3 self-start text-sm font-semibold text-[#123C2F]">Перейти в SAQTA Save <ArrowUpRight size={17} /></Link>
-              <p className="mt-5 text-xs leading-5 text-[#63725F]">Демо-заказы без реальных платежей. Только продукция, подходящая для безопасной продажи.</p>
+              <p className="mt-5 text-xs leading-5 text-[#63725F]">Размещение бесплатно для пекарен на всех тарифах. Демо-заказы без реальных платежей; только пригодная к продаже продукция.</p>
             </div>
           </div>
         </section>
@@ -121,12 +113,12 @@ export default function Home() {
               <p className="mb-3 text-xs font-semibold uppercase tracking-[.18em] text-[#237A57]">Видеть полную картину</p>
               <h2 className="text-3xl font-semibold leading-tight tracking-[-.04em] text-[#123C2F] md:text-[38px]">Ваши данные.<br />Ваш следующий шаг.</h2>
               <p className="mt-5 max-w-[380px] text-sm leading-7 text-[#5D6B62]">Продажи, производство, остатки и списания связаны в одной панели. Фильтруйте по периоду и точке — показатели пересчитываются по записям в базе.</p>
-              <Link href="/dashboard" className="mt-7 inline-flex items-center gap-3 text-sm font-semibold text-[#123C2F]">Открыть аналитику <ArrowRight size={16} /></Link>
+              <Link href="/forecast?view=results" className="mt-7 inline-flex items-center gap-3 text-sm font-semibold text-[#123C2F]">Открыть аналитику <ArrowRight size={16} /></Link>
             </div>
             <div className="overflow-hidden rounded-2xl border border-[#E2E8E1] bg-[#F7F7F2]">
               <div className="flex items-center justify-between border-b border-[#E2E8E1] px-6 py-4"><p className="flex items-center gap-2 text-sm font-semibold text-[#123C2F]"><BarChart3 size={17} /> От данных к действию</p><span className="rounded-full bg-[#E7EDD9] px-2.5 py-1 text-xs font-semibold tracking-wide text-[#526844]">ЖИВЫЕ ДАННЫЕ</span></div>
               <LandingAnalytics />
-              <div className="divide-y divide-[#E2E8E1] px-6">{[{ title: "Продажи и производство", detail: "Сравните спрос и объём выпечки", icon: TrendingUp, href: "/dashboard" }, { title: "Остатки и списания", detail: "Найдите товары с излишками", icon: Package, href: "/inventory" }, { title: "Подтверждённые результаты", detail: "Отдельно учёт, отдельно оценки", icon: Leaf, href: "/impact" }].map(({ title, detail, icon: Icon, href }) => <Link href={href} key={title} className="group flex items-center gap-4 py-5"><span className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#E2E8E1] bg-white text-[#237A57]"><Icon size={18} /></span><div><p className="text-sm font-medium text-[#123C2F]">{title}</p><p className="mt-1 text-xs text-[#5D6B62]">{detail}</p></div><ChevronRight size={16} className="ml-auto text-[#5D6B62] transition group-hover:translate-x-1" /></Link>)}</div>
+              <div className="divide-y divide-[#E2E8E1] px-6">{[{ title: "Продажи и производство", detail: "Сравните спрос и объём выпечки", icon: TrendingUp, href: "/forecast?view=results" }, { title: "Остатки и списания", detail: "Найдите товары с излишками", icon: Package, href: "/forecast?view=data" }, { title: "Подтверждённые результаты", detail: "Отдельно учёт, отдельно оценки", icon: Leaf, href: "/forecast?view=results" }].map(({ title, detail, icon: Icon, href }) => <Link href={href} key={title} className="group flex items-center gap-4 py-5"><span className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#E2E8E1] bg-white text-[#237A57]"><Icon size={18} /></span><div><p className="text-sm font-medium text-[#123C2F]">{title}</p><p className="mt-1 text-xs text-[#5D6B62]">{detail}</p></div><ChevronRight size={16} className="ml-auto text-[#5D6B62] transition group-hover:translate-x-1" /></Link>)}</div>
               <p className="border-t border-[#E2E8E1] px-6 py-3 text-xs leading-5 text-[#6A786E]">В демо используются синтетические записи. Реальные результаты зависят от данных пекарни.</p>
             </div>
           </div>
@@ -139,18 +131,18 @@ export default function Home() {
 
         <section className="mx-auto max-w-[1360px] px-6 pb-20 md:px-12">
           <div className="grid gap-8 rounded-[28px] bg-[#E9EEDC] p-7 md:p-10 lg:grid-cols-[1.15fr_1fr] lg:gap-20">
-            <div><p className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[.14em] text-[#237A57]"><Leaf size={14} /> Ответственное отношение к эффекту</p><h2 className="text-2xl font-semibold leading-tight tracking-[-.035em] text-[#123C2F] md:text-3xl">Сохранять ценность.<br />Считать честно.</h2><p className="mt-4 max-w-[460px] text-sm leading-7 text-[#53634E]">Мы учитываем продажи через SAQTA Save, вес продукции и зарегистрированные списания. Изменение показателей само по себе не доказывает влияние SAQTA.</p><Link href="/impact" className="mt-6 inline-flex items-center gap-3 text-sm font-semibold text-[#123C2F]">Как считаем результаты <ArrowUpRight size={17} /></Link></div>
-            <div className="grid gap-5 self-center">{[{ title: "Прозрачные расчёты", body: "Фактические записи отделены от прогнозов и потенциальной экономии." }, { title: "Без придуманных обещаний", body: "Без неподтверждённых CO₂-коэффициентов и гарантий сокращения отходов." }, { title: "Проверяемые допущения", body: "Цена подписки и юнит-экономика — редактируемая гипотеза для пилота." }].map(({ title, body }) => <div key={title} className="flex items-start gap-3"><Check size={18} className="mt-0.5 shrink-0 text-[#237A57]" /><div><h3 className="text-sm font-semibold text-[#123C2F]">{title}</h3><p className="mt-1 text-xs leading-6 text-[#53634E]">{body}</p></div></div>)}</div>
+            <div><p className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[.14em] text-[#237A57]"><Leaf size={14} /> Ответственное отношение к эффекту</p><h2 className="text-2xl font-semibold leading-tight tracking-[-.035em] text-[#123C2F] md:text-3xl">Сохранять ценность.<br />Считать честно.</h2><p className="mt-4 max-w-[460px] text-sm leading-7 text-[#53634E]">Мы учитываем продажи через SAQTA Save, вес продукции и зарегистрированные списания. Изменение показателей само по себе не доказывает влияние SAQTA.</p><Link href="/forecast?view=results" className="mt-6 inline-flex items-center gap-3 text-sm font-semibold text-[#123C2F]">Как считаем результаты <ArrowUpRight size={17} /></Link></div>
+            <div className="grid gap-5 self-center">{[{ title: "Прозрачные расчёты", body: "Фактические записи отделены от прогнозов и потенциальной экономии." }, { title: "Без придуманных обещаний", body: "Без неподтверждённых CO₂-коэффициентов и гарантий сокращения отходов." }, { title: "Проверяемые допущения", body: "Предварительные тарифы Forecast отделены от сценарной экономии пекарни. Save остаётся бесплатным." }].map(({ title, body }) => <div key={title} className="flex items-start gap-3"><Check size={18} className="mt-0.5 shrink-0 text-[#237A57]" /><div><h3 className="text-sm font-semibold text-[#123C2F]">{title}</h3><p className="mt-1 text-xs leading-6 text-[#53634E]">{body}</p></div></div>)}</div>
           </div>
         </section>
 
         <section className="bg-[#123C2F] px-6 py-14 md:px-12 md:py-16">
-          <div className="mx-auto flex max-w-[1264px] flex-col justify-between gap-7 md:flex-row md:items-center"><div><p className="mb-3 text-xs font-medium uppercase tracking-[.18em] text-[#C7F36B]">Сделайте первый шаг</p><h2 className="text-3xl font-medium tracking-[-.04em] text-white md:text-4xl">Завтра начинается<br />с хорошего плана.</h2></div><div><Link href="/dashboard" className="inline-flex items-center gap-6 rounded-full bg-[#C7F36B] px-6 py-4 text-sm font-semibold text-[#123C2F] transition hover:bg-[#D7FA91]">Исследовать демо <ArrowUpRight size={18} /></Link><p className="mt-3 text-center text-xs text-[#B9CCC0]">Прогнозы · Учёт · SAQTA Save</p></div></div>
+          <div className="mx-auto flex max-w-[1264px] flex-col justify-between gap-7 md:flex-row md:items-center"><div><p className="mb-3 text-xs font-medium uppercase tracking-[.18em] text-[#C7F36B]">Сделайте первый шаг</p><h2 className="text-3xl font-medium tracking-[-.04em] text-white md:text-4xl">Завтра начинается<br />с хорошего плана.</h2></div><div><Link href="/forecast" className="inline-flex items-center gap-6 rounded-full bg-[#C7F36B] px-6 py-4 text-sm font-semibold text-[#123C2F] transition hover:bg-[#D7FA91]">Исследовать демо <ArrowUpRight size={18} /></Link><p className="mt-3 text-center text-xs text-[#B9CCC0]">Прогнозы · Учёт · SAQTA Save</p></div></div>
         </section>
       </main>
 
       <footer className="mx-auto max-w-[1360px] px-6 pb-7 pt-12 md:px-12">
-        <div className="flex flex-col justify-between gap-8 md:flex-row"><div><Link href="/" aria-label="SAQTA — главная"><Image src="/brand/saqta-logo.svg" width={132} height={29} alt="SAQTA" /></Link><p className="mt-4 max-w-[280px] text-xs leading-6 text-[#5D6B62]">Технологии для осмысленной выпечки.<br />Начинаем с пекарен Астаны.</p></div><nav className="grid grid-cols-2 gap-x-12 gap-y-3 text-xs text-[#536358] md:grid-cols-3" aria-label="Навигация в подвале"><Link href="/forecast">SAQTA Forecast</Link><Link href="/save">SAQTA Save</Link><Link href="/docs">Документация</Link><Link href="/impact">Эффект</Link><Link href="/economics">Юнит-экономика</Link><Link href="/settings">Данные и настройки</Link></nav></div>
+        <div className="flex flex-col justify-between gap-8 md:flex-row"><div><Link href="/" aria-label="SAQTA — главная"><Image src="/brand/saqta-logo.svg" width={132} height={29} alt="SAQTA" /></Link><p className="mt-4 max-w-[280px] text-xs leading-6 text-[#5D6B62]">Технологии для осмысленной выпечки.<br />Начинаем с пекарен Астаны.</p></div><nav className="grid grid-cols-2 gap-x-12 gap-y-3 text-xs text-[#536358] md:grid-cols-3" aria-label="Навигация в подвале"><Link href="/forecast">SAQTA Forecast</Link><Link href="/save">SAQTA Save</Link><Link href="/docs">Документация</Link><Link href="/forecast?view=results">Эффект</Link><Link href="/about">О проекте</Link><Link href="/forecast?view=data">Данные и настройки</Link></nav></div>
         <div className="mt-9 flex flex-col justify-between gap-2 border-t border-[#DFE5DC] pt-5 text-xs text-[#6A786E] md:flex-row"><p>© {new Date().getFullYear()} SAQTA. Сохраняем то, что ценно.</p><p>Демонстрационный MVP · Синтетические данные · Без реальных платежей</p></div>
       </footer>
     </div>

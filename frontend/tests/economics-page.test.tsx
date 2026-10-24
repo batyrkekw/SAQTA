@@ -3,7 +3,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/components/app-shell", () => ({ default: ({ children }: { children: React.ReactNode }) => <main>{children}</main> }));
-import EconomicsPage from "../src/app/economics/page";
+import EconomicsPage from "../internal/economics-page";
 
 describe("interactive economics calculator", () => {
   it("updates financial results from editable inputs and restores defaults", () => {

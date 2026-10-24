@@ -13,7 +13,7 @@ Recorded on **24 October 2026** from the local installation. Frontend versions w
 | Local database | SQLite via Python standard library |
 | Compose PostgreSQL image | `postgres:17-alpine` (configured; not run locally) |
 
-The Docker image tags pin major/minor release families, not immutable image digests. Docker is unavailable on this verification machine. PostgreSQL, Docker Compose, managed hosting, and public deployment have not been verified by the local SQLite checks. See [VERIFICATION.md](VERIFICATION.md) for executed checks.
+The Docker image tags pin major/minor release families, not immutable image digests. Docker is unavailable on this verification machine. Local SQLite checks do not establish PostgreSQL or hosting behavior. The previous public release was separately verified against Render PostgreSQL 17 and Vercel; those historical results do not verify this update. New-release deployment/migration results are tracked separately. See [VERIFICATION.md](VERIFICATION.md) for executed checks.
 
 ## Frontend runtime dependencies
 
@@ -60,6 +60,7 @@ The table includes direct and transitive packages, including test/lint tools. Th
 | `certifi` | 2026.10.23 |
 | `click` | 8.5.0 |
 | `colorama` | 0.4.6 |
+| `et_xmlfile` | 2.0.0 |
 | `fastapi` | 0.119.0 |
 | `greenlet` | 3.5.6 |
 | `h11` | 0.16.0 |
@@ -71,6 +72,7 @@ The table includes direct and transitive packages, including test/lint tools. Th
 | `Mako` | 1.4.3 |
 | `MarkupSafe` | 3.0.4 |
 | `numpy` | 2.5.4 |
+| `openpyxl` | 3.1.5 |
 | `packaging` | 26.3 |
 | `pandas` | 2.3.2 |
 | `pluggy` | 1.7.0 |
@@ -101,4 +103,4 @@ For a local environment matching this verification, install `backend/requirement
 
 ## Optional and future technology
 
-CatBoost is neither installed nor implemented. Paid LLM APIs, GPU runtimes, payment processing, authentication providers, and email/SMS providers are not dependencies. Vercel, Render, Railway, Docker, and PostgreSQL are deployment targets/configuration, not proof of an active public service.
+CatBoost is neither installed nor implemented. Paid LLM APIs, GPU runtimes, payment processing, authentication providers, and email/SMS providers are not dependencies. The earlier Vercel/Render/PostgreSQL deployment was verified separately, as recorded in VERIFICATION.md. This update adds CSV/XLSX processing through installed openpyxl 3.1.5 and its et_xmlfile 2.0.0 dependency; it requires additive import migration c83f42d78b91. Current-source versions are not evidence that the new release is already live. Railway remains an alternative configuration and local Docker Compose has not been run.

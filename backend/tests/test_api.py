@@ -76,7 +76,12 @@ def test_dashboard_filters_change_calculations(client):
     assert full["metrics"]["produced"] > location["metrics"]["produced"]
     assert full["metrics"]["produced"] > today["metrics"]["produced"]
     assert full["demo_data"] is True
-    assert full["metrics"]["potential_savings_kzt"] == round(full["metrics"]["loss_kzt"] * 0.2)
+    assert full["metrics"]["potential_savings_kzt"] == 0
+    assert full["savings_scenario"] == {"configured": False, "loss_reduction_percent": None}
+    scenario = client.get("/api/dashboard?loss_reduction_percent=25").json()
+    assert scenario["metrics"]["potential_savings_kzt"] == (scenario["metrics"]["loss_kzt"] * 25 + 50) // 100
+    assert scenario["savings_scenario"] == {"configured": True, "loss_reduction_percent": 25}
+    assert client.get("/api/dashboard?loss_reduction_percent=101").status_code == 422
     assert len(today["trends"]) == 1
     assert client.get(f"/api/dashboard?start_date={today_local()}&end_date=2020-01-01").status_code == 422
     assert client.get("/api/dashboard?location_id=9999").status_code == 404

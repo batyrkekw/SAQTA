@@ -1,11 +1,26 @@
 "use client";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { Download, FileUp } from "lucide-react";
-import { ApiError, api, downloadCsv, errorMessage } from "@/lib/api";
+import { ImportWorkflow } from "@/features/data/import-workflow";
+import { downloadCsv, errorMessage } from "@/lib/api";
 import { Notice } from "./ui";
 
-export function CsvTools({ onImported, filters = {} }: { onImported?: () => void; filters?: Record<string, string | number | undefined> }) {
-  const fileInput = useRef<HTMLInputElement>(null); const [pending, setPending] = useState(false), [message, setMessage] = useState(""), [error, setError] = useState(""), [rows, setRows] = useState<{ row: number; message: string }[]>([]);
-  async function upload(file: File | undefined) { if (!file) return; setError(""); setMessage(""); setRows([]); if (!file.name.toLowerCase().endsWith(".csv")) { setError("Выберите файл CSV."); return; } if (file.size > 2 * 1024 * 1024) { setError("Максимальный размер CSV — 2 МБ."); return; } setPending(true); const body = new FormData(); body.set("file", file); try { const result = await api<{ imported: number; message: string }>("/import", { method: "POST", body }); setMessage(`Импортировано записей: ${result.imported}. ${result.message}`); onImported?.(); } catch (reason) { setError(errorMessage(reason)); if (reason instanceof ApiError) setRows(reason.rows); } finally { setPending(false); if (fileInput.current) fileInput.current.value = ""; } }
-  return <div className="space-y-3"><div className="flex flex-wrap gap-2"><input type="file" accept=".csv,text/csv" className="hidden" ref={fileInput} onChange={event => { void upload(event.target.files?.[0]); }} aria-label="CSV файл для импорта" /><button className="btn-secondary" disabled={pending} onClick={() => fileInput.current?.click()}><FileUp size={14} />{pending ? "Проверяем CSV…" : "Импорт CSV"}</button><button className="btn-secondary" disabled={pending} onClick={() => { setError(""); downloadCsv(filters).catch(reason => setError(errorMessage(reason))); }}><Download size={14} />Экспорт CSV</button></div><p className="text-xs leading-relaxed text-[#5D6B62]">UTF-8, разделитель — запятая. До 2 МБ и 5 000 строк. Заголовки: <code className="break-all">kind,product_id,location_id,date,quantity,reason,unit_price_kzt</code>. Значения kind: production, sales, waste. Импорт проходит целиком после проверки остатков.</p>{message && <Notice kind="success">{message}</Notice>}{error && <Notice kind="error">{error}{rows.length > 0 && <ul className="mt-2 list-disc space-y-1 pl-4">{rows.slice(0, 20).map((row, index) => <li key={index}>Строка {row.row}: {row.message}</li>)}{rows.length > 20 && <li>И ещё {rows.length - 20} ошибок.</li>}</ul>}</Notice>}</div>;
+export type CsvToolsProps = { onImported?: () => void; filters?: Record<string, string | number | undefined> };
+
+export function CsvTools({ onImported, filters = {} }: CsvToolsProps) {
+  const [expanded, setExpanded] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [error, setError] = useState("");
+  async function exportRecords() {
+    setError(""); setExporting(true);
+    try { await downloadCsv(filters); }
+    catch (reason) { setError(errorMessage(reason)); }
+    finally { setExporting(false); }
+  }
+  return <div className="space-y-4">
+    <div className="flex flex-wrap gap-2"><button type="button" className="btn-secondary" aria-expanded={expanded} onClick={() => setExpanded(value => !value)}><FileUp size={14} />{expanded ? "Скрыть импорт" : "Импорт CSV / XLSX"}</button><button type="button" className="btn-secondary" disabled={exporting} onClick={() => { void exportRecords(); }}><Download size={14} />{exporting ? "Выгружаем…" : "Экспорт CSV"}</button></div>
+    <p className="text-xs leading-relaxed text-[#5D6B62]">Импорт CSV или XLSX: выбор источника, сопоставление столбцов, проверка и отдельное подтверждение. До 2 МБ и 5 000 строк на листе. Выгрузка CSV учитывает выбранные фильтры.</p>
+    {error ? <Notice kind="error">{error}</Notice> : null}
+    {expanded ? <ImportWorkflow onImported={onImported} /> : null}
+  </div>;
 }

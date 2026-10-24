@@ -1,6 +1,6 @@
 # SAQTA public demo deployment
 
-SAQTA is publicly deployed with **Vercel frontend + Render API + Render PostgreSQL**. The live demo contains synthetic records and has no authentication.
+The previous SAQTA release is publicly deployed with **Vercel frontend + Render API + Render PostgreSQL**. The live demo contains synthetic records and has no authentication. This working tree restructures the product into Forecast/Save/About and adds new forecast and import tools. **Deployment of this update is pending verification**; the historical live results below do not establish that its new code or migration is deployed.
 
 ## Verified public resources
 
@@ -25,7 +25,23 @@ The table records the first verified production deployment. Subsequent documenta
 
 The database was created on 24 October 2026 and expires **23 November 2026 at 14:00:24 Asia/Qyzylorda (09:00:24 UTC)**. It has no backups. The free API can sleep after 15 minutes without requests and take about a minute to wake. Export or migrate data, or explicitly select a paid plan, before expiry if persistence is required. [Render free-instance limits](https://render.com/docs/free)
 
-## Current release configuration
+## Existing service configuration
+
+### Update order for the unified product
+
+Current local checks are complete: 86 backend tests, 63 frontend tests across 12 files, Ruff, strict TypeScript, zero-warning ESLint and the production frontend build (12 static pages). Fresh SQLite migrations through c83f42d78b91 and synthetic seeding passed. These results do not verify the updated public deployment or its PostgreSQL migration; those release checks remain pending.
+
+The new source keeps the existing Next.js/FastAPI/PostgreSQL stack. It uses Forecast's five internal views, free Save publication and About; legacy URLs redirect into Forecast. Prices/quotas are preliminary configuration, not enforced subscriptions. Payment is not connected.
+
+1. Run the complete backend/frontend tests, lint, strict types and production build on the final tree. Inspect the sanitized source report; the real workbook is a single survey response with no verified daily sales history.
+2. Prepare a reviewed **synthetic-only source package**. Exclude `data/private/`, every real XLSX/XLS file, local databases, `.env`, tokens, `.vercel` state, `artifacts/`, caches and dependencies. Git ignore rules are a safeguard; inspect the actual upload manifest as well. Do not copy the private original or normalized survey into frontend public assets or the API image.
+3. Preserve the existing database. Arrange a backup/export before migration for durable installations. Apply additive Alembic revision `c83f42d78b91` after `ee2260d736c6`; it creates import provenance/fingerprint tables without resetting the ledger. Never run demo reset during a release. Install the updated lock, including openpyxl 3.1.5 and et_xmlfile 2.0.0.
+4. Release the API first to the intended existing service. Confirm provider build/runtime status, PostgreSQL migration through the new revision, `/api/health`, and `/api/backtest` with synthetic IDs. Exercise inspect → preview → commit and repeated-file deduplication with a clearly synthetic fixture, checking unchanged balances on rejection. A local SQLite migration test is not a PostgreSQL verification.
+5. Build/release the frontend against the intended HTTPS API URL and exact CORS origin. The existing project requires the monorepo source with `frontend` root and outside-root build access. Its copy script publishes **only README, BRAND and API_CONTRACT**; `docs/internal/` and private data reports are not downloadable assets.
+6. Verify the real public origin after the production alias updates: Forecast navigation and explanations; backtest metrics/source warnings; savings known examples; preliminary pricing and the informational paid-plan modal; preview errors/duplicates; free listing announcement generation/edit/copy; reserve/cancel/collect and oversell rejection; legacy redirects; mobile navigation. Do not infer UI success from API health alone.
+7. Record exact release IDs, migration result, test counts, timestamps and any failures in `VERIFICATION.md`. Until those checks finish, the new release is unverified. No real workbook upload, subscription activation, notification setup or payment is part of this release.
+
+The real-data preparation outputs remain ignored and local. If a private deployment is required later, use a separate real-origin database, disable auto-seeding and implement access controls before importing confidential files. Changing an environment variable cannot relabel an existing demo database.
 
 ### Render backend
 
@@ -40,7 +56,7 @@ The service is linked to `batyrkekw/SAQTA`, branch `main`, with automatic deploy
 * `CORS_ORIGINS=https://saqta-batyrkekw.vercel.app`
 * `DATABASE_URL`: provider-managed private PostgreSQL connection, stored only in the Render environment
 
-The Docker command runs `alembic upgrade head`, guarded `python -m app.bootstrap`, then Uvicorn on `$PORT`. The deployment logs confirmed the PostgreSQL dialect, both shipped migration revisions and successful demo initialization. Bootstrap fills an empty demo once, preserves existing records, and refuses real-data workspaces. Never add `--reset` to startup.
+The Docker command runs `alembic upgrade head`, guarded `python -m app.bootstrap`, then Uvicorn on `$PORT`. The previous deployment logs confirmed the PostgreSQL dialect, migration through ee2260d736c6 and successful demo initialization. The update additionally requires c83f42d78b91 before import commits can work. Bootstrap fills an empty demo once, preserves existing records, and refuses real-data workspaces. Never add `--reset` to startup.
 
 Push reviewed backend changes to `main` to trigger a release, then inspect its build/runtime logs, wait for `LIVE`, and run the smoke checks below. Root documentation changes do not trigger an API rebuild with this service root configuration. For multiple replicas, move migrations to a single release/predeploy step. [Render monorepo root behavior](https://render.com/docs/monorepo-support)
 
@@ -92,9 +108,9 @@ For a real-data workspace, use a separate database, `WORKSPACE_MODE=real` and `A
 
 ## End-to-end verification
 
-The first public run passed **22/22 checks**, completing on **24 October 2026 at 14:14:19 Asia/Qyzylorda (09:14:19 UTC)**. It confirmed public pages/assets, browser CORS/preflight, PostgreSQL-backed data and forecasts, economics, negative-input rejection and order/inventory accounting. The report is saved locally as ignored `artifacts/live-smoke.json`; details and boundaries are recorded in [VERIFICATION.md](VERIFICATION.md).
+The first public run passed **22/22 checks**, completing on **24 October 2026 at 14:14:19 Asia/Qyzylorda (09:14:19 UTC)**. It confirmed public pages/assets, browser CORS/preflight, PostgreSQL-backed data and forecasts, negative-input rejection and order/inventory accounting. The report is saved locally as ignored `artifacts/live-smoke.json`; details and boundaries are recorded in [VERIFICATION.md](VERIFICATION.md).
 
-Live browser checks also passed for landing navigation, data filters, persisted forecasts, inventory editing, CSV rejection, listing creation/deactivation, order cancellation/collection, impact, interactive economics and settings. Read-only API checks confirmed the UI-created listing and order states. These are targeted checks at the public origin; no full mobile, cross-browser or accessibility certification is claimed.
+Live browser checks also passed for landing navigation, data filters, persisted forecasts, inventory editing, CSV rejection, listing creation/deactivation, order cancellation/collection, impact and settings. Read-only API checks confirmed the UI-created listing and order states. These are targeted checks at the public origin; no full mobile, cross-browser or accessibility certification is claimed.
 
 A separate targeted PostgreSQL race passed **9/9 checks** at 14:22:33 Asia/Qyzylorda (09:22:33 UTC): two requests launched together for one listing unit returned one 201 and one 409, with exactly one stored order. Cancelling that order and deactivating the QA listing restored the original inventory balances; impact/write-off values did not change. The local report is ignored `artifacts/postgres-order-race.json`. This is one targeted concurrency case, not a load test.
 
@@ -106,7 +122,7 @@ python scripts/verify_live.py --frontend-url https://saqta-batyrkekw.vercel.app 
 
 The script requires a synthetic demo before writing. It never resets the database, records QA entity IDs, reconciles QA stock and deactivates its test product/listing. Read-only checks are the default when `--write-demo` is omitted. `--allow-local` enables local rehearsal only.
 
-Use an unauthenticated browser to verify dashboard filtering, forecast explanation, inventory forms, order confirmation/cancellation/collection, impact, CSV feedback, economics and responsive navigation. API checks alone do not verify browser interactions or layout.
+Use an unauthenticated browser to verify dashboard filtering, forecast explanation, inventory forms, order confirmation/cancellation/collection, impact, import preview/commit, savings, pricing and responsive navigation. API checks alone do not verify browser interactions or layout.
 
 ## Public demo limits
 

@@ -13,3 +13,6 @@
 **/.vercel
 **/*.db
 artifacts
+data/private
+**/*.xlsx
+**/*.xls

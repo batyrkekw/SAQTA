@@ -25,5 +25,9 @@ frontend/tsconfig.tsbuildinfo
 frontend/public/docs/
 *.log
 artifacts/
+# Private bakery research and operational data never belongs in public builds.
+data/private/
+*.xlsx
+*.xls
 .DS_Store
 Thumbs.db

@@ -2,7 +2,7 @@ import React, { type ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import InventoryPage from '../src/app/inventory/page';
+import InventoryPage from '../src/features/workspace/inventory';
 import type { RecordKind, StockRecord } from '../src/types/api';
 
 vi.mock('../src/components/app-shell', () => ({ AppShell: ({ children }: { children: ReactNode }) => <div>{children}</div> }));

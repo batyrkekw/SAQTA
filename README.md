@@ -2,99 +2,140 @@
 
 **Predict demand. Save food. Protect tomorrow.**
 
-SAQTA is a working food waste prevention MVP for bakeries, originating in Kazakhstan and initially focused on Astana. The name is inspired by the Kazakh **сақта**: keep, preserve, or protect. The application speaks Russian and displays money in Kazakhstani tenge (₸).
+SAQTA is a working food waste prevention MVP for bakeries, originating in Kazakhstan with an initial focus on Astana. Its name comes from Kazakh **сақта**: keep, preserve or protect. The interface is Russian and money is displayed in Kazakhstani tenge (₸).
 
-Forecast helps bakery managers make production decisions before surplus occurs. Save lets them offer eligible remaining food for discounted pickup. A statistical forecast is a decision aid, never a sales guarantee. Unsold food is not automatically waste.
+**SAQTA Forecast** supports production decisions before surplus occurs. **SAQTA Save** offers eligible remaining products for discounted pickup, with free publication and no publication commission. Forecasts are decision aids; unsold products are not automatically waste.
 
-**Public demo:** [SAQTA](https://saqta-batyrkekw.vercel.app) · [API documentation](https://saqta-api.onrender.com/docs) · [API health](https://saqta-api.onrender.com/api/health). Deployed and checked on **24 October 2026**. This is a shared, unauthenticated workspace containing synthetic data; do not enter private business or customer information.
+The existing public synthetic demo is [SAQTA](https://saqta-batyrkekw.vercel.app), with [API documentation](https://saqta-api.onrender.com/docs) and [health status](https://saqta-api.onrender.com/api/health). Its previous release was verified on **24 October 2026**. This working tree adds the unified product, pricing, import preview and new forecast tools; deployment and live verification of this update are tracked separately in `docs/VERIFICATION.md`. An existing live URL does not establish that the update is deployed.
 
-This repository originally contained a concept document only; there was no application implementation to migrate. This project builds the working application rather than a slide deck.
+The public demo has **no authentication or tenant isolation**. Never upload private bakery files, respondent answers or customer information to it. A separate real-data workspace also requires access controls before private use.
 
-## Product and features
+## Product structure
 
-| Route | Working functionality |
+The main navigation is **Прогнозирование · SAQTA Save · О проекте**. Forecast contains related tools inside one workspace, rather than separate top-level panels.
+
+| URL | Functionality |
 |---|---|
-| `/` | Public product introduction, original SVG brand, links into the application |
-| `/dashboard` | Database-derived production, sales, stock, write-offs, losses, trends, forecast comparison, recommendations; date/location filters |
-| `/forecast` | Product/location/date/horizon, stored explainable forecast, existing inventory, production recommendation, history and chronological MAE |
-| `/inventory` | Catalog creation/editing, production/sales/write-off entry and edits, reconciliation, search/sort, CSV import/export |
-| `/save` | Surplus listing creation/editing/deactivation, search/filter, demo reservations, cancellation and collection |
-| `/impact` | Collected order units, recorded weight and revenue, write-off trends, preceding-period comparison and methodology |
-| `/economics` | Editable assumptions, contribution margin, LTV/CAC, payback, revenue target, illustrative acquisition funnel |
-| `/settings` | Bakery settings, safety buffer, data source, CSV, explicit demo reset confirmation |
-| `/docs` | Human-readable methodology, downloadable README/brand/API reference and live OpenAPI link |
+| `/` | Public product introduction, original SVG identity and working product links |
+| `/forecast?view=forecast` | Product/location/date/horizon, production recommendation, history and explanation |
+| `/forecast?view=data` | Catalog, production/sales/write-offs, live stock, import preview and CSV export |
+| `/forecast?view=data&settings=1` | Bakery profile, safety buffer, source status and explicitly confirmed demo reset |
+| `/forecast?view=results` | Historical backtest, with expandable operational analytics and collected-order/write-off reporting |
+| `/forecast?view=savings` | Editable bakery cost-saving scenarios; no default assumed improvement |
+| `/forecast?view=pricing` | Preliminary Forecast plans and honest connection status |
+| `/save` | Free listing publication/editing, generated editable announcement text, reservations, cancellation and collection |
+| `/about` | Product purpose, Forecast/Save relationship and connection information |
+| `/docs` | Public technical documentation and API links |
 
-Empty, loading and API-error states do not invent fallback metrics. The demo label identifies synthetic records throughout the application. Catalog weights and costs are supplied data, not independently measured by SAQTA.
+Legacy routes remain usable: `/dashboard` and `/impact` redirect to Forecast results; `/inventory` redirects to data; `/settings` opens data/settings; `/economics` redirects to Forecast pricing. Their useful data/API functions are preserved. Internal startup financial calculations are absent from the public interface.
+
+Loading, empty and error states do not fabricate fallback metrics. Synthetic data is labeled DEMO; catalog weights and costs are supplied values, not independent measurements.
+
+## Four implemented tools
+
+1. **Savings scenarios:** user-entered monthly quantities, cost, selling price, subscription and assumed write-off reduction. The assumed reduction starts at **0%**. Loss, revenue, gross profit and cost-saving effect are calculated separately.
+2. **Historical backtest:** rolling chronological forecasts using only observations preceding each test date; MAE and WAPE compared with the last observed sales value. Insufficient history returns requirements and null metrics.
+3. **Explainable forecasts:** actual contributing sales dates/quantities, recent and same-weekday means, weights, their difference, inventory, buffer and exact production formulas for each forecast day.
+4. **Save announcement generator:** deterministic text from the entered product, quantity, prices, pickup window and description. The bakery can edit and copy it before publication. It does not invent ingredients, allergens, certificates, freshness or availability.
+
+No LLM, paid AI API, neural network, GPU or CatBoost is implemented or required. The demand model is an explainable statistical baseline.
+
+## Preliminary Forecast plans
+
+Prices and quotas are configured in one place: `frontend/src/features/forecast/pricing.config.ts`.
+
+| Plan | Preliminary monthly price | Proposed products | Proposed forecast requests/month | Proposed locations |
+|---|---:|---:|---:|---|
+| Free | 0 ₸ | 3 | 10 | 1 |
+| Starter | 15,000 ₸ | 20 | 300 | 1 |
+| Pro | 30,000 ₸ | 100 | 1,000 | Multiple configured locations |
+
+These are proposals, not enforced entitlements. All implemented tools remain available in the shared unauthenticated demo. One forecast request covers one product/location and a 1–14-day horizon. Payment and subscription activation are not connected; no plan is shown as active and no payment success is simulated. SAQTA Save publication costs **0 ₸ with 0% publication commission on every plan**, including Free.
+
+Paid buttons display the requested notice, without collecting a request or setting up notifications:
+
+> **Подключение тарифов**
+>
+> Платные тарифы SAQTA Forecast находятся на этапе подготовки. Выбор тарифа пока не запускает оплату или активацию подписки. Мы сообщим о доступности подключения, когда процесс будет готов. SAQTA Save остаётся бесплатным для размещения остатков.
+
+The notice closes with «Понятно». Forecast accuracy, savings and profit growth are not guaranteed by any proposed plan.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-  Manager[Bakery manager / demo customer] --> Web[Next.js App Router · Russian UI]
-  Web -->|Typed HTTP client /api| API[FastAPI + Pydantic]
-  API --> Stock[Inventory and marketplace transactions]
-  API --> Analytics[Dashboard / impact / economics]
-  API --> Forecast[Explainable baseline + chronological evaluation]
-  Stock --> ORM[SQLAlchemy 2.x]
+  User[Bakery manager / demo customer] --> Web[Next.js App Router · Russian UI]
+  Web -->|Typed HTTP /api| API[FastAPI + Pydantic]
+  API --> Forecast[Statistical forecast / rolling backtest]
+  API --> Operations[Inventory / listings / orders]
+  API --> Analytics[Recorded operational and impact metrics]
+  Files[CSV / XLSX] --> Inspect[Inspect / map / preview / confirm]
+  Inspect --> API
+  Forecast --> ORM[SQLAlchemy 2.x]
+  Operations --> ORM
   Analytics --> ORM
-  Forecast --> ORM
   ORM --> DB[(PostgreSQL / local SQLite)]
-  CSV[Validated CSV · Pandas] --> API
-  Migrations[Alembic migrations] --> DB
-  Seed[Reproducible synthetic seed] --> DB
+  Alembic[Additive Alembic migrations] --> DB
+  Synthetic[Separate reproducible DEMO seed] --> DB
 ```
 
-Forecasting is separate from the API and database layers. No paid API, LLM, GPU, CatBoost or payment processor is required. CatBoost is a roadmap item, not an implemented feature.
+Forecast calculations are independent of API/database layers. Import preview does not write ledger records. Confirmed imports and orders use database transactions.
 
-## Actual technology and versions
+## Actual stack and versions
 
-Exact installed versions are recorded in [`docs/VERSIONS.md`](docs/VERSIONS.md), `frontend/package-lock.json` and `backend/requirements.lock.txt`. Direct backend dependencies are listed in `backend/requirements.txt`; the lock also pins their installed transitive dependencies. The frontend uses Next.js, React, strict TypeScript, Tailwind CSS, Recharts, Lucide, React Hook Form and Zod. The backend uses Python 3.12, FastAPI, Pydantic, SQLAlchemy, Alembic, Pandas and psycopg. Tests use Pytest, Vitest and React Testing Library; linting uses Ruff and ESLint.
+Exact versions are pinned in `frontend/package-lock.json`, `backend/requirements.lock.txt` and documented in `docs/VERSIONS.md`.
 
-The development machine has Python 3.12.5 and Node.js 25.2.1. Use **Node.js 24 LTS** for deployment (the Docker image uses 24). Versions are pinned rather than automatically installing future releases.
+| Layer | Installed technology |
+|---|---|
+| Frontend | Next.js 16.4.3, React/React DOM 19.3.1, strict TypeScript 5.9.3, Tailwind CSS 4.3.3 |
+| UI/data | Recharts 3.10.1, Lucide React 1.61.0, React Hook Form 7.91.0, Zod 4.6.7 |
+| API | Python 3.12, FastAPI 0.119.0, Pydantic 2.14.1, Uvicorn 0.37.0 |
+| Storage | SQLAlchemy 2.0.43, Alembic 1.16.5, psycopg 3.2.10; PostgreSQL deployment / optional SQLite local fallback |
+| Data preparation | Pandas 2.3.2, openpyxl 3.1.5, et_xmlfile 2.0.0 |
+| Verification | Pytest 8.4.2, Vitest 4.1.12, React Testing Library 16.3.3, Ruff 0.13.1, ESLint 9.39.5 |
 
-## Repository layout
+Local verification uses Python 3.12.5 and Node.js 25.2.1. Use **Node.js 24 LTS** for deployment. Docker targets Node 24/Python 3.12/PostgreSQL 17; successful local SQLite tests do not verify a Docker or PostgreSQL installation.
+
+## Repository structure
 
 ```text
 frontend/
-  src/app/             App Router routes, layout and design tokens
-  src/components/      Responsive shell, shared forms/cards/charts
-  src/lib/             Typed API client and economics calculation
-  src/types/           API response types
-  public/brand/        Editable original SVG logos and icons
-  tests/               Vitest / React Testing Library
+  src/app/                 Routes, server boundaries and legacy redirects
+  src/features/forecast/   Forecast, explanations, backtest, savings and pricing
+  src/features/workspace/  Reusable catalog, analytics and settings
+  src/features/save/       Deterministic announcement generation
+  src/components/          Responsive shell, forms, import workflow and charts
+  src/lib/                 Typed API client
+  src/types/               Shared API types
+  public/brand/            Original editable SVG identity
+  tests/                   Vitest / React Testing Library
 backend/
-  app/api/             REST endpoints
-  app/core/            Environment configuration
-  app/db/              SQLAlchemy session and engine
-  app/models/          Normalized relational entities
-  app/schemas/         Validated request models
-  app/services/        Inventory, orders and CSV processing
-  app/forecasting/     Baseline forecast and chronological evaluation
-  app/analytics/       Dashboard, impact and unit economics
-  alembic/             Database migrations
-  tests/               Pytest unit and integration tests
-data/demo/             CSV example and seed instructions
-docs/                  Brand, API contract, versions and verification
-docker-compose.yml     PostgreSQL + API + web
-render.yaml            Render backend/PostgreSQL blueprint
+  app/api/                 REST endpoints and import/backtest routers
+  app/forecasting/         Baseline, per-day explanation and chronological evaluation
+  app/services/            Inventory, orders, validated imports and source guards
+  app/models/              Relational schema and import provenance
+  app/analytics/           Recorded operational/impact calculations
+  alembic/                 Additive migrations
+  tests/                   Pytest unit/integration tests
+scripts/                   Preparation, public smoke and concurrency checks
+data/demo/                 Synthetic example and seed instructions
+data/private/              Ignored real source/preparation outputs; never deploy
+docs/                      Brand, contract, source report, deployment and verification
+docker-compose.yml         PostgreSQL + API + web
+render.yaml                Backend/PostgreSQL Blueprint
 ```
 
-## Prerequisites and local installation
+## Prerequisites and local setup
 
-Install Python **3.12+**, Node.js **24 LTS**, npm, and optionally Docker Compose. PostgreSQL is recommended for deployment; SQLite provides a zero-service local fallback. No credentials are included.
+Install Python **3.12+**, Node.js **24 LTS**, npm and optionally Docker Compose. PostgreSQL is recommended for deployment; SQLite is a local fallback. No credentials are committed.
 
-From the repository root, in PowerShell:
+From the repository root in PowerShell:
 
 ```powershell
 python -m venv backend/.venv
 backend/.venv/Scripts/python -m pip install -r backend/requirements.lock.txt
 Copy-Item backend/.env.example backend/.env
 Copy-Item frontend/.env.example frontend/.env.local
-```
-
-Then initialize the backend **from `backend/`** (relative SQLite paths resolve there):
-
-```powershell
 cd backend
 .venv/Scripts/python -m alembic upgrade head
 .venv/Scripts/python -m app.seed
@@ -109,44 +150,42 @@ npm ci
 npm run dev
 ```
 
-Open [SAQTA locally](http://127.0.0.1:3000), [API health](http://127.0.0.1:8000/api/health) or [OpenAPI](http://127.0.0.1:8000/docs). On macOS/Linux replace `.venv/Scripts/python` with `.venv/bin/python`; copy `.env` files with `cp`.
+Open [local SAQTA](http://127.0.0.1:3000), [health](http://127.0.0.1:8000/api/health) or [OpenAPI](http://127.0.0.1:8000/docs). On macOS/Linux use `.venv/bin/python` and `cp`. Run backend commands from `backend/`, where relative SQLite paths resolve.
 
-For a local production frontend: `npm run build` followed by `npm start`. `NEXT_PUBLIC_API_URL` is embedded at **build time**; rebuild after changing it.
+For the local production frontend run `npm run build`, then `npm start`. `NEXT_PUBLIC_API_URL` is embedded at **build time**; rebuild when it changes.
 
 ## Environment variables
 
 | Variable | Scope | Purpose |
 |---|---|---|
-| `DATABASE_URL` | Backend | `sqlite:///./saqta.db` for local use or `postgresql+psycopg://USER:PASSWORD@HOST:5432/DB` |
-| `WORKSPACE_MODE` | Backend | Initialization/reset policy: `demo` for synthetic workspace; `real` for a separately provisioned empty database. Stored origin labels are persisted with the workspace. |
-| `AUTO_SEED_DEMO` | Backend | Optional boolean, default `false`; fill an empty demo after migrations without resetting existing records. The Render Blueprint enables it; real-data workspaces are refused. |
-| `CORS_ORIGINS` | Backend | Comma-separated explicit frontend origins; configure the actual HTTPS deployment origin |
-| `DEMO_ANCHOR_DATE` | Seed | Optional ISO date for repeatable historical dates; defaults to current Astana date |
-| `NEXT_PUBLIC_API_URL` | Frontend build | Backend base including `/api`, e.g. `http://127.0.0.1:8000/api` |
-| `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | Compose | Database configuration; set a strong password in ignored root `.env` |
-| `PORT` | Backend deployment | Hosting provider port; Docker command supports the assigned value |
+| `DATABASE_URL` | Backend | `sqlite:///./saqta.db` locally or private `postgresql+psycopg://USER:PASSWORD@HOST:5432/DB` |
+| `WORKSPACE_MODE` | Backend | `demo` or `real` initialization/reset policy; persisted origin also protects existing data labels |
+| `AUTO_SEED_DEMO` | Backend | Default false; optional guarded bootstrap of an empty demo, preserving existing records |
+| `CORS_ORIGINS` | Backend | Explicit comma-separated allowed frontend origins |
+| `SAQTA_TIMEZONE` | Backend | Default `Asia/Qyzylorda` for local business dates |
+| `DEMO_ANCHOR_DATE` | Seed | Optional ISO anchor for reproducible historical dates |
+| `NEXT_PUBLIC_API_URL` | Frontend build | API base including `/api`, e.g. `http://127.0.0.1:8000/api` |
+| `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | Compose | Database configuration in ignored root `.env` |
+| `PORT` | Deployment | Provider-assigned application port |
 
-See the actual example files for defaults. Do not commit `.env`, database files, tokens or credentials. `NEXT_PUBLIC_` values are public; never put secrets there.
+`NEXT_PUBLIC_` values are public. Never place database URLs, tokens or credentials there. Read `.env.example` files for defaults; do not publish actual environment files.
 
-## Database migrations, seed and reset
+## Database, migrations and demo data
+
+Run `alembic upgrade head` before initialization or startup. The additive revision **`c83f42d78b91`**, after `ee2260d736c6`, adds `import_batches` and unique `import_fingerprints`; it does not erase historical records or relabel origins. Existing databases require this migration before confirmed imports work. Back up durable data before migration; a downgrade removes the new provenance tables.
+
+The reproducible synthetic seed provides **42 days × 5 products × 2 Astana locations**. It includes weekday/weekend patterns, production, sales, write-offs, live stock, listings and demo orders. PRNG seed is `24042`; `DEMO_ANCHOR_DATE=2026-10-24` fixes historical dates. Live pickup windows use execution time. History does not roll forward automatically.
+
+`python -m app.seed` is idempotent for an initialized bakery. Explicit reset is available inside Forecast → Данные → Настройки with confirmation `RESET SAQTA DEMO`, or:
 
 ```powershell
 cd backend
-.venv/Scripts/python -m alembic upgrade head
-.venv/Scripts/python -m app.seed
+.venv/Scripts/python -m app.seed --reset
 ```
 
-The seed creates **42 days × 5 baked products × 2 Astana locations**, with deterministic weekday/weekend variation, production, sales, write-offs, live stock, several listings and demo orders. The PRNG is fixed; set `DEMO_ANCHOR_DATE=2026-10-24` to reproduce historical record dates. Live pickup windows and initial live-order events use execution time so the marketplace can be demonstrated. Seeding never runs automatically on every web request. Stored history does not roll forward automatically; normal user actions and expired-reservation cleanup still update operational records.
+Reset deletes the configured demo's records and is refused for real workspaces. Never run it as part of deployment or data migration.
 
-Use **Settings → Reset demo** and type the exact confirmation, or call:
-
-```powershell
-Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/demo/reset -ContentType 'application/json' -Body '{"confirm":"RESET SAQTA DEMO"}'
-```
-
-Reset deletes records in the configured demo database. It is refused in `WORKSPACE_MODE=real`. The CLI equivalent is `python -m app.seed --reset` from `backend/` with the virtual environment active. The default seed command is idempotent when a bakery already exists; it does not overwrite it.
-
-For an empty real-data workspace, use a **separate database**, set `WORKSPACE_MODE=real` and its `DATABASE_URL` in `backend/.env`, then initialize it explicitly:
+For a **separate private real-data database**, set `WORKSPACE_MODE=real`, `AUTO_SEED_DEMO=false` and its own `DATABASE_URL`, then run:
 
 ```powershell
 cd backend
@@ -154,109 +193,110 @@ cd backend
 .venv/Scripts/python -m app.seed --empty
 ```
 
-`--empty` creates a bakery, one placeholder location and application settings, with no synthetic catalog or business records. Migrations alone do not create this workspace. Enter your catalog and records after initialization. Real mode does not implement authentication or make a public shared installation private.
+This creates the workspace, placeholder location and settings without synthetic business records. Real origin is persisted in ApplicationSettings. Changing an environment variable cannot convert a synthetic database into a real one. Private access controls remain necessary.
 
-The workspace's `demo`/`real` origin is saved in ApplicationSettings. Changing an environment variable cannot relabel an existing synthetic database as real data. Use a separate database and the empty initializer for that distinction; there is no UI mode switch that converts data.
+### Relational model and stock rules
 
-### Relational model
+Bakery owns BakeryLocation and Product. ProductionRecord, SalesRecord and WasteRecord are the dated stock ledger. InventorySnapshot holds unique product/location live `on_hand` and `reserved` values. Forecast stores computed results and explanation components. SurplusListing allocates stock; Order/OrderItem retain status, reservation price and accounting weight. Write-offs snapshot unit cost and weight. ApplicationSettings stores buffer and source origin. ImportBatch records file hash, source, sheet, mapping and counts; ImportFingerprint prevents repeated semantic rows within a bakery.
 
-Bakery owns BakeryLocation and Product. ProductionRecord, SalesRecord and WasteRecord form the stock ledger and reference product/location pairs. InventorySnapshot stores live `on_hand` and `reserved` stock with unique product/location keys. Forecast stores results and explanations for its product, location, target date and horizon. SurplusListing allocates inventory; Order and OrderItem preserve order status, discounted price and product weight at reservation. WasteRecord snapshots unit cost and product weight at write-off. ApplicationSettings stores the production buffer and persisted workspace origin.
+Foreign keys, quantity/price constraints, indexes and timestamps are implemented. Money uses **integer KZT**; quantities are integer units and weights grams.
 
-Foreign keys, stock/price/quantity constraints, indexes and timestamps are declared in SQLAlchemy and initialized by Alembic. Currency uses **integer KZT**, quantities integer units, weights grams. No floating-point currency columns are used.
+Production adds stock. Normal sales and write-offs consume unallocated inventory. Listings allocate stock; orders reserve listing availability. Collection deducts stock and records sales once; cancellation before deadline restores listing availability. Guarded conditional updates and transactions prevent partial or oversold orders. Conflicting edits surface errors instead of silently changing quantities.
 
-### Stock and order rules
+Stock and active listing counts are **live**, independent of period filters. Production/sales/write-offs are date-filtered flows. Operational next-day demand refers to the day after the selected period ends. The bakery must check freshness, expiry, storage and allergens; SAQTA does not certify food safety or track batches.
 
-Production increases stock; sales and write-offs reduce unallocated stock. Listings allocate stock so ordinary sales and other listings cannot consume it. Orders reserve available listing quantities. Collection deducts stock, creates the corresponding sale once and contributes to impact; cancellation releases an order reservation back to its listing before the pickup deadline. Guarded conditional database updates and transactions prevent overselling and partial multi-item orders. Conflicting edits return errors; quantities are never silently clamped.
+## Real workbook inspection and preparation
 
-Inventory and dashboard unsold stock are **live balances**, independent of the selected date interval. Date-filtered production/sales/write-offs are period flows; changing dates does not turn current stock into a historical stock snapshot. Active listing counts are also current. Dashboard forecast demand is for the day after the selected period ends, using only earlier history. Verify product freshness, allergens, storage and pickup eligibility operationally before publishing a listing; the MVP does not certify food safety or track batches/expiry.
+The provided real XLSX was inspected read-only: **1 worksheet, 16 columns, 1 Google Forms response, 0 missing cells and 0 exact duplicate responses**. It is a survey, not a daily operational ledger, and yields **0 verified daily sales observations**. No questionnaire answer was converted into invented historical demand or imported into production records.
 
-## CSV import and export
+The unchanged source SHA256, schema-only quality report, provenance and transformations are documented in `docs/DATA_REPORT.md`. No private answers, respondent names or contacts are reproduced here. Raw and normalized outputs stay in ignored `data/private/` and are excluded from public uploads. The existing synthetic seed remains separate and explicitly labeled.
 
-UTF-8, comma-separated CSV, at most **2 MB / 5,000 rows**:
+To repeat preparation in a private environment from the repository root:
+
+```powershell
+backend/.venv/Scripts/python scripts/prepare_bakery_data.py --input C:/path/to/workbook.xlsx --output-dir data/private --report docs/DATA_REPORT.md
+```
+
+Outputs include normalized survey JSON, provenance/quality JSON and a **header-only** daily-history template. Unicode/whitespace and native dates are normalized; missing values and duplicates remain flagged. No synthetic daily dataset is presented as real. Collect actual dated product/location sales, production and reconciliation records before real forecasting evaluation.
+
+## CSV/XLSX inspect → preview → commit
+
+Inside Forecast → Данные, choose the source origin first. The UI blocks a real-origin file before sending it to a public demo; the backend independently enforces the persisted workspace origin. Do not select DEMO for a real file to bypass this guard.
+
+1. **Inspect:** upload CSV or ordinary XLSX and review sheets, headers, classification and up to five sample rows. Survey files cannot become ledger imports.
+2. **Map:** choose a sheet and map date, quantity, record kind, product, location and optional units/price/reason. Product/location/kind may use explicit defaults. Existing names/IDs must resolve unambiguously.
+3. **Preview:** validate dates, whole numbers, units, duplicate identities and historical/live inventory. Review ready/duplicate/error rows and warnings before writing.
+4. **Commit:** submit the same file/options and preview token with `IMPORT SAQTA`. Any invalid row blocks the batch. Valid semantic duplicates are skipped; concurrent conflicts roll back the whole transaction.
+
+Limits: **2 MB**, **5,000 rows per sheet**, **80 columns**, **25 XLSX sheets**, **32 MB expanded XLSX content**. CSV is UTF-8 with comma, semicolon or tab separation. `.xls`, `.xlsm`, encrypted workbooks and formulas are unsupported. Date format is explicitly ISO or day-month-year; decimal separator selection never rounds fractional quantities into units. Zero quantities are rejected explicitly, not silently dropped. Unit conversions are not guessed.
+
+Deduplication is semantic and works across renamed files; intentionally identical separate operations need aggregation or manual review. Stock is revalidated at commit, so a stale preview may require another check. The raw uploaded file is not stored; provenance and committed records are persisted.
+
+The legacy `POST /api/import` remains compatible for canonical CSV. It performs atomic row validation but **does not provide duplicate prevention**; the UI uses the new flow. `GET /api/export` retains canonical columns and date/location filters. A canonical sample is:
 
 ```csv
 kind,product_id,location_id,date,quantity,reason,unit_price_kzt
 production,1,1,2026-10-24,40,,
-sales,1,1,2026-10-24,25,,850
+sales,1,1,2026-10-24,25,,750
 waste,1,1,2026-10-24,2,Повреждение упаковки,
 ```
 
-`kind` is `production`, `sales` or `waste`; dates are ISO. IDs must exist. Waste requires a reason. Imports validate structure, types, positive quantities and inventory in row order. The transaction is all-or-nothing, with row-level errors. Reimporting a valid file adds additional records; import is **not idempotent**. Review before repeating. Export includes the same columns; date and location filters are supported. An example is in `data/demo/`.
+## Forecast methodology and historical evaluation
 
-## Forecasting methodology and limitations
+For each product/location and target date:
 
-For a target date, use only observations strictly before it:
+1. Use only observations strictly before the target.
+2. Average the last **7 observed dates**, not necessarily 7 calendar days.
+3. Average up to **4 previous observations matching the target weekday**.
+4. Demand is **0.6 × recent mean + 0.4 × weekday mean**; without matching weekdays it is the recent mean. Nonnegative demand is rounded to units for production.
+5. Production is `max(0, ceil(demand × (1 + buffer_percent/100)) − available_inventory)`. Reserved Save stock is excluded. Across a multi-day horizon the initial stock is consumed once; forecast surplus from future production is not assumed fresh for later days.
 
-1. Aggregate daily sales for the selected product and location.
-2. Compute the mean of the latest seven observed daily sales values.
-3. Compute the mean of up to four previous observations on the target weekday.
-4. Combine **60% recent mean + 40% weekday mean** when weekday history exists; otherwise use the recent mean. Round the nonnegative demand to units.
-5. Recommend `max(0, ceil(predicted_demand × (1 + safety_buffer/100)) − available_inventory)`. Reserved inventory is excluded. Multi-day recommendations consume the initial stock across days; forecast surplus from future production is not assumed to remain fresh for the next day.
+Each new forecast response includes actual samples, means, coefficients, weekday difference, buffer, inventory and exact per-day demand/production formulas in `explanation_components`. Earlier saved results can lack this additive field. No reasons or external covariates are invented.
 
-The response includes demand, production, considered stock, expected surplus, risk indicator, timestamp, method and explanation. Insufficient history returns an actionable validation message. The risk indicator is a heuristic, not a calibrated probability.
+Historical `GET /api/backtest` uses a rolling chronological window, with a minimum **14 prior observations** and **7 test observations** by default. A full requested window is required; insufficient history returns null MAE/WAPE and data requirements. Both models are scored on the same days. The comparison predicts the last observed sales value. MAE is mean absolute error; WAPE is `sum(abs(error)) / sum(actual_sales) × 100`, and is null when total actual sales is zero. Statistical demand is evaluated before final unit rounding. No `100 − WAPE` accuracy claim is made.
 
-MAE is the average absolute error over chronological held-out predictions: every prediction uses only preceding observations. It is shown only when evaluation points exist; otherwise the interface states **«Недостаточно данных для оценки точности»**. Synthetic held-out scores demonstrate the calculation and are **not evidence of real bakery model accuracy**.
+Every test prediction excludes that day's sales and all later values. Output includes sample count, test period, training end dates, baseline metrics, origin and reliability warnings. Synthetic results verify mechanics, **not real bakery accuracy**. Small windows are unreliable evidence of future performance.
 
-Daily sales can understate demand when stockouts occur. Holidays, weather, promotions, price changes, intraday timing, freshness and stockout censoring are not modelled. Better data needs validated timestamps, opening days, inventory availability, promotions and longer real history. Optional future CatBoost must beat the baseline using chronological validation before adoption.
+Completely absent calendar days are not filled. The existing ledger interprets days with production/write-offs but no sale entry as sales zero; this may represent zero sales or missing recording and is exposed as a limitation. Sales can understate demand during stockouts. Weather, holidays, promotions, expiry and stockout censoring are not modelled. Real data needs longer verified daily history, explicit zero-day handling, opening days and availability information. CatBoost remains a future comparison, not an implemented model.
 
-## Impact methodology
+## Savings and impact formulas
 
-* Recovered units: sum of **collected** marketplace order-item quantities.
-* Recovered weight in kg: `Σ(collected quantity × recorded product grams) / 1000`.
-* Value recovered: `Σ(collected quantity × reserved discounted unit price)` in KZT.
-* Recorded waste: `Σ(write-off quantity × recorded product grams) / 1000`.
-* Baseline: immediately preceding equal-length date interval, same selected location. Change is `(selected waste − baseline waste) / baseline waste × 100`; unavailable when baseline is zero or recorded coverage is incomplete. Coverage means at least one production record on every date in each comparison interval under the selected location filter. It is a completeness proxy, not independently verified opening days or complete reporting across every product/location. The response includes baseline `observed_days`, `required_days`, `complete`, and top-level `comparison_complete`.
-* Write-off loss: recorded quantity multiplied by the unit cost snapshotted at write-off. Missing unit cost contributes 0 ₸; selling price is not substituted.
-* Potential savings: an illustrative **20% of recorded write-off cost** scenario, explicitly separated from achieved results.
+The manual savings model assumes one month, one product and one batch **without opening inventory**. It rejects negative values and sold + written-off quantities exceeding produced units.
 
-Catalog weights are assumptions until a bakery verifies them. Demo outcomes are synthetic. Listing or reserving an item does not count as recovery. No unsupported CO₂ factors, avoided-waste claim, or causal claim is made. `potential_avoided_waste_kg` remains null without evidence.
+* Write-off cost loss = written-off units × unit cost.
+* Scenario avoided cost = write-off cost loss × **user-entered** reduction percentage, rounded to integer KZT.
+* Effect after subscription = scenario avoided cost − monthly subscription cost.
+* Sales revenue = sold units × selling price.
+* Gross profit on sold units = sales revenue − sold units × unit cost; write-offs are shown separately.
 
-The seed covers 42 days. The default 30-day comparison therefore has only 12 preceding seeded days and reports an incomplete baseline; a recent 14-day interval can demonstrate two fully covered equal windows. This guards against presenting partial history as a measured reduction.
+Revenue and gross profit are **not added** to avoided cost to fabricate profit. Avoided production cost is hypothetical: if food is already produced, its cost has already been incurred. Fixed company expenses, taxes and implementation costs are excluded; this is not net profit or demonstrated SAQTA performance.
 
-## Unit economics: hypothetical assumptions
+Recorded result metrics use **collected** order items only. Accounting weight is `sum(quantity × snapshotted catalog grams) / 1000`; recovered value is `sum(quantity × reservation price)`. Write-off weight/cost use snapshotted catalog values. Baseline is the preceding equal-length period under the same location filter. Percentage change is suppressed for a zero baseline or incomplete recorded coverage; coverage is a proxy, not independent verification of opening days. The 42-day seed cannot support a complete preceding 30-day baseline; a recent 14-day comparison can.
 
-| Input / result | Default |
-|---|---:|
-| Subscription per location / month | 30,000 ₸ |
-| Hosting and database | 3,000 ₸ |
-| Forecast computation | 2,000 ₸ |
-| Customer support | 3,000 ₸ |
-| Backups / miscellaneous | 1,000 ₸ |
-| Total variable costs | 9,000 ₸ |
-| Contribution margin | 21,000 ₸ / 70% |
-| CAC | 40,000 ₸ |
-| Lifetime | 12 months |
-| Contribution-based LTV | 252,000 ₸ |
-| LTV/CAC | 6.3 |
-| CAC payback | ≈ 1.9 months |
+No unsupported CO₂ factors, causal impact claims or assumption that every discounted sale otherwise becomes waste is used. Potential avoided waste remains null without evidence. Missing unit cost contributes zero in recorded cost totals and should be completed before business interpretation.
 
-`contribution = revenue − variable costs`; `margin% = contribution/revenue × 100`; `LTV = contribution × lifetime`; `LTV/CAC = LTV/CAC`; `payback = CAC/contribution`; `customers for target = ceil(monthly revenue target/subscription)`. Undefined denominators display an unavailable value. Contribution margin is **not net profit**. Fixed company expenses, taxes and development costs are excluded.
+## API documentation
 
-The editable illustrative funnel is a target: **200 contacted → 60 responses → 30 demonstrations → 15 pilots → 10 paying locations**. Ten continuously paying locations at 30,000 ₸/month imply **3,600,000 ₸ ARR**. Actual first-year revenue can be lower as locations join gradually. These are assumptions to validate, not operating results.
+FastAPI serves `/docs` and `/openapi.json`; business routes use `/api`. The typed frontend client uses the configured API base. Full public payloads are in `docs/API_CONTRACT.md`.
 
-## API and OpenAPI
-
-Interactive docs: `/docs`; machine schema: `/openapi.json` on the backend. All business endpoints use `/api`. See [`docs/API_CONTRACT.md`](docs/API_CONTRACT.md) for full payloads.
-
-| Group | Endpoints |
+| Group | Endpoints under `/api` |
 |---|---|
-| Status / workspace | `GET /health`, `GET/PATCH /bakery`, `GET /locations`, `GET/PATCH /settings` |
-| Catalog | `GET/POST /products`, `PATCH /products/{id}` |
-| Operations | `GET/POST /records`, `PATCH /records/{kind}/{id}`, `GET /inventory` |
-| Data exchange | `POST /import`, `GET /export`, `POST /demo/reset` |
-| Analytics | `GET /dashboard`, `GET /impact`, `POST /economics` |
-| Forecast | `POST/GET /forecasts`, `GET /history` |
-| Save | `GET/POST /listings`, `PATCH /listings/{id}` |
-| Orders | `GET/POST /orders`, `POST /orders/{id}/cancel`, `POST /orders/{id}/collect` |
+| Workspace | `GET /health`, `GET/PATCH /bakery`, `GET /locations`, `GET/PATCH /settings` |
+| Catalog/ledger | `GET/POST /products`, `PATCH /products/{id}`, `GET/POST /records`, `PATCH /records/{kind}/{id}`, `GET /inventory` |
+| Forecast | `POST/GET /forecasts`, `GET /history`, `GET /backtest` |
+| Data | `POST /imports/inspect`, `POST /imports/preview`, `POST /imports/commit`, legacy `POST /import`, `GET /export`, `POST /demo/reset` |
+| Results | `GET /dashboard`, `GET /impact` |
+| Save | `GET/POST /listings`, `PATCH /listings/{id}`, `GET/POST /orders`, `POST /orders/{id}/cancel`, `POST /orders/{id}/collect` |
 
-Records support `page`/`page_size`. Analytics support inclusive `start_date`, `end_date`, `location_id`. HTTP 422 reports validation errors; HTTP 409 reports stock/state conflicts. Expected errors use safe Russian messages. There is no mock API returning static dashboard totals.
+Records support pagination. Date filters are inclusive. Meaningful 422 validation errors and 409 stock/state conflicts use safe messages. CORS is explicitly configured and is not authentication.
 
-## Tests and quality checks
+## Tests, lint, types and build
 
 ```powershell
 cd backend
 .venv/Scripts/python -m pytest -q
 .venv/Scripts/python -m ruff check app tests
+.venv/Scripts/python -m pip check
 cd ../frontend
 npm test
 npm run lint
@@ -264,68 +304,46 @@ npm run typecheck
 npm run build
 ```
 
-Tests cover forecasts, recommendations, missing history, invalid quantities, CSV validation/rollback, inventory edits, order placement/cancellation/collection, overselling prevention, economics, impact and major endpoints. Frontend tests exercise calculations and user interactions. Actual results and verification limits are recorded in [`docs/VERIFICATION.md`](docs/VERIFICATION.md); no cloud deployment is implied by a successful local build.
+Tests cover calculations, future-data exclusion, chronological comparison, insufficient/zero-demand history, inventory and order transactions, overselling, import validation/rollback/deduplication, source separation, explanations and UI behavior. The current source passed **86 backend tests**, **63 frontend tests across 12 files**, Ruff, ESLint with zero warnings, strict TypeScript and the production frontend build (**12 static pages**). Fresh SQLite upgraded through all three migrations to `c83f42d78b91` and the 42-day synthetic seed loaded. Local browser forecast generation and numeric explanations worked. One upstream Starlette/AnyIO deprecation warning remains. Updated PostgreSQL migration, public deployment and live integration are still pending; `docs/VERIFICATION.md` records the distinction. A successful local check does not establish deployment or PostgreSQL verification.
 
 ## Deployment
 
-### Docker Compose (PostgreSQL)
+For Docker Compose:
 
 ```powershell
 Copy-Item .env.example .env
-# Edit .env: choose a strong POSTGRES_PASSWORD, review URLs/origins.
+# Choose a strong POSTGRES_PASSWORD and review origins/URLs in the ignored .env.
 docker compose up --build -d
 docker compose exec backend python -m app.seed
 ```
 
-Visit port 3000. Migrations run before the API starts. Seeding is explicit. To reset, use the confirmed demo UI or API. Data persists in `postgres_data`. `docker compose down` preserves it; do not delete volumes unless you intend to erase that database. Passwords with URL-special characters must be URL-encoded in a custom `DATABASE_URL`; for the Compose interpolation use a URL-safe randomly generated password.
+Docker Compose was not executed on the current Windows machine. Existing previous-release Render container/PostgreSQL checks are separate from local verification.
 
-### Vercel frontend + Render backend + PostgreSQL
+The Vercel frontend uses **Root Directory `frontend`**, Node 24, `npm ci`, `npm run build`, outside-root source access and build-time `NEXT_PUBLIC_API_URL=https://YOUR-API-HOST/api`. The Render Docker backend uses its private PostgreSQL `DATABASE_URL`, exact frontend `CORS_ORIGINS`, `/api/health`, and starts with migrations → guarded bootstrap → Uvicorn on `$PORT`. Never reset during startup. `render.yaml` and `backend/railway.json` support fresh Render/Railway setup.
 
-The verified public demo uses Vercel Hobby project `saqta`, the free Render API `saqta-api`, and free managed PostgreSQL 17 in Frankfurt. Source is stored in the private [batyrkekw/SAQTA repository](https://github.com/batyrkekw/SAQTA). The first API deployment built commit `af21fef1eb7f3f570f1ec05f9286e623ce9fb372`, ran both Alembic revisions against PostgreSQL, and initialized the synthetic workspace. The live HTTP/API smoke run passed **22/22 checks**, including persisted forecasts, inventory changes, cancellation, collection and overselling rejection. A separate **9/9-check concurrent order test** accepted exactly one of two simultaneous requests for one available listing unit on PostgreSQL. Targeted live browser flows also passed. [Deployment details and future release commands](docs/DEPLOYMENT.md) · [Verification evidence and limits](docs/VERIFICATION.md).
+The existing backend can auto-deploy from its reviewed Git branch; the existing frontend uses reviewed monorepo uploads rather than Git auto-deployment. This documentation edit does not deploy either service. Detailed existing-resource settings, safe update order, PostgreSQL migration requirements and exact remaining release checks are in `docs/DEPLOYMENT.md`.
 
-The API is linked to GitHub `main` with service root `backend`, Docker context `.`, and Dockerfile `./Dockerfile`; backend changes auto-deploy. The frontend uses reviewed source uploads to the existing Vercel project, rather than GitHub auto-deployment. The monorepo release configuration uses Root Directory `frontend` and includes source files outside that root, allowing the build to copy the README and brand/API documentation. **The frontend does not currently auto-deploy from GitHub.** Deploy reviewed monorepo source from the repository root using the procedure in `docs/DEPLOYMENT.md`, or explicitly connect the existing project to GitHub before switching to Git-based releases.
+**Exclude `data/private/`, all real XLSX/XLS files, credentials, local databases, environment files, generated artifacts, dependencies and authentication state from every source upload.** `frontend/scripts/copy-docs.mjs` only publishes README, BRAND and API_CONTRACT; private reports and internal documents are not included. The actual bakery workbook must never enter a public build or demo.
 
-To provision a separate installation:
+The previously provisioned free PostgreSQL resource expires **23 November 2026 at 14:00:24 Asia/Qyzylorda**, with no backups at initial verification; inspect current provider state before relying on it. Durable storage, backups/restore drills and access controls are required for real business deployment.
 
-1. Push the reviewed source to a Git provider you control, excluding credentials and runtime data.
-2. In Render, create the blueprint from `render.yaml`, or a Docker web service with context `backend`, `backend/Dockerfile`, and managed PostgreSQL. The Blueprint explicitly selects **free** API and PostgreSQL plans in Frankfurt, pins PostgreSQL 17 and disables external database IP access. Supply the final Vercel origin as `CORS_ORIGINS`; the Blueprint supplies the private `DATABASE_URL`, `WORKSPACE_MODE=demo` and `AUTO_SEED_DEMO=true`. Standard `postgres://` and `postgresql://` URLs are normalized to psycopg by the backend. Never expose the connection string in frontend variables.
-3. The Docker command runs `alembic upgrade head`, guarded `python -m app.bootstrap`, then Uvicorn on `$PORT`; health path is `/api/health`. Bootstrap fills an empty demo once, preserves existing records on restarts and refuses real-data workspaces. Free Render services do not have a hosting shell or one-off jobs, so seeding does not depend on either. For multiple replicas, run migrations once as a release/predeploy step instead of competing startup migrations.
-4. For a clean real-data workspace, use a separate database, `WORKSPACE_MODE=real` and `AUTO_SEED_DEMO=false`; initialize only its workspace with `python -m app.seed --empty` after migrations through an authorized administration environment. Public shared installations must remain synthetic demos until access controls exist.
-5. In Vercel, import the same repository, choose **Root Directory: `frontend`**, Node 24, install `npm ci`, build `npm run build`. Allow build access to files outside the root directory so the generated downloadable docs can include root README and `docs/`. Set `NEXT_PUBLIC_API_URL=https://YOUR-API-HOST/api` before building.
-6. Set Render `CORS_ORIGINS=https://YOUR-VERCEL-HOST` (no trailing slash), restart the backend, and redeploy the frontend if its API URL changed.
-7. Verify HTTPS health, populated products/settings, dashboard fetch, forecast, create/edit production, reserve/cancel/collect an order, import errors and mobile layout at the actual URL. Use `scripts/verify_live.py` and [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md). Health alone does not establish working UI/API integration. Provision backups and restore testing for a durable installation.
+## Security, limitations and roadmap
 
-The current free PostgreSQL database expires **23 November 2026 at 14:00:24 Asia/Qyzylorda (09:00:24 UTC)** and has no backups. The free API sleeps after 15 idle minutes and can take about a minute to wake. These are demonstration tiers. Arrange an export/migration or an explicitly approved paid database before expiry if data must survive. [Render free-instance documentation](https://render.com/docs/free), [Blueprint specification](https://render.com/docs/blueprint-spec).
+This is an unauthenticated single-workspace MVP. Public visitors can inspect/change synthetic records and explicitly reset the demo. No tenant isolation, real payment, subscription enforcement, outbound notifications, fiscal receipt, batch/expiry system, trained neural model or production security certification is claimed. Real-origin imports require a separate workspace and cannot be made safe merely by changing an environment label.
 
-Vercel builds reject missing, non-HTTPS or localhost API configuration so a public deployment cannot silently target a visitor's machine. Public URLs are recorded only after hosting confirms them and unauthenticated live checks succeed.
+The inspected real file is a survey, so real forecasting/backtest accuracy remains unestablished. Prices and quotas await validation; private business data needs authorization and access controls. Broader PostgreSQL concurrency/load testing, local Docker Compose, mobile/cross-browser coverage and backup restore drills remain verification boundaries unless a later release report establishes them.
 
-### Railway alternative
+Roadmap: validated daily bakery data; authentication/authorization and tenancy; explicit zero-sales and opening-day modelling; batch/expiry tracking; better stockout-aware demand; longer chronological evaluation and calibrated intervals; optional CatBoost comparison; observability, durable backups and enforceable subscription limits before commercial payments.
 
-Set service root to `backend`; the included `railway.json` selects its Dockerfile and health check. Add PostgreSQL, set the same backend variables, run migrations (already in Docker startup) and seed explicitly. Point Vercel at the Railway HTTPS API origin and configure exact CORS origins. Never expose the database connection URL in frontend variables.
+## Research and official documentation
 
-**Operational follow-up:** choose durable database storage before the current free database expires, configure backups and restore testing, and add authentication/authorization before storing private information. Local Docker Compose, broader PostgreSQL concurrency scenarios and load testing remain unverified; successful container startup, smoke checks and the targeted two-order race do not establish those broader guarantees.
+* [UNEP — Food Waste Index Report 2024](https://www.unep.org/resources/publication/food-waste-index-report-2024): primary research on food-waste measurement and baselines, not evidence of SAQTA outcomes. The link was checked during the original implementation.
+* [TSPM — Kazakhstan food-service establishments](https://www.tspm.kz/en/press/publications/hotels/the-number-of-food-service-establishments-in-kazakhstan-increased-by-17-5/): secondary reporting attributing statistics to official sources. Restaurant/café totals are not a verified bakery customer count; market and willingness-to-pay assumptions require validation. The link was checked during the original implementation.
 
-## Security, privacy and operational limits
+[Next.js](https://nextjs.org/docs) · [React](https://react.dev/) · [TypeScript](https://www.typescriptlang.org/docs/) · [Tailwind CSS](https://tailwindcss.com/docs) · [FastAPI](https://fastapi.tiangolo.com/) · [SQLAlchemy](https://docs.sqlalchemy.org/) · [PostgreSQL](https://www.postgresql.org/docs/) · [Alembic](https://alembic.sqlalchemy.org/) · [Recharts](https://recharts.org/) · [Docker](https://docs.docker.com/) · [Vercel](https://vercel.com/docs) · [openpyxl](https://openpyxl.readthedocs.io/).
 
-This is an **unauthenticated single-workspace MVP**. Anyone with API access can read/change data and reset a demo. It is unsuitable for confidential real-business information in a shared public environment. Restrict network access for demonstrations. Authentication, authorization and tenant isolation are required before private multi-tenant use.
-
-Pydantic validates input; SQLAlchemy performs ORM operations; transactions guard inventory; CSV upload limits and explicit CORS origins are configured. Secrets come from environment variables. CORS is a browser policy, not access control. Real payments, notifications, delivery, fiscal receipts, legal food compliance, batch expiry, rate limiting and audit identity are not implemented. Orders are explicitly demo checkout. The application does not promise production readiness.
-
-## Roadmap
-
-Validated bakery pilots and data quality checks; authentication and tenant isolation; batch/expiry and allergen information; stockout-aware demand estimation; promotion/holiday covariates; calibrated prediction intervals; chronological baseline-vs-CatBoost comparison; PostgreSQL concurrency/load testing; observability, backup restore drills and payment integration if justified.
-
-## Research sources
-
-* [UNEP — Food Waste Index Report 2024](https://www.unep.org/resources/publication/food-waste-index-report-2024): primary international research about measuring food waste in households, retail and food service and establishing baselines. The official landing page was checked and redirects to the UNEP repository. It supports the measurement-first approach; it does not measure SAQTA's effects.
-* [TSPM — Kazakhstan food-service establishments](https://www.tspm.kz/en/press/publications/hotels/the-number-of-food-service-establishments-in-kazakhstan-increased-by-17-5/): **secondary publication**, attributing establishment statistics to Kazakhstan's Bureau of National Statistics. Link checked. Restaurant/café totals are not a verified bakery customer count. Market size, willingness to pay and acquisition assumptions need primary validation and customer research.
-
-## Official technology documentation
-
-[Next.js](https://nextjs.org/docs) · [React](https://react.dev/) · [TypeScript](https://www.typescriptlang.org/docs/) · [Tailwind CSS](https://tailwindcss.com/docs) · [FastAPI](https://fastapi.tiangolo.com/) · [SQLAlchemy](https://docs.sqlalchemy.org/) · [PostgreSQL](https://www.postgresql.org/docs/) · [Alembic](https://alembic.sqlalchemy.org/) · [Recharts](https://recharts.org/) · [Docker](https://docs.docker.com/) · [Vercel](https://vercel.com/docs).
-
-[CatBoost documentation](https://catboost.ai/docs/) is a future-integration reference only; CatBoost is not installed or used by this MVP.
+[CatBoost documentation](https://catboost.ai/docs/) is a future-reference link only; CatBoost is not installed or used.
 
 ## Brand assets
 
-Original editable vector assets: `frontend/public/brand/saqta-symbol.svg`, `saqta-logo.svg`, `saqta-logo-dark.svg`, `favicon.svg`, `app-icon.svg`. The protected grain symbol joins preservation, food and a rising data signal. [`docs/BRAND.md`](docs/BRAND.md) documents exact colors, typography, spacing, background variants and correct/incorrect use. No third-party brand marks or invented partnerships are used.
+Original editable assets live in `frontend/public/brand/`: `saqta-symbol.svg`, `saqta-logo.svg`, `saqta-logo-dark.svg`, `favicon.svg`, `app-icon.svg`. The protected grain symbol combines preservation, food and a rising data signal. `docs/BRAND.md` documents colors, typography, spacing and correct usage. No third-party logos, invented customer references or partnerships are used.

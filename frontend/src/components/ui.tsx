@@ -8,8 +8,9 @@ export const number = (value: number, digits = 0) => new Intl.NumberFormat("ru-K
 export const dateLabel = (value: string) => new Date(value.includes("T") ? value : value + "T12:00:00").toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
 export const today = () => new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Qyzylorda" });
 
-export function PageHeader({ eyebrow, title, description, action }: { eyebrow: string; title: string; description: string; action?: ReactNode }) {
-  return <header className="mb-8 flex flex-wrap items-end justify-between gap-5"><div><div className="mb-2 text-xs font-bold uppercase tracking-[.18em] text-[#237A57]">{eyebrow}</div><h1 className="text-3xl font-semibold tracking-[-.04em] text-[#123C2F] md:text-[34px]">{title}</h1><p className="mt-2 max-w-2xl text-sm leading-relaxed text-[#5D6B62]">{description}</p></div>{action}</header>;
+export function PageHeader({ eyebrow, title, description, action, level = 1 }: { eyebrow: string; title: string; description: string; action?: ReactNode; level?: 1 | 2 }) {
+  const Heading = level === 2 ? "h2" : "h1";
+  return <header className="mb-8 flex flex-wrap items-end justify-between gap-5"><div><div className="mb-2 text-xs font-bold uppercase tracking-[.18em] text-[#237A57]">{eyebrow}</div><Heading className={`${level === 2 ? "text-2xl" : "text-3xl md:text-[34px]"} font-semibold tracking-[-.04em] text-[#123C2F]`}>{title}</Heading><p className="mt-2 max-w-2xl text-sm leading-relaxed text-[#5D6B62]">{description}</p></div>{action}</header>;
 }
 
 export function Card({ title, subtitle, children, action, className = "" }: { title?: string; subtitle?: string; children: ReactNode; action?: ReactNode; className?: string }) {

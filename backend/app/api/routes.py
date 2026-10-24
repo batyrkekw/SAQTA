@@ -226,9 +226,10 @@ def forecast_history(db: DB, location_id: int | None = None, product_id: int | N
 
 
 @router.get("/dashboard", tags=["Analytics"])
-def get_dashboard(db: DB, location_id: int | None = None, start_date: date | None = None, end_date: date | None = None):
+def get_dashboard(db: DB, location_id: int | None = None, start_date: date | None = None, end_date: date | None = None,
+                  loss_reduction_percent: int | None = Query(None, ge=0, le=100)):
     check_location(db, location_id)
-    return dashboard(db, location_id, start_date, end_date)
+    return dashboard(db, location_id, start_date, end_date, loss_reduction_percent)
 
 
 @router.get("/impact", tags=["Analytics"])
@@ -237,7 +238,7 @@ def get_impact(db: DB, location_id: int | None = None, start_date: date | None =
     return impact(db, location_id, start_date, end_date)
 
 
-@router.post("/economics", tags=["Analytics"])
+@router.post("/economics", tags=["Internal"], include_in_schema=False)
 def economics(payload: EconomicsInput):
     return calculate(payload)
 
