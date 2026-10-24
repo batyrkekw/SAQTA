@@ -6,7 +6,9 @@ SAQTA is a working food waste prevention MVP for bakeries, originating in Kazakh
 
 Forecast helps bakery managers make production decisions before surplus occurs. Save lets them offer eligible remaining food for discounted pickup. A statistical forecast is a decision aid, never a sales guarantee. Unsold food is not automatically waste.
 
-This repository originally contained a concept document only; there was no application implementation to migrate. `DESCRIPTION.txt` retains the rebranded background notes. This project builds the application rather than a slide deck.
+**Public demo:** [SAQTA](https://saqta-batyrkekw.vercel.app) · [API documentation](https://saqta-api.onrender.com/docs) · [API health](https://saqta-api.onrender.com/api/health). Deployed and checked on **24 October 2026**. This is a shared, unauthenticated workspace containing synthetic data; do not enter private business or customer information.
+
+This repository originally contained a concept document only; there was no application implementation to migrate. This project builds the working application rather than a slide deck.
 
 ## Product and features
 
@@ -279,7 +281,13 @@ Visit port 3000. Migrations run before the API starts. Seeding is explicit. To r
 
 ### Vercel frontend + Render backend + PostgreSQL
 
-1. Push this repository to a Git provider you control. No deployment account or public URL is provisioned by this repository.
+The verified public demo uses Vercel Hobby project `saqta`, the free Render API `saqta-api`, and free managed PostgreSQL 17 in Frankfurt. Source is stored in the private [batyrkekw/SAQTA repository](https://github.com/batyrkekw/SAQTA). The first API deployment built commit `af21fef1eb7f3f570f1ec05f9286e623ce9fb372`, ran both Alembic revisions against PostgreSQL, and initialized the synthetic workspace. The live HTTP/API smoke run passed **22/22 checks**, including persisted forecasts, inventory changes, cancellation, collection and overselling rejection. A separate **9/9-check concurrent order test** accepted exactly one of two simultaneous requests for one available listing unit on PostgreSQL. Targeted live browser flows also passed. [Deployment details and future release commands](docs/DEPLOYMENT.md) · [Verification evidence and limits](docs/VERIFICATION.md).
+
+The API is linked to GitHub `main` with service root `backend`, Docker context `.`, and Dockerfile `./Dockerfile`; backend changes auto-deploy. The frontend uses reviewed source uploads to the existing Vercel project, rather than GitHub auto-deployment. The monorepo release configuration uses Root Directory `frontend` and includes source files outside that root, allowing the build to copy the README and brand/API documentation. **The frontend does not currently auto-deploy from GitHub.** Deploy reviewed monorepo source from the repository root using the procedure in `docs/DEPLOYMENT.md`, or explicitly connect the existing project to GitHub before switching to Git-based releases.
+
+To provision a separate installation:
+
+1. Push the reviewed source to a Git provider you control, excluding credentials and runtime data.
 2. In Render, create the blueprint from `render.yaml`, or a Docker web service with context `backend`, `backend/Dockerfile`, and managed PostgreSQL. The Blueprint explicitly selects **free** API and PostgreSQL plans in Frankfurt, pins PostgreSQL 17 and disables external database IP access. Supply the final Vercel origin as `CORS_ORIGINS`; the Blueprint supplies the private `DATABASE_URL`, `WORKSPACE_MODE=demo` and `AUTO_SEED_DEMO=true`. Standard `postgres://` and `postgresql://` URLs are normalized to psycopg by the backend. Never expose the connection string in frontend variables.
 3. The Docker command runs `alembic upgrade head`, guarded `python -m app.bootstrap`, then Uvicorn on `$PORT`; health path is `/api/health`. Bootstrap fills an empty demo once, preserves existing records on restarts and refuses real-data workspaces. Free Render services do not have a hosting shell or one-off jobs, so seeding does not depend on either. For multiple replicas, run migrations once as a release/predeploy step instead of competing startup migrations.
 4. For a clean real-data workspace, use a separate database, `WORKSPACE_MODE=real` and `AUTO_SEED_DEMO=false`; initialize only its workspace with `python -m app.seed --empty` after migrations through an authorized administration environment. Public shared installations must remain synthetic demos until access controls exist.
@@ -287,7 +295,7 @@ Visit port 3000. Migrations run before the API starts. Seeding is explicit. To r
 6. Set Render `CORS_ORIGINS=https://YOUR-VERCEL-HOST` (no trailing slash), restart the backend, and redeploy the frontend if its API URL changed.
 7. Verify HTTPS health, populated products/settings, dashboard fetch, forecast, create/edit production, reserve/cancel/collect an order, import errors and mobile layout at the actual URL. Use `scripts/verify_live.py` and [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md). Health alone does not establish working UI/API integration. Provision backups and restore testing for a durable installation.
 
-Free Render PostgreSQL expires 30 days after creation and has no backups; the free API sleeps after 15 idle minutes and can take about a minute to wake. These are demonstration tiers. Upgrade only after explicitly choosing paid resources. [Render free-instance documentation](https://render.com/docs/free), [Blueprint specification](https://render.com/docs/blueprint-spec).
+The current free PostgreSQL database expires **23 November 2026 at 14:00:24 Asia/Qyzylorda (09:00:24 UTC)** and has no backups. The free API sleeps after 15 idle minutes and can take about a minute to wake. These are demonstration tiers. Arrange an export/migration or an explicitly approved paid database before expiry if data must survive. [Render free-instance documentation](https://render.com/docs/free), [Blueprint specification](https://render.com/docs/blueprint-spec).
 
 Vercel builds reject missing, non-HTTPS or localhost API configuration so a public deployment cannot silently target a visitor's machine. Public URLs are recorded only after hosting confirms them and unauthenticated live checks succeed.
 
@@ -295,7 +303,7 @@ Vercel builds reject missing, non-HTTPS or localhost API configuration so a publ
 
 Set service root to `backend`; the included `railway.json` selects its Dockerfile and health check. Add PostgreSQL, set the same backend variables, run migrations (already in Docker startup) and seed explicitly. Point Vercel at the Railway HTTPS API origin and configure exact CORS origins. Never expose the database connection URL in frontend variables.
 
-**Remaining external steps:** Git remote, hosting accounts/credentials, database provisioning, final environment values, deployment and live smoke verification. Docker/managed PostgreSQL/cloud hosting cannot be called verified merely from local SQLite tests. See the verification record for what was actually executed.
+**Operational follow-up:** choose durable database storage before the current free database expires, configure backups and restore testing, and add authentication/authorization before storing private information. Local Docker Compose, broader PostgreSQL concurrency scenarios and load testing remain unverified; successful container startup, smoke checks and the targeted two-order race do not establish those broader guarantees.
 
 ## Security, privacy and operational limits
 

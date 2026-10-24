@@ -1,6 +1,8 @@
 # SAQTA verification record
 
-Verified locally on **24 October 2026**, Asia/Qyzylorda. Python 3.12.5; Node.js 25.2.1; Windows PowerShell. Exact dependencies: [VERSIONS.md](VERSIONS.md).
+Local and public deployment checks were performed on **24 October 2026**, Asia/Qyzylorda. Local runtime: Python 3.12.5; Node.js 25.2.1; Windows PowerShell. Deployment: Node.js 24 on Vercel, Python 3.12 Docker service and PostgreSQL 17 on Render. Exact application dependencies: [VERSIONS.md](VERSIONS.md).
+
+## Local application checks
 
 | Check | Actual result |
 |---|---|
@@ -27,20 +29,61 @@ Backend tests include forecasting without future leakage, exact production buffe
 
 Initial lint/test failures were fixed and the affected checks rerun. The backend reports one upstream Starlette/AnyIO deprecation warning; it does not fail tests. No tests are deliberately skipped or marked expected failure. Synthetic MAE and synthetic impact totals are not real operating outcomes.
 
-## Deployment preparation follow-up
+## Public deployment checks
 
-The Render Blueprint now explicitly chooses free API/PostgreSQL plans, Frankfurt and PostgreSQL 17, with public database IP access disabled. Container startup runs migrations, guarded demo bootstrap and Uvicorn. Automatic seeding is opt-in, preserves existing data and refuses real-data workspaces. The full backend suite passes 38 tests and Ruff is clean. Frontend lint/type checks pass with the Vercel API configuration guard.
+Public frontend: [saqta-batyrkekw.vercel.app](https://saqta-batyrkekw.vercel.app). API: [saqta-api.onrender.com](https://saqta-api.onrender.com/docs). The source is in private repository [batyrkekw/SAQTA](https://github.com/batyrkekw/SAQTA). The initial API release built commit `af21fef1eb7f3f570f1ec05f9286e623ce9fb372`.
 
-`scripts/verify_live.py` was rehearsed locally: `artifacts/local-deployment-rehearsal.json` records 22 passing checks with labeled QA mutations, and `artifacts/local-deployment-readonly.json` records 18 read-only checks. The script independently recomputes held-out MAE and verifies cancellation, overselling rejection, collection and exact impact changes. QA product/listing were deactivated and remaining QA stock reconciled. These reports are **not public-cloud verification**.
+| Check | Actual public result |
+|---|---|
+| Render API release | `dep-dbe7cavavr4c739u63ag` reached `LIVE` at 14:12:41 Asia/Qyzylorda (09:12:41 UTC) |
+| PostgreSQL startup | Render logs confirmed `PostgresqlImpl`, migration `b1b6d5df8d63` → `ee2260d736c6`, successful guarded bootstrap and healthy demo workspace |
+| Vercel production build | `dpl_2XcBoyGR4KXT9NQ7Edu3HzZpVbF2` reached `READY`; 74-second build |
+| Unauthenticated frontend HTTP | All nine application routes returned 200; four SVG assets and SAQTA manifest passed |
+| API integration | Connected database, five initial catalog products, two locations, nonnegative inventory, data-derived dashboard/impact, KZT and synthetic labels |
+| CORS | Exact production origin and POST preflight passed |
+| Forecast | Forecast ID 1 persisted with `recent_weekday_baseline_v1`; MAE 5.39 independently recomputed from seven chronological held-out synthetic observations |
+| Economics | Contribution 21,000 ₸, 70%; LTV 252,000 ₸; LTV/CAC 6.3; payback 1.9048 months; ten-location illustrative ARR 3,600,000 ₸ |
+| Inventory/order writes | Negative quantities rejected; reserve and cancel restored balances; overselling returned a conflict without balance changes; collection reduced stock consistently |
+| Impact accounting | Test collection added exactly 2 units, 1,000 ₸ and 0.2 kg of catalog accounting weight; synthetic test values, not environmental outcomes |
+| QA cleanup | Created test product/listing deactivated and stock reconciled to zero; audit records retained; existing data was not reset or deleted |
+| Automated public smoke | **22 passed, 0 failed**, exit code 0; completed 14:14:19 Asia/Qyzylorda (09:14:19 UTC) |
+| Targeted PostgreSQL order race | **9 passed, 0 failed**, exit code 0; completed 14:22:33 Asia/Qyzylorda (09:22:33 UTC); two simultaneous one-unit requests returned exactly one 201 and one 409 |
 
-Account access is pending: both hosting integrations are unconnected and their browser dashboards show sign-in pages. The local source has no Git remote. Public deployment and browser verification at live hosts remain outstanding; see [DEPLOYMENT.md](DEPLOYMENT.md).
+The public report is saved locally as ignored `artifacts/live-smoke.json`. QA trace IDs: product 6, production 421, listing 18, cancelled order 16, collected order 18, write-off 421. The rejected oversell did not create a successful order. These IDs make the retained labeled test records identifiable without exposing credentials.
+
+Earlier local script rehearsals remain in ignored `artifacts/local-deployment-rehearsal.json` (22 checks with labeled QA writes) and `artifacts/local-deployment-readonly.json` (18 read-only checks). Those rehearsal reports are separate from the public run.
+
+The separate targeted concurrency report is ignored `artifacts/postgres-order-race.json`. Requests A and B shared the same 14:22:29.569653 Asia/Qyzylorda launch timestamp for listing 20, quantity one. Only winning order 21 persisted; the losing request returned 409 without a second order. Cancelling order 21 restored one available listing unit, and deactivating listing 20 restored original stock balances (25 on hand, 10 reserved, 15 available). No production/product records were created; recovered value/units/weight and write-off totals were unchanged. This establishes the tested two-request case, not broad load/performance behavior.
+
+## Live browser interaction checks
+
+The following checks passed in an unauthenticated in-app browser at the stable public origin, `https://saqta-batyrkekw.vercel.app`. Values are snapshots of synthetic records at verification time; later demo activity can change them.
+
+| Flow | Verified browser result |
+|---|---|
+| Landing and dashboard | Landing CTA opened the hydrated dashboard with Render-backed metrics and DEMO labels |
+| Dashboard filter | All locations → location 1 changed produced 16,069 → 8,866, sold 12,848 → 7,314, and stock 252 → 132 |
+| Forecast | UI-created forecast 2 for product/location 1 on 25 October 2026: demand 58, recommended production 48, inventory 16, expected surplus 6; held-out synthetic MAE shown rounded to 5.4 across seven points |
+| Inventory edit | QA product 6 name and price updated through the form; price became 1,100 ₸ and the product remained inactive |
+| CSV validation | Invalid headers rejected at row 1 with missing `date`, `location_id` and `product_id` details; no records imported |
+| Marketplace cancellation | UI created explicitly synthetic listing 19 and order 19; confirmation displayed, cancellation restored one available unit |
+| Marketplace collection | Order 20 confirmed and collected for one croissant at 375 ₸, using 80 g catalog weight; listing 19 subsequently deactivated |
+| Impact | Page reflected 21 recovered units, 4.68 kg catalog accounting weight and 9,925 ₸ in the selected synthetic period |
+| Economics | Defaults showed 70% contribution, LTV 252,000 ₸, LTV/CAC 6.3 and payback 1.9 months; changing subscription to 40,000 ₸ updated contribution to 31,000 ₸ / 77.5%, LTV 372,000 ₸, ratio 9.3, payback 1.3 months, target eight locations and ARR 4,800,000 ₸; defaults restored |
+| Settings | Connected database, DEMO/no-authentication warning and KZT displayed; no demo reset performed |
+
+A subsequent read-only API check confirmed listing 19 is inactive with zero available/reserved stock, order 19 is cancelled, and order 20 is collected for 375 ₸. The test used existing synthetic croissant inventory, with no real product or payment. This supplements the automated write checks rather than replacing them.
+
+The browser report is saved locally as ignored `artifacts/browser-live-verification.json`, recorded at 14:22:45 Asia/Qyzylorda (09:22:45 UTC), with screenshot `artifacts/saqta-live-dashboard.png`.
 
 ## Verification boundaries
 
-* **No public deployment was performed.** There is no verified public URL, hosting account or deployment credential in this repository.
-* **Docker is unavailable on this machine.** Dockerfiles and Compose configuration are supplied, but image builds and Compose startup were not executed.
-* **No PostgreSQL service was available locally.** ORM schema and migrations support PostgreSQL, with psycopg installed and URL normalization checked, but migrations/concurrency tests executed against SQLite. Run deployment smoke tests against managed PostgreSQL before relying on a hosted installation.
-* Browser checks used the in-app browser at its available responsive viewport. They are targeted smoke checks, not a full cross-browser/accessibility certification.
+* Render built and ran the backend container against managed PostgreSQL 17. Docker is unavailable locally; local image builds and Docker Compose startup were not executed.
+* Local automated migration/concurrency tests used SQLite. Public checks exercised real PostgreSQL transactions, order accounting and one simultaneous two-order race. Broader concurrency scenarios, sustained load and database performance limits were not tested.
+* The free PostgreSQL database expires **23 November 2026 at 14:00:24 Asia/Qyzylorda (09:00:24 UTC)** and has no backups. The API can sleep after inactivity. This is a temporary demonstration deployment.
+* Live browser checks used the available in-app desktop browser. Public mobile layout, full cross-browser behavior and accessibility certification were not established by these targeted checks.
 * There is no authentication, tenancy isolation or payment processing. Do not use a shared public deployment for confidential business data.
+* Synthetic held-out MAE is calculated correctly for the seeded series; it does not establish accuracy on real bakery data. Recovered weight uses catalog weights and is not a physical measurement.
+* The Vercel frontend used a source upload and has no Git auto-deployment. Render backend auto-deploys from `main` when files under `backend` change.
 
-Deployment setup and exact remaining external steps are in [README.md](../README.md#deployment).
+Resource identifiers, release configuration, repeatable commands and operational follow-up are in [DEPLOYMENT.md](DEPLOYMENT.md) and [README.md](../README.md#deployment).
