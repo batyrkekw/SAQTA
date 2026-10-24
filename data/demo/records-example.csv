@@ -1,0 +1,4 @@
+kind,product_id,location_id,date,quantity,reason,unit_price_kzt
+production,1,1,2026-10-24,40,,
+sales,1,1,2026-10-24,25,,850
+waste,1,1,2026-10-24,2,Повреждение упаковки,

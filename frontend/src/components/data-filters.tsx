@@ -1,0 +1,8 @@
+"use client";
+
+import { CalendarDays, MapPin } from "lucide-react";
+import type { Location } from "@/types/api";
+
+export function DataFilters({ locations, location, setLocation, start, end, setStart, setEnd }: { locations: Location[]; location: string; setLocation: (value: string) => void; start: string; end: string; setStart: (value: string) => void; setEnd: (value: string) => void }) {
+  return <div className="flex flex-wrap items-end gap-2"><label className="flex h-10 items-center gap-2 rounded-lg border border-[#E1E6DC] bg-white px-3 text-xs"><MapPin size={14} className="text-[#5D6B62]" /><span className="sr-only">Филиал</span><select aria-label="Филиал" value={location} onChange={e => setLocation(e.target.value)} className="max-w-[180px] bg-transparent outline-none"><option value="">Все филиалы</option>{locations.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><div className="flex h-10 items-center gap-2 rounded-lg border border-[#E1E6DC] bg-white px-3 text-xs"><CalendarDays size={14} className="hidden text-[#5D6B62] sm:block" /><label className="sr-only" htmlFor="period-start">Начало периода</label><input id="period-start" type="date" aria-label="Начало периода" value={start} max={end || undefined} onChange={e => setStart(e.target.value)} className="w-[111px] bg-transparent outline-none" /><span className="text-[#5D6B62]">—</span><label className="sr-only" htmlFor="period-end">Конец периода</label><input id="period-end" type="date" aria-label="Конец периода" value={end} min={start || undefined} onChange={e => setEnd(e.target.value)} className="w-[111px] bg-transparent outline-none" /></div></div>;
+}

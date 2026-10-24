@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">SAQTA</title>
+  <desc id="desc">A protected grain grows into a rising demand signal.</desc>
+  <rect width="64" height="64" rx="18" fill="#123C2F"/>
+  <path d="M15 33C15 44.05 22.61 51 32 51C41.39 51 49 44.05 49 33" stroke="#C7F36B" stroke-width="4" stroke-linecap="round"/>
+  <path d="M30 34C19 33 16 25 19 16C29 18 34 24 30 34Z" fill="#C7F36B"/>
+  <path d="M35 28C34 19 40 13 48 14C48 23 43 29 35 28Z" fill="#F7F7F2"/>
+  <path d="M30 40L36 34L41 37L48 29" stroke="#F7F7F2" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

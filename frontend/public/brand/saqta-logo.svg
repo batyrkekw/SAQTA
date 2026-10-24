@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 292 64" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">SAQTA</title>
+  <desc id="desc">SAQTA protected grain symbol and custom geometric wordmark.</desc>
+  <rect width="64" height="64" rx="18" fill="#123C2F"/>
+  <path d="M15 33C15 44.05 22.61 51 32 51C41.39 51 49 44.05 49 33" stroke="#C7F36B" stroke-width="4" stroke-linecap="round"/>
+  <path d="M30 34C19 33 16 25 19 16C29 18 34 24 30 34Z" fill="#C7F36B"/>
+  <path d="M35 28C34 19 40 13 48 14C48 23 43 29 35 28Z" fill="#F7F7F2"/>
+  <path d="M30 40L36 34L41 37L48 29" stroke="#F7F7F2" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <g stroke="#123C2F" stroke-width="5.5" stroke-linejoin="round" stroke-linecap="square">
+    <path d="M113 16H99C92 16 88 20 88 26C88 32 92 35 99 35H104C111 35 115 38 115 44C115 50 111 53 104 53H88"/>
+    <path d="M127 53L143 16L159 53M133 41H153"/>
+    <path d="M201 34.5C201 46 195 53 186 53C177 53 171 46 171 34.5C171 23 177 16 186 16C195 16 201 23 201 34.5ZM189 42L203 56"/>
+    <path d="M212 16H243M227.5 16V53"/>
+    <path d="M251 53L267 16L283 53M257 41H277"/>
+  </g>
+</svg>
