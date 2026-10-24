@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, CheckConstraint, Date, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
+from sqlalchemy import BigInteger, Boolean, CheckConstraint, Date, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.config import now_utc
@@ -39,6 +39,7 @@ class Product(TimestampMixin, Base):
     cost_kzt: Mapped[int | None] = mapped_column(Integer, nullable=True)
     weight_grams: Mapped[int] = mapped_column(Integer, default=0)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    is_test_data: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
     __table_args__ = (CheckConstraint("price_kzt >= 0 AND (cost_kzt IS NULL OR cost_kzt >= 0) AND weight_grams >= 0", name="product_nonnegative"),)
 
 
@@ -105,17 +106,31 @@ class SurplusListing(TimestampMixin, Base):
     pickup_deadline: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     status: Mapped[str] = mapped_column(String(20), default="active", index=True)
     description: Mapped[str] = mapped_column(String(1000), default="")
+    is_test_data: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
     __table_args__ = (CheckConstraint("quantity > 0 AND available_quantity >= 0 AND reserved_quantity >= 0 AND collected_quantity >= 0", name="listing_nonnegative"), CheckConstraint("discounted_price_kzt >= 0 AND discounted_price_kzt < original_price_kzt", name="listing_discount"),)
 
 
 class Order(TimestampMixin, Base):
     __tablename__ = "orders"
     id: Mapped[int] = mapped_column(primary_key=True)
+    bakery_id: Mapped[int | None] = mapped_column(ForeignKey("bakeries.id"), nullable=True, index=True)
     customer_name: Mapped[str] = mapped_column(String(100))
     status: Mapped[str] = mapped_column(String(20), default="reserved", index=True)
-    total_kzt: Mapped[int] = mapped_column(Integer)
+    total_kzt: Mapped[int] = mapped_column(BigInteger)
     collected_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    __table_args__ = (CheckConstraint("total_kzt >= 0", name="order_total_nonnegative"),)
+    commission_rate_bps: Mapped[int] = mapped_column(Integer, default=500, server_default="500")
+    commission_tiyn: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
+    seller_proceeds_tiyn: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
+    commission_recorded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    idempotency_key: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    request_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    is_test_data: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    __table_args__ = (
+        CheckConstraint("total_kzt >= 0", name="order_total_nonnegative"),
+        CheckConstraint("commission_rate_bps = 500 AND commission_tiyn >= 0 AND seller_proceeds_tiyn >= 0", name="order_commission_nonnegative"),
+        CheckConstraint("(status = 'collected' AND commission_tiyn = total_kzt * 5 AND seller_proceeds_tiyn = total_kzt * 95) OR (status != 'collected' AND commission_tiyn = 0 AND seller_proceeds_tiyn = 0)", name="order_settlement_balanced"),
+        UniqueConstraint("bakery_id", "idempotency_key", name="uq_order_bakery_idempotency"),
+    )
 
 
 class OrderItem(Base):
@@ -140,3 +155,5 @@ class ApplicationSettings(TimestampMixin, Base):
 
 
 from app.models.imports import ImportBatch, ImportFingerprint  # noqa: E402,F401
+from app.models.identity import AuthSession, AuthUser, QuotaEvent, Subscription, SubscriptionUsage  # noqa: E402,F401
+from app.models.observations import ForecastObservation, ForecastRun  # noqa: E402,F401

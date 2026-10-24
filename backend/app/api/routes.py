@@ -10,18 +10,20 @@ from sqlalchemy.orm import Session
 from app.analytics.economics import calculate
 from app.analytics.reports import dashboard, impact, inventory_report, period
 from app.core.config import get_settings, now_utc, today_local
-from app.db.session import get_db, require_row
+from app.db.session import scoped_db, require_row
 from app.forecasting.baseline import InsufficientHistory, generate
 from app.models import ApplicationSettings, Bakery, BakeryLocation, Forecast, Product, SurplusListing
 from app.models import Order as OrderModel
 from app.schemas import BakeryPatch, EconomicsInput, ForecastRequest, ListingCreate, ListingPatch, OrderCreate, ProductCreate, ProductPatch, RecordCreate, RecordPatch, ResetRequest, SettingsPatch
 from app.services.csv_io import MAX_BYTES, export_csv, import_records
-from app.services.inventory import RECORD_MODELS, adjust_stock, create_record, history_rows, inventory_row, product_json, record_json, validate_date, validate_ledger
+from app.services.inventory import RECORD_MODELS, adjust_stock, create_record, sales_history_rows, product_json, record_json, validate_date, validate_ledger
+from app.services.assortment import known_inventory
 from app.services.marketplace import create_listing, create_order, expire_reservations, listing_json, order_json, patch_listing, transition_order
 from app.services.workspace import is_demo, workspace_mode
+from app.services.subscriptions import consume_forecast_quota, require_forecast_access
 
 router = APIRouter(prefix="/api")
-DB = Annotated[Session, Depends(get_db)]
+DB = Annotated[Session, Depends(scoped_db)]
 
 
 def bakery(db):
@@ -43,7 +45,7 @@ def settings_json(db):
     return {"bakery_name": owner.name, "city": owner.city, "currency": "KZT", "safety_buffer_percent": config.safety_buffer_percent,
             "workspace_mode": workspace_mode(db), "demo_data": is_demo(db),
             "data_source": "Синтетические данные — DEMO DATA" if is_demo(db) else "Реальные данные — отдельная база",
-            "auth_enabled": False}
+            "auth_enabled": get_settings().workspace_mode == "real"}
 
 
 def expire(db):
@@ -110,7 +112,11 @@ def products(db: DB, search: str = ""):
 
 @router.post("/products", status_code=201, tags=["Catalog"])
 def new_product(payload: ProductCreate, db: DB):
-    row = Product(bakery_id=bakery(db).id, **payload.model_dump())
+    if not is_demo(db) and payload.is_test_data:
+        raise HTTPException(403, "Тестовые записи разрешены только в демонстрационном пространстве")
+    fields = payload.model_dump()
+    fields["is_test_data"] = payload.is_test_data or bool(db.info.get("include_test_data"))
+    row = Product(bakery_id=bakery(db).id, **fields)
     db.add(row)
     db.commit()
     return product_json(row)
@@ -186,24 +192,28 @@ def get_inventory(db: DB, location_id: int | None = None, start_date: date | Non
 def get_history(db: DB, product_id: int, location_id: int):
     require_row(db, Product, product_id, "Товар")
     check_location(db, location_id)
-    return history_rows(db, product_id, location_id)
+    return sales_history_rows(db, product_id, location_id)
 
 
 @router.post("/forecasts", status_code=201, tags=["Forecast"])
 def forecast(payload: ForecastRequest, db: DB):
+    require_forecast_access(db)
     if payload.target_date <= today_local():
         raise HTTPException(422, "Выберите дату начиная с завтрашнего дня")
     if (payload.target_date - today_local()).days > 90:
         raise HTTPException(422, "Дата прогноза должна быть в ближайшие 90 дней")
     expire(db)
     product = require_row(db, Product, payload.product_id, "Товар")
-    inventory = inventory_row(db, payload.product_id, payload.location_id)
-    history = [r for r in history_rows(db, payload.product_id, payload.location_id) if r["date"] < payload.target_date]
+    location = require_row(db, BakeryLocation, payload.location_id, "Филиал")
+    if product.bakery_id != location.bakery_id:
+        raise HTTPException(422, "Товар и филиал должны принадлежать одной организации")
+    inventory, inventory_source = known_inventory(db, payload.product_id, payload.location_id)
+    history = [r for r in sales_history_rows(db, payload.product_id, payload.location_id) if r["date"] < payload.target_date]
     try:
-        result = generate(history, payload.target_date, payload.horizon_days, inventory.on_hand - inventory.reserved, app_settings(db).safety_buffer_percent)
+        result = generate(history, payload.target_date, payload.horizon_days, inventory, app_settings(db).safety_buffer_percent)
     except InsufficientHistory as exc:
         raise HTTPException(422, str(exc))
-    result.update(product_id=product.id, product_name=product.name, location_id=payload.location_id, target_date=payload.target_date.isoformat(),
+    result.update(inventory_source=inventory_source, product_id=product.id, product_name=product.name, location_id=payload.location_id, target_date=payload.target_date.isoformat(),
                   horizon_days=payload.horizon_days, generated_at=now_utc().isoformat(), demo_data=is_demo(db),
                   history=[{**r, "date": r["date"].isoformat()} for r in history])
     saved = Forecast(product_id=product.id, location_id=payload.location_id, target_date=payload.target_date, horizon_days=payload.horizon_days, result_json=json.dumps(result, ensure_ascii=False))
@@ -211,6 +221,7 @@ def forecast(payload: ForecastRequest, db: DB):
     db.flush()
     result["id"] = saved.id
     saved.result_json = json.dumps(result, ensure_ascii=False)
+    consume_forecast_quota(db)
     db.commit()
     return result
 
@@ -228,6 +239,9 @@ def forecast_history(db: DB, location_id: int | None = None, product_id: int | N
 @router.get("/dashboard", tags=["Analytics"])
 def get_dashboard(db: DB, location_id: int | None = None, start_date: date | None = None, end_date: date | None = None,
                   loss_reduction_percent: int | None = Query(None, ge=0, le=100)):
+    # The dashboard computes fresh demand/trend predictions, so it is a paid
+    # analysis operation in real mode, not a loophole around forecast access.
+    require_forecast_access(db)
     check_location(db, location_id)
     return dashboard(db, location_id, start_date, end_date, loss_reduction_percent)
 
@@ -305,6 +319,9 @@ def collect_order(order_id: int, db: DB):
 
 @router.post("/import", tags=["Data"])
 async def csv_import(db: DB, file: UploadFile = File(...)):
+    require_forecast_access(db)
+    if not is_demo(db):
+        raise HTTPException(409, "Для реальных данных используйте /api/imports/inspect, /preview и /commit: источник и строки требуют подтверждённого импорта.")
     if not file.filename or not file.filename.lower().endswith(".csv"):
         raise HTTPException(422, "Выберите файл с расширением .csv")
     content = await file.read(MAX_BYTES + 1)
@@ -328,7 +345,15 @@ def csv_export(db: DB, location_id: int | None = None, start_date: date | None =
 def reset_demo(payload: ResetRequest, db: DB):
     if get_settings().workspace_mode != "demo" or not is_demo(db):
         raise HTTPException(403, "Сброс демо недоступен в рабочем пространстве реальных данных")
+    # The reset utility clears tables. Refuse a mixed database before invoking it,
+    # including organizations hidden by the current request's tenant criteria.
+    settings_table = ApplicationSettings.__table__
+    if db.connection().scalar(select(settings_table.c.id).where(settings_table.c.workspace_mode == "real").limit(1)):
+        raise HTTPException(403, "Сброс запрещён: база содержит реальные организации. Используйте отдельную демонстрационную базу.")
     from app.seed import seed_database
+    # Explicitly authorized maintenance operation after the all-organizations
+    # real-data guard above. Re-created rows do not inherit a deleted identity.
+    db.info.clear()
     result = seed_database(db, reset=True)
     db.commit()
     return {"message": "Демонстрационные данные SAQTA восстановлены", **result, "workspace_mode": "demo"}

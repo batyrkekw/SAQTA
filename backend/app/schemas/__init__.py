@@ -16,6 +16,7 @@ class ProductCreate(Input):
     cost_kzt: int | None = Field(default=None, ge=0, le=10_000_000)
     weight_grams: int = Field(default=0, ge=0, le=100_000)
     is_active: bool = True
+    is_test_data: bool = False
 
 
 class ProductPatch(Input):
@@ -85,6 +86,7 @@ class OrderLine(Input):
 class OrderCreate(Input):
     customer_name: str = Field(min_length=1, max_length=100)
     items: list[OrderLine] = Field(min_length=1, max_length=20)
+    idempotency_key: str | None = Field(default=None, min_length=8, max_length=100, pattern=r"^[A-Za-z0-9_.:-]+$")
 
     @model_validator(mode="after")
     def unique_lines(self):

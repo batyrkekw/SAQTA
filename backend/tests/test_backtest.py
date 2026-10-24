@@ -54,7 +54,7 @@ def test_forecast_recommendation_explains_inventory_and_exact_integer_buffer():
     assert day["recommended_production"] == 90 == result["recommended_production"]
     assert "90" in result["explanation"] and "20" in result["explanation"]
     assert "110 − 20" in day["production_formula"]
-    assert any("как 0" in limitation for limitation in components["limitations"])
+    assert any("не трактуются как 0" in limitation for limitation in components["limitations"])
 
 
 def test_multiday_explanation_matches_sequential_inventory_use():
@@ -182,23 +182,23 @@ def test_backtest_api_validation_and_missing_entities(client):
     assert client.get("/api/backtest?product_id=99999&location_id=1").status_code == 404
 
 
-def test_backtest_api_exposes_production_without_sales_ambiguity(client):
+def test_backtest_api_does_not_convert_production_without_sales_to_zero(client):
     product = client.post("/api/products", json={"name": "Нулевая история", "category": "Хлеб", "price_kzt": 500}).json()
     response = client.post("/api/records", json={"kind": "production", "product_id": product["id"], "location_id": 1, "date": today_local().isoformat(), "quantity": 10})
     assert response.status_code == 201
     result = client.get(f"/api/backtest?product_id={product['id']}&location_id=1").json()
-    assert result["observation_source"]["days_without_sales_records"] == 1
-    assert any("без записей продаж" in warning for warning in result["warnings"])
+    assert result["history_days"] == 0
+    assert result["observation_source"]["days_without_sales_records"] == 0
+    assert "не превращаются в 0" in result["observation_source"]["zero_sales_interpretation"]
 
 
-def test_backtest_api_real_source_is_not_misrepresented_as_verified_file(client, database):
+def test_backtest_api_real_source_requires_organization_access(client, database):
     with database() as session:
         settings = session.scalar(select(ApplicationSettings))
         settings.workspace_mode = "real"
         session.commit()
-    result = client.get("/api/backtest?product_id=1&location_id=1").json()
-    assert result["demo_data"] is False and result["data_source"] == "real"
-    assert any("не подтверждает происхождение" in warning for warning in result["warnings"])
+    result = client.get("/api/backtest?product_id=1&location_id=1")
+    assert result.status_code == 401
 
 
 def test_new_forecast_response_contains_persisted_explanation_components(client):

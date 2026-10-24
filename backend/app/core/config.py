@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:3000", "http://127.0.0.1:3000"]
     saqta_timezone: str = "Asia/Qyzylorda"
     demo_anchor_date: date | None = None
+    auth_session_hours: int = 168
+    auth_registration_enabled: bool = True
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     @field_validator("cors_origins", mode="before")

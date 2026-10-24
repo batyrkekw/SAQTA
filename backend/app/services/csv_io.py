@@ -14,6 +14,18 @@ MAX_ROWS = 5000
 COLUMNS = ["kind", "product_id", "location_id", "date", "quantity", "reason", "unit_price_kzt"]
 
 
+def spreadsheet_text(value):
+    """Escape formula-like text only in exported representation, never stored data.
+
+    Spreadsheet applications may interpret a string after leading whitespace as
+    a formula. An apostrophe makes that cell text. It remains part of raw CSV
+    data, so reimporting a protected reason requires explicit review.
+    """
+    if isinstance(value, str) and value.lstrip().startswith(("=", "+", "-", "@")):
+        return "'" + value
+    return value
+
+
 def validate_csv(content: bytes) -> list[RecordCreate]:
     if len(content) > MAX_BYTES:
         raise HTTPException(413, "CSV превышает ограничение 2 МБ")
@@ -66,4 +78,5 @@ def export_csv(db: Session, location_id=None, start_date=None, end_date=None):
     # Production precedes consumption within a day, so exported CSV can be replayed in an empty workspace.
     priorities = {"production": 0, "sales": 1, "waste": 2}
     rows.sort(key=lambda r: (r["date"], priorities[r["kind"]]))
-    return pd.DataFrame(rows, columns=COLUMNS).to_csv(index=False)
+    safe_rows = [{field: spreadsheet_text(value) for field, value in row.items()} for row in rows]
+    return pd.DataFrame(safe_rows, columns=COLUMNS).to_csv(index=False)

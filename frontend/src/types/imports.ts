@@ -1,7 +1,8 @@
 import type { RecordKind } from "./api";
 
 export type SourceOrigin = "demo" | "real";
-export type ImportTarget = "date" | "quantity" | "kind" | "product" | "location" | "unit" | "unit_price_kzt" | "reason";
+export type ImportTarget = "date" | "quantity" | "sold" | "remaining" | "produced" | "kind" | "product" | "location" | "unit" | "unit_price_kzt" | "reason";
+export type ImportMode = "ledger" | "observations";
 export type ColumnMapping = Partial<Record<ImportTarget, string>>;
 export type ImportClassification = "survey" | "daily_records_candidate" | "unclassified";
 export type ImportSheet = { name: string; columns: string[]; row_count: number };
@@ -14,11 +15,14 @@ export type ImportInspection = {
   columns: string[];
   sample_rows: { row: number; values: Record<string, string> }[];
   suggested_mapping: ColumnMapping;
+  suggested_mode?: ImportMode;
+  suggested_observation_mapping?: ColumnMapping;
   classification: ImportClassification;
   limits: { max_bytes: number; max_rows: number; max_columns: number; formats: string[] };
 };
 export type ImportOptions = {
   source_origin: SourceOrigin;
+  mode?: ImportMode;
   sheet?: string;
   column_mapping: ColumnMapping;
   default_kind?: RecordKind;
@@ -30,16 +34,19 @@ export type ImportOptions = {
 };
 export type ImportIssue = { row: number; field: string; message: string };
 export type ImportPreviewRecord = {
-  kind: RecordKind;
+  kind?: RecordKind;
   product_id: number;
   location_id: number;
   date: string;
-  quantity: number;
+  quantity?: number;
+  sold?: number;
+  remaining?: number | null;
+  produced?: number | null;
   reason?: string;
   unit_price_kzt?: number | null;
-  unit: string;
-  product_name: string;
-  location_name: string;
+  unit?: string;
+  product_name?: string;
+  location_name?: string;
 };
 export type ImportPreview = {
   preview_token: string;
@@ -55,6 +62,9 @@ export type ImportPreview = {
   can_commit: boolean;
   errors: ImportIssue[];
   warnings: string[];
+  mode?: ImportMode;
+  missing_values?: Record<string, number>;
+  recognized_columns?: string[] | ColumnMapping;
   preview_rows: { row: number; status: "ready" | "duplicate" | "error"; record?: ImportPreviewRecord }[];
 };
 export type ImportCommit = {

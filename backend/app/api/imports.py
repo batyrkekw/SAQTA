@@ -5,11 +5,12 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
-from app.db.session import get_db
+from app.db.session import scoped_db
 from app.services.data_import import MAX_BYTES, ImportOptions, commit_import, guard_origin, inspect_file, preview_import
+from app.services.subscriptions import require_forecast_access
 
 router = APIRouter(prefix="/api/imports", tags=["Import preview"])
-DB = Annotated[Session, Depends(get_db)]
+DB = Annotated[Session, Depends(scoped_db)]
 
 
 def parse_options(raw: str) -> ImportOptions:
@@ -30,12 +31,14 @@ async def read_upload(file: UploadFile):
 
 @router.post("/inspect")
 async def inspect_upload(db: DB, file: UploadFile = File(...), source_origin: Literal["demo", "real"] = Form(...)):
+    require_forecast_access(db)
     guard_origin(db, source_origin)
     return inspect_file(db, await read_upload(file), file.filename or "", source_origin)
 
 
 @router.post("/preview")
 async def preview_upload(db: DB, file: UploadFile = File(...), options: str = Form(...)):
+    require_forecast_access(db)
     parsed = parse_options(options)
     guard_origin(db, parsed.source_origin)
     return preview_import(db, await read_upload(file), file.filename or "", parsed)
@@ -43,6 +46,7 @@ async def preview_upload(db: DB, file: UploadFile = File(...), options: str = Fo
 
 @router.post("/commit")
 async def commit_upload(db: DB, file: UploadFile = File(...), options: str = Form(...), preview_token: str = Form(...), confirm: str = Form(...)):
+    require_forecast_access(db)
     parsed = parse_options(options)
     guard_origin(db, parsed.source_origin)
     return commit_import(db, await read_upload(file), file.filename or "", parsed, preview_token, confirm)

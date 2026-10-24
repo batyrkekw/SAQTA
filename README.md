@@ -4,11 +4,11 @@
 
 SAQTA is a working food waste prevention MVP for bakeries, originating in Kazakhstan with an initial focus on Astana. Its name comes from Kazakh **сақта**: keep, preserve or protect. The interface is Russian and money is displayed in Kazakhstani tenge (₸).
 
-**SAQTA Forecast** supports production decisions before surplus occurs. **SAQTA Save** offers eligible remaining products for discounted pickup, with free publication and no publication commission. Forecasts are decision aids; unsold products are not automatically waste.
+**SAQTA Forecast** supports production decisions before surplus occurs. **SAQTA Save** offers eligible remaining products for discounted pickup, with free publication and a modeled 5% commission only on confirmed discounted sales. Forecasts are decision aids; unsold products are not automatically waste.
 
-The updated public synthetic demo is [SAQTA](https://saqta-batyrkekw.vercel.app), with [API documentation](https://saqta-api.onrender.com/docs) and [health status](https://saqta-api.onrender.com/api/health). The unified Forecast/Save/About release was deployed and verified on **24 October 2026**: **45/45 public API/integration checks passed** against PostgreSQL, including new imports/backtesting and the marketplace concurrency case. Public browser checks confirmed numeric forecast explanations, backtest metrics/source warnings, the exact paid-plan notice and compact three-item navigation. Details and remaining verification boundaries are in `docs/VERIFICATION.md`.
+The existing public synthetic demo is [SAQTA](https://saqta-batyrkekw.vercel.app), with [API documentation](https://saqta-api.onrender.com/docs) and [health status](https://saqta-api.onrender.com/api/health). **This architecture/assortment/subscription/5% commission update is local source until a new release is recorded in `docs/VERIFICATION.md`.** The previous unified-product release, final documentation commit `19618ed`, was publicly verified on 24 October 2026; its 45 checks do not verify this new implementation.
 
-The public demo has **no authentication or tenant isolation**. Never upload private bakery files, respondent answers or customer information to it. A separate real-data workspace also requires access controls before private use.
+Public demo access remains anonymous and synthetic-only. The updated real-data mode implements owner authentication, organization isolation, revocable bearer sessions, and server-enforced manually activated Forecast subscriptions. Use a separate private real-data deployment; never upload private files or respondent/customer information to the shared public demo. Security gaps and exact access behavior are documented in `docs/ACCESS.md`.
 
 ## Product structure
 
@@ -17,13 +17,13 @@ The main navigation is **Прогнозирование · SAQTA Save · О пр
 | URL | Functionality |
 |---|---|
 | `/` | Public product introduction, original SVG identity and working product links |
-| `/forecast?view=forecast` | Product/location/date/horizon, production recommendation, history and explanation |
+| `/forecast?view=forecast` | Assortment-wide forecast, product priorities/risks, branch/organization scope and per-product explanations |
 | `/forecast?view=data` | Catalog, production/sales/write-offs, live stock, import preview and CSV export |
 | `/forecast?view=data&settings=1` | Bakery profile, safety buffer, source status and explicitly confirmed demo reset |
 | `/forecast?view=results` | Historical backtest, with expandable operational analytics and collected-order/write-off reporting |
 | `/forecast?view=savings` | Editable bakery cost-saving scenarios; no default assumed improvement |
 | `/forecast?view=pricing` | Preliminary Forecast plans and honest connection status |
-| `/save` | Free listing publication/editing, generated editable announcement text, reservations, cancellation and collection |
+| `/save` | Free publication, editable announcements, idempotent reservations, collection and separate 5% modeled commission accounting |
 | `/about` | Product purpose, Forecast/Save relationship and connection information |
 | `/docs` | Public technical documentation and API links |
 
@@ -42,15 +42,17 @@ No LLM, paid AI API, neural network, GPU or CatBoost is implemented or required.
 
 ## Preliminary Forecast plans
 
-Prices and quotas are configured in one place: `frontend/src/features/forecast/pricing.config.ts`.
+Prices and display information live in `frontend/src/features/forecast/pricing.config.ts`; authoritative real-mode entitlements are checked by `backend/app/services/subscriptions.py`. Subscription state belongs to the organization.
 
-| Plan | Preliminary monthly price | Proposed products | Proposed forecast requests/month | Proposed locations |
-|---|---:|---:|---:|---|
-| Free | 0 ₸ | 3 | 10 | 1 |
+| Plan | Preliminary monthly price | Active products eligible for Forecast | Successful forecast runs/month | Locations |
+|---|---:|---:|---:|---:|
+| Free / inactive Forecast | 0 ₸ | 3 | 0 | 1 |
 | Starter | 15,000 ₸ | 20 | 300 | 1 |
-| Pro | 30,000 ₸ | 100 | 1,000 | Multiple configured locations |
+| Pro | 30,000 ₸ | 100 | 1,000 | 10 |
 
-These are proposals, not enforced entitlements. All implemented tools remain available in the shared unauthenticated demo. One forecast request covers one product/location and a 1–14-day horizon. Payment and subscription activation are not connected; no plan is shown as active and no payment success is simulated. SAQTA Save publication costs **0 ₸ with 0% publication commission on every plan**, including Free.
+Real-mode Forecast/import/backtest operations require an active unexpired Starter/Pro subscription; inactive or expired access returns HTTP 402. Forecast runs are counted atomically by the local calendar month. A successful assortment run costs one run regardless of its product count; exhausted quota returns 429, failures and insufficient-history-only diagnostics do not consume it, and idempotent replays do not consume it twice. Product/location limits for Forecast analysis are enforced on the server. Catalog creation/reactivation and free Save publication are independent of those Forecast product quotas; a fourth or later Save product does not require a paid Forecast plan. Demo access is explicitly unpaid (`access_mode: demo`, `active: false`) and has no paid quota. Free organization-owned Save publication remains available without a Forecast subscription.
+
+No payment provider is connected. An operator can activate an actual registered organization using `python -m app.subscription_admin --email owner@example.com --plan starter --days 30` in a separate real environment; there is no public self-activation endpoint and no money is charged. The real-mode application reports its persisted plan/status/expiry/remaining allowance. SAQTA Save publication costs **0 ₸**; a **5% modeled sales commission** is recorded only on collection, based on the discounted order total. It is not a listing fee or a transfer of real money.
 
 Paid buttons display the requested notice, without collecting a request or setting up notifications:
 
@@ -66,7 +68,8 @@ The notice closes with «Понятно». Forecast accuracy, savings and profit
 flowchart LR
   User[Bakery manager / demo customer] --> Web[Next.js App Router · Russian UI]
   Web -->|Typed HTTP /api| API[FastAPI + Pydantic]
-  API --> Forecast[Statistical forecast / rolling backtest]
+  API --> Access[Owner session / tenant scope / subscription checks]
+  Access --> Forecast[Assortment forecast / rolling backtest]
   API --> Operations[Inventory / listings / orders]
   API --> Analytics[Recorded operational and impact metrics]
   Files[CSV / XLSX] --> Inspect[Inspect / map / preview / confirm]
@@ -79,7 +82,7 @@ flowchart LR
   Synthetic[Separate reproducible DEMO seed] --> DB
 ```
 
-Forecast calculations are independent of API/database layers. Import preview does not write ledger records. Confirmed imports and orders use database transactions.
+Forecast calculations are independent of API/database layers. Import preview does not write records. An authenticated request scope restricts ORM reads/writes to the organization, while separate subscription checks gate paid operations. Confirmed imports, forecast usage and orders use database transactions.
 
 ## Actual stack and versions
 
@@ -164,6 +167,8 @@ For the local production frontend run `npm run build`, then `npm start`. `NEXT_P
 | `CORS_ORIGINS` | Backend | Explicit comma-separated allowed frontend origins |
 | `SAQTA_TIMEZONE` | Backend | Default `Asia/Qyzylorda` for local business dates |
 | `DEMO_ANCHOR_DATE` | Seed | Optional ISO anchor for reproducible historical dates |
+| `AUTH_SESSION_HOURS` | Backend | Revocable real-owner bearer session lifetime; default 168 hours |
+| `AUTH_REGISTRATION_ENABLED` | Backend | Enable real organization registration; default true, ignored for demo registration refusal |
 | `NEXT_PUBLIC_API_URL` | Frontend build | API base including `/api`, e.g. `http://127.0.0.1:8000/api` |
 | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | Compose | Database configuration in ignored root `.env` |
 | `PORT` | Deployment | Provider-assigned application port |
@@ -172,7 +177,13 @@ For the local production frontend run `npm run build`, then `npm start`. `NEXT_P
 
 ## Database, migrations and demo data
 
-Run `alembic upgrade head` before initialization or startup. The additive revision **`c83f42d78b91`**, after `ee2260d736c6`, adds `import_batches` and unique `import_fingerprints`; it does not erase historical records or relabel origins. Existing databases require this migration before confirmed imports work. Back up durable data before migration; a downgrade removes the new provenance tables.
+Run `alembic upgrade head` before initialization or startup. The existing import revision `c83f42d78b91` is followed by these additive revisions:
+
+1. `b7a1f2d4e6c8`: organization owner/session/subscription/usage tables and unambiguous order ownership backfill.
+2. `d1e2f3a4b5c6`: independently sourced daily forecast observations and persisted idempotent assortment runs.
+3. `e4f5a6b7c8d9`: discounted-sale commission/proceeds accounting, order idempotency and explicit verification-record markers.
+
+No migration deletes customer records or resets the demo. Existing collected orders receive a historical 5% business-model estimate with `commission_recorded_at=NULL`, not a retroactive charge. Known historical demo QA records are flagged by tightly constrained provenance; arbitrary names and real customer rows are not deleted. Back up durable data before migration. Downgrades drop the new fields/tables and are maintenance operations, not deployment steps.
 
 The reproducible synthetic seed provides **42 days × 5 products × 2 Astana locations**. It includes weekday/weekend patterns, production, sales, write-offs, live stock, listings and demo orders. PRNG seed is `24042`; `DEMO_ANCHOR_DATE=2026-10-24` fixes historical dates. Live pickup windows use execution time. History does not roll forward automatically.
 
@@ -183,23 +194,15 @@ cd backend
 .venv/Scripts/python -m app.seed --reset
 ```
 
-Reset deletes the configured demo's records and is refused for real workspaces. Never run it as part of deployment or data migration.
+Reset deletes demo records only after refusing any database containing a real organization, including real organizations hidden by the demo request scope. Never run it as part of deployment or data migration.
 
-For a **separate private real-data database**, set `WORKSPACE_MODE=real`, `AUTO_SEED_DEMO=false` and its own `DATABASE_URL`, then run:
-
-```powershell
-cd backend
-.venv/Scripts/python -m alembic upgrade head
-.venv/Scripts/python -m app.seed --empty
-```
-
-This creates the workspace, placeholder location and settings without synthetic business records. Real origin is persisted in ApplicationSettings. Changing an environment variable cannot convert a synthetic database into a real one. Private access controls remain necessary.
+For a **separate private real-data database**, set `WORKSPACE_MODE=real`, `AUTO_SEED_DEMO=false`, its own `DATABASE_URL`, HTTPS and an exact private frontend origin; run `alembic upgrade head`. Register through the real-mode UI/API to create an organization, one actual branch and its owner. No seed is necessary. Real registration is disabled in DEMO. The legacy `seed --empty` maintenance command creates no owner credentials and is not the new-customer onboarding path. Manual activation and bearer-session details are in `docs/ACCESS.md`.
 
 ### Relational model and stock rules
 
 Bakery owns BakeryLocation and Product. ProductionRecord, SalesRecord and WasteRecord are the dated stock ledger. InventorySnapshot holds unique product/location live `on_hand` and `reserved` values. Forecast stores computed results and explanation components. SurplusListing allocates stock; Order/OrderItem retain status, reservation price and accounting weight. Write-offs snapshot unit cost and weight. ApplicationSettings stores buffer and source origin. ImportBatch records file hash, source, sheet, mapping and counts; ImportFingerprint prevents repeated semantic rows within a bakery.
 
-Foreign keys, quantity/price constraints, indexes and timestamps are implemented. Money uses **integer KZT**; quantities are integer units and weights grams.
+Foreign keys, quantity/price constraints, indexes and timestamps are implemented. Catalog/ledger prices use **integer KZT**; commission and seller proceeds use **integer tiyn** (1 ₸ = 100 tiyn), preserving exact 5% arithmetic. Quantities are integer units and weights grams. AuthUser/AuthSession hold the organization owner and hashed revocable sessions; Subscription/SubscriptionUsage/QuotaEvent hold real access and monthly usage. ForecastObservation retains sourced complete daily totals independently of stock; ForecastRun stores organization-owned assortment results and request identity.
 
 Production adds stock. Normal sales and write-offs consume unallocated inventory. Listings allocate stock; orders reserve listing availability. Collection deducts stock and records sales once; cancellation before deadline restores listing availability. Guarded conditional updates and transactions prevent partial or oversold orders. Conflicting edits surface errors instead of silently changing quantities.
 
@@ -224,15 +227,15 @@ Outputs include normalized survey JSON, provenance/quality JSON and a **header-o
 Inside Forecast → Данные, choose the source origin first. The UI blocks a real-origin file before sending it to a public demo; the backend independently enforces the persisted workspace origin. Do not select DEMO for a real file to bypass this guard.
 
 1. **Inspect:** upload CSV or ordinary XLSX and review sheets, headers, classification and up to five sample rows. Survey files cannot become ledger imports.
-2. **Map:** choose a sheet and map date, quantity, record kind, product, location and optional units/price/reason. Product/location/kind may use explicit defaults. Existing names/IDs must resolve unambiguously.
+2. **Map:** choose a sheet and import mode. `observations` maps date, sold quantity, product/SKU, optional remaining/produced/price/unit/branch. `ledger` retains record-kind accounting imports. Existing product names/IDs must resolve unambiguously; create catalog entries first. A single branch is selected automatically, while multiple branches require a mapping/default.
 3. **Preview:** validate dates, whole numbers, units, duplicate identities and historical/live inventory. Review ready/duplicate/error rows and warnings before writing.
 4. **Commit:** submit the same file/options and preview token with `IMPORT SAQTA`. Any invalid row blocks the batch. Valid semantic duplicates are skipped; concurrent conflicts roll back the whole transaction.
 
-Limits: **2 MB**, **5,000 rows per sheet**, **80 columns**, **25 XLSX sheets**, **32 MB expanded XLSX content**. CSV is UTF-8 with comma, semicolon or tab separation. `.xls`, `.xlsm`, encrypted workbooks and formulas are unsupported. Date format is explicitly ISO or day-month-year; decimal separator selection never rounds fractional quantities into units. Zero quantities are rejected explicitly, not silently dropped. Unit conversions are not guessed.
+Limits: **2 MB**, **5,000 rows per sheet**, **80 columns**, **25 XLSX sheets**, **32 MB expanded XLSX content**. CSV is UTF-8 with comma, semicolon or tab separation. `.xls`, `.xlsm`, encrypted workbooks and formulas are unsupported. Date format is explicitly ISO or day-month-year; decimal separator selection never rounds fractional quantities into units. Ledger movement quantities must be positive. Daily observation mode accepts explicit zero sales; absent stock/production stays NULL. Unit conversions are not guessed.
 
 Deduplication is semantic and works across renamed files; intentionally identical separate operations need aggregation or manual review. Stock is revalidated at commit, so a stale preview may require another check. The raw uploaded file is not stored; provenance and committed records are persisted.
 
-The legacy `POST /api/import` remains compatible for canonical CSV. It performs atomic row validation but **does not provide duplicate prevention**; the UI uses the new flow. `GET /api/export` retains canonical columns and date/location filters. A canonical sample is:
+Daily observation imports do not invent stock movements or create availability for Save. A dated optional remaining quantity can inform conditional forecast recommendations, with freshness/provenance warnings; observations do not silently overwrite the inventory ledger. Duplicate or conflicting product/branch/day totals are surfaced. The legacy `POST /api/import` remains DEMO-only for canonical CSV, without duplicate protection; real mode requires the preview/confirmation flow. `GET /api/export` retains canonical columns and date/location filters. A canonical sample is:
 
 ```csv
 kind,product_id,location_id,date,quantity,reason,unit_price_kzt
@@ -243,21 +246,17 @@ waste,1,1,2026-10-24,2,Повреждение упаковки,
 
 ## Forecast methodology and historical evaluation
 
-For each product/location and target date:
+The main request `POST /api/forecast-runs` takes a date, horizon and optional branch, not a mandatory product. It evaluates every active product/branch pair in the current organization and returns demand, data quality, conditional production, shortage/surplus/volatility/missing-history priorities and numeric explanations. An omitted branch means the whole organization; branches are forecast independently before totals are added. Detail filters do not determine which products are analyzed.
 
-1. Use only observations strictly before the target.
-2. Average the last **7 observed dates**, not necessarily 7 calendar days.
-3. Average up to **4 previous observations matching the target weekday**.
-4. Demand is **0.6 × recent mean + 0.4 × weekday mean**; without matching weekdays it is the recent mean. Nonnegative demand is rounded to units for production.
-5. Production is `max(0, ceil(demand × (1 + buffer_percent/100)) − available_inventory)`. Reserved Save stock is excluded. Across a multi-day horizon the initial stock is consumed once; forecast surplus from future production is not assumed fresh for later days.
+Only dates with actual ledger sales or explicitly imported complete daily sales totals enter the model. An imported daily total takes precedence over ledger sales for the same product/branch/day, with an overlap warning; it is not added twice. Production-only/write-off-only dates and absent calendar days are **not** imputed as zero. Explicit observation sales of zero are retained.
 
-Each new forecast response includes actual samples, means, coefficients, weekday difference, buffer, inventory and exact per-day demand/production formulas in `explanation_components`. Earlier saved results can lack this additive field. No reasons or external covariates are invented.
+For each target date, use only earlier observations: recent mean of the latest 7 observed dates and mean of up to 4 earlier matching weekdays; demand is `0.6 × recent + 0.4 × weekday`, falling back to the recent mean without matching weekdays. The minimum is 3 observed dates. There is no fitted external-data model.
 
-Historical `GET /api/backtest` uses a rolling chronological window, with a minimum **14 prior observations** and **7 test observations** by default. A full requested window is required; insufficient history returns null MAE/WAPE and data requirements. Both models are scored on the same days. The comparison predicts the last observed sales value. MAE is mean absolute error; WAPE is `sum(abs(error)) / sum(actual_sales) × 100`, and is null when total actual sales is zero. Statistical demand is evaluated before final unit rounding. No `100 − WAPE` accuracy claim is made.
+Production is `max(0, ceil(predicted_demand × (1 + buffer/100)) − available_inventory)` only when stock is supported by inventory records or a recent imported physical snapshot. Save reservations are excluded. If stock is unknown, production/surplus/cost-risk values remain NULL and the API says what is missing. Imported physical stock does not create sellable Save inventory. Across multiple days the initial inventory is considered once; forecast future surplus is not assumed fresh for reuse. Each result exposes actual dates/quantities, means, weights and arithmetic.
 
-Every test prediction excludes that day's sales and all later values. Output includes sample count, test period, training end dates, baseline metrics, origin and reliability warnings. Synthetic results verify mechanics, **not real bakery accuracy**. Small windows are unreliable evidence of future performance.
+`GET /api/backtest` uses an expanding chronological window: by default 14 prior observed dates plus 7 held-out dates. Both the statistical method and last-observed-sales comparison use the same test days, strictly excluding each test date and future outcomes from training. MAE is mean absolute error; WAPE is `sum(abs(error))/sum(actual) × 100`, null when the actual sum is zero. Insufficient history returns null metrics and requirements. Synthetic scores do not establish real bakery accuracy; forecast values are not guarantees.
 
-Completely absent calendar days are not filled. The existing ledger interprets days with production/write-offs but no sale entry as sales zero; this may represent zero sales or missing recording and is exposed as a limitation. Sales can understate demand during stockouts. Weather, holidays, promotions, expiry and stockout censoring are not modelled. Real data needs longer verified daily history, explicit zero-day handling, opening days and availability information. CatBoost remains a future comparison, not an implemented model.
+Weather, holidays, promotions, availability/stockout censoring, expiry and opening days are not modeled. Real sales can understate demand during stockouts. Longer verified daily series and stock reconciliation are needed before operational accuracy claims. CatBoost is a future comparison, not implemented.
 
 ## Savings and impact formulas
 
@@ -275,6 +274,12 @@ Recorded result metrics use **collected** order items only. Accounting weight is
 
 No unsupported CO₂ factors, causal impact claims or assumption that every discounted sale otherwise becomes waste is used. Potential avoided waste remains null without evidence. Missing unit cost contributes zero in recorded cost totals and should be completed before business interpretation.
 
+## SAQTA Save commission accounting
+
+Publishing a listing costs **0 ₸**. Only the transition from reserved to confirmed collected records the modeled platform commission: `discounted_sale_total × 5%`. Original retail price is shown separately and never used as the commission base. For a **2,000 ₸ discounted sale**, the modeled commission is **100 ₸** and seller proceeds **1,900 ₸**. Integer tiyn avoid fractional-tenge rounding: fee = integer-KZT total × 5 tiyn, seller = total × 95 tiyn.
+
+Reserved/cancelled orders have zero due commission and proceeds; a reservation may show a clearly separate estimate. Repeated collection is rejected and cannot record a second sale/commission. Order keys replay the same intended order rather than creating another reservation; a changed body with the same key conflicts. Old collected rows are marked historical estimates with no recorded-charge time, not retroactively charged. Real payment collection, refunds after collection and seller payouts are not integrated; every settlement response says `payments_processed:false`.
+
 ## API documentation
 
 FastAPI serves `/docs` and `/openapi.json`; business routes use `/api`. The typed frontend client uses the configured API base. Full public payloads are in `docs/API_CONTRACT.md`.
@@ -283,7 +288,8 @@ FastAPI serves `/docs` and `/openapi.json`; business routes use `/api`. The type
 |---|---|
 | Workspace | `GET /health`, `GET/PATCH /bakery`, `GET /locations`, `GET/PATCH /settings` |
 | Catalog/ledger | `GET/POST /products`, `PATCH /products/{id}`, `GET/POST /records`, `PATCH /records/{kind}/{id}`, `GET /inventory` |
-| Forecast | `POST/GET /forecasts`, `GET /history`, `GET /backtest` |
+| Forecast | `POST /forecast-runs`, legacy `POST/GET /forecasts`, `GET /history`, `GET /backtest` |
+| Organization access | `POST /auth/register`, `POST /auth/login`, `GET /auth/me`, `POST /auth/logout`, `GET /subscription`, `POST /locations` |
 | Data | `POST /imports/inspect`, `POST /imports/preview`, `POST /imports/commit`, legacy `POST /import`, `GET /export`, `POST /demo/reset` |
 | Results | `GET /dashboard`, `GET /impact` |
 | Save | `GET/POST /listings`, `PATCH /listings/{id}`, `GET/POST /orders`, `POST /orders/{id}/cancel`, `POST /orders/{id}/collect` |
@@ -304,7 +310,7 @@ npm run typecheck
 npm run build
 ```
 
-Tests cover calculations, future-data exclusion, chronological comparison, insufficient/zero-demand history, inventory and order transactions, overselling, import validation/rollback/deduplication, source separation, explanations and UI behavior. The current source passed **86 backend tests**, **63 frontend tests across 12 files**, Ruff, ESLint with zero warnings, strict TypeScript and the production frontend build (**12 static pages**). Fresh SQLite upgraded through all three migrations to `c83f42d78b91` and the 42-day synthetic seed loaded. Local browser forecast generation and numeric explanations worked. One upstream Starlette/AnyIO deprecation warning remains. The updated Render API was separately verified after PostgreSQL migration `ee2260d736c6` → `c83f42d78b91`, preserving existing records. The Vercel production release and **45/45 public checks** passed: new product integration 14/14, preserved compatibility 22/22 and a targeted order race 9/9. Public browser forecast, backtest, savings calculation, pricing notice, compact navigation and Save announcement generation/editing/copy/publication checks passed. Labeled synthetic QA ledger/collection/write-off records remain for traceability, so demo aggregates can include verification activity; QA entities were deactivated and their stock reconciled, without deleting records. `docs/VERIFICATION.md` separates these executed checks from broader unverified behavior.
+Tests cover forecasts/backtesting without future leakage or invented zero days, missing stock, assortment-wide scope, observation imports, authentication/tenant boundaries, server entitlement/expiry, atomic last-slot quota, request replay, order state/overselling and exact commission arithmetic. **Local checks passed: 151 backend tests, 78 frontend tests, strict TypeScript and lint checks**; the production frontend build also passed; this source has not been deployed and must be recorded in `docs/VERIFICATION.md`; older 86/63 unit and 45 public checks belong to the previous release. Local focused authentication and migration tests have executed, but do not establish new public deployment or PostgreSQL behavior.
 
 ## Deployment
 
@@ -329,11 +335,13 @@ The previously provisioned free PostgreSQL resource expires **23 November 2026 a
 
 ## Security, limitations and roadmap
 
-This is an unauthenticated single-workspace MVP. Public visitors can inspect/change synthetic records and explicitly reset the demo. No tenant isolation, real payment, subscription enforcement, outbound notifications, fiscal receipt, batch/expiry system, trained neural model or production security certification is claimed. Real-origin imports require a separate workspace and cannot be made safe merely by changing an environment label.
+The public demo is anonymous and contains synthetic data only. Separate real mode now implements salted scrypt passwords, hashed expiring/revocable bearer sessions, organization-scoped ORM queries/writes and server-enforced subscriptions. CORS is not authentication. This is application-level isolation, not PostgreSQL RLS or a security certification. Real-mode Save is scoped to the signed-in organization; a public multi-seller buyer identity/checkout system is not implemented.
 
-The inspected real file is a survey, so real forecasting/backtest accuracy remains unestablished. Prices and quotas await validation; private business data needs authorization and access controls. Broader PostgreSQL concurrency/load testing, local Docker Compose, mobile/cross-browser coverage and backup restore drills remain verification boundaries unless a later release report establishes them.
+No real payment, payout, fiscal receipt, email verification/password recovery/MFA, outbound notifications, batch/expiry system, trained neural model or commercial security certification is claimed. Registration/login rate limiting, abuse controls, invitations/roles, audit logging, independent security review, durable backups and restore drills remain necessary before sensitive commercial onboarding. The detailed private setup and limitations are in `docs/ACCESS.md`.
 
-Roadmap: validated daily bakery data; authentication/authorization and tenancy; explicit zero-sales and opening-day modelling; batch/expiry tracking; better stockout-aware demand; longer chronological evaluation and calibrated intervals; optional CatBoost comparison; observability, durable backups and enforceable subscription limits before commercial payments.
+The real workbook is a single questionnaire response, so real forecasting accuracy is unestablished. Catalog entries must exist before importing their observations. Subscription prices require business validation. Broader PostgreSQL concurrency/load tests, local Docker Compose, full mobile/cross-browser and accessibility certification remain unverified unless a later release report establishes them.
+
+Roadmap: verified daily bakery data; opening-day/availability and stockout-aware demand; batch/expiry tracking; longer chronological evaluation/calibrated intervals; optional CatBoost comparison; hardened owner authentication and roles; observability, durable backups and eventual real billing only after the subscription/business process is ready.
 
 ## Research and official documentation
 

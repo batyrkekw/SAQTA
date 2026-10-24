@@ -47,11 +47,14 @@ class Client:
     def __init__(self, timeout: float, allow_local: bool):
         self.timeout = timeout
         self.allow_local = allow_local
+        self.verification_mode = False
 
     def fetch(self, url: str, method: str = "GET", payload: dict | None = None,
               expected: int = 200, headers: dict | None = None) -> tuple[Any, dict]:
         body = json.dumps(payload).encode("utf-8") if payload is not None else None
         request_headers = {"User-Agent": "SAQTA-live-verification/1.0", **(headers or {})}
+        if self.verification_mode:
+            request_headers["X-SAQTA-Verification"] = "include"
         if body is not None:
             request_headers["Content-Type"] = "application/json"
         request = Request(url, data=body, method=method, headers=request_headers)
@@ -91,7 +94,7 @@ class Verifier:
             "checks": [], "created_ids": {},
             "limitations": [
                 "HTTP/API verification does not replace browser layout and interaction checks.",
-                "This MVP has no authentication: public workspaces are suitable only for synthetic demo data.",
+                "Public DEMO access is unauthenticated and synthetic only; private REAL authentication is tested separately.",
                 "Recovered weight is accounting weight from product-card values, not a measured physical weight.",
                 "Read endpoints may release expired demo reservations as part of normal server behavior.",
             ],
@@ -247,9 +250,10 @@ class Verifier:
         product_id = listing_id = None
         pending: set[int] = set()
         self.report["qa_marker"] = marker
+        self.client.verification_mode = True
         try:
             product = self.post("/products", {"name": marker, "category": "QA synthetic verification", "unit": "шт.",
-                                                   "price_kzt": 1000, "cost_kzt": 400, "weight_grams": 100})
+                                                   "price_kzt": 1000, "cost_kzt": 400, "weight_grams": 100, "is_test_data": True})
             product_id = product["id"]
             self.id("products", product_id)
             product = self.patch(f"/products/{product_id}", {"name": marker + " edited"})
@@ -326,6 +330,7 @@ class Verifier:
                 return {"product_deactivated": product_id, "listing_deactivated": listing_id,
                         "trace_records_retained": True, "existing_data_deleted_or_reset": False}
             self.check("synthetic QA cleanup", cleanup)
+            self.client.verification_mode = False
 
     def run(self) -> int:
         for route in ("/", "/dashboard", "/forecast", "/inventory", "/save", "/impact", "/economics", "/settings", "/docs"):

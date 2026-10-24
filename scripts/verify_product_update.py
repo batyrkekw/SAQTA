@@ -96,6 +96,7 @@ def xlsx_fixture(rows: list[list[Any]]) -> bytes:
 class Verifier:
     def __init__(self, args):
         self.args = args
+        self.include_verification = False
         self.api = args.api_url
         self.frontend = args.frontend_url
         self.origin = self.api[:-4]
@@ -115,6 +116,8 @@ class Verifier:
 
     def request(self, method, url, body=None, content_type=None, expected=(200,)):
         headers = {"User-Agent": "SAQTA-product-update-verification/1.0"}
+        if self.include_verification and url.startswith(self.api + "/"):
+            headers["X-SAQTA-Verification"] = "include"
         if content_type:
             headers["Content-Type"] = content_type
         try:
@@ -448,8 +451,9 @@ class Verifier:
 
     def writes(self):
         require(self.health and self.settings and self.health.get("demo_data") is True and self.settings.get("workspace_mode") == "demo", "Write guard failed; no private or real workspace mutations allowed")
+        self.include_verification = True
         self.location_id = self.locations[0]["id"]
-        product = self.json("POST", "/products", {"name": self.marker, "category": "QA SYNTHETIC", "unit": "шт.", "price_kzt": 500, "cost_kzt": 0, "weight_grams": 0}, (201,))
+        product = self.json("POST", "/products", {"name": self.marker, "category": "QA SYNTHETIC", "unit": "шт.", "price_kzt": 500, "cost_kzt": 0, "weight_grams": 0, "is_test_data": True}, (201,))
         self.product_id = product["id"]
         self.remember("products", self.product_id)
         try:
@@ -462,6 +466,7 @@ class Verifier:
                 self.check("forecast explanation reproduces demand and sequential production formulas", self.explained_forecast)
         finally:
             self.check("isolated synthetic QA cleanup", self.cleanup)
+            self.include_verification = False
         return {"qa_product_id": self.product_id}
 
     def run(self):

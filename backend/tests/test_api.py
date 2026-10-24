@@ -1,10 +1,10 @@
 from datetime import timedelta
 
 import pytest
-from sqlalchemy import update
+from sqlalchemy import select, update
 
 from app.core.config import get_settings, today_local
-from app.models import ApplicationSettings
+from app.models import ApplicationSettings, Product
 from app.seed import seed_database
 
 
@@ -140,9 +140,10 @@ def test_reset_refused_in_real_workspace(client):
     original = settings.workspace_mode
     try:
         settings.workspace_mode = "real"
-        assert client.post("/api/demo/reset", json={"confirm": "RESET SAQTA DEMO"}).status_code == 403
+        assert client.post("/api/demo/reset", json={"confirm": "RESET SAQTA DEMO"}).status_code == 401
         # Merely changing the environment must never relabel synthetic records as real.
-        assert client.get("/api/settings").json()["demo_data"] is True
+        assert client.get("/api/settings").status_code == 401
+        assert client.get("/api/health").json()["demo_data"] is True
     finally:
         settings.workspace_mode = original
 
@@ -153,9 +154,11 @@ def test_persisted_real_workspace_cannot_be_reset_by_demo_environment(client, da
         session.commit()
         with pytest.raises(ValueError, match="persisted real-data workspace"):
             seed_database(session, reset=True)
-    assert client.get("/api/settings").json()["demo_data"] is False
-    assert client.post("/api/demo/reset", json={"confirm": "RESET SAQTA DEMO"}).status_code == 403
-    assert len(client.get("/api/products").json()) == 5
+    assert client.get("/api/settings").status_code == 401
+    assert client.post("/api/demo/reset", json={"confirm": "RESET SAQTA DEMO"}).status_code == 401
+    assert client.get("/api/products").status_code == 401
+    with database() as session:
+        assert len(list(session.scalars(select(Product)))) == 5
 
 
 def test_unit_economics_defaults_and_zero_divisors(client):

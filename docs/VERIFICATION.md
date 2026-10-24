@@ -2,11 +2,27 @@
 
 All times in this report use **24 October 2026, Asia/Qyzylorda** unless explicitly marked UTC. Local runtime: Python 3.12.5, Node.js 25.2.1, Windows PowerShell. The public service uses Node 24, a Python 3.12 container and Render PostgreSQL 17.
 
-## Current unified-product update: release status
+## Current architecture/assortment/subscription/commission source
+
+**Local release checks: 151 backend tests and 78 frontend tests passed; strict TypeScript and lint checks passed after the Save submit-handler correction. The production frontend build passed (12 static pages). This source has not been deployed.** The previously published final documentation commit `19618ed` and its 45 integration checks are historical, not evidence for the new auth, quota, observation, assortment or settlement code. A later executed-release section must identify the new source and actual provider results before claiming publication.
+
+| Focused current-source check | Executed result / boundary |
+|---|---|
+| Organization access HTTP tests | 11 passed: scrypt and hashed revocable/expiring sessions, inactive/expired plans, import authorization, actual two-tenant raw-ID/analytics/import/order isolation, assortment request replay, one-run usage, failed-request non-consumption, Demo unpaid/real-registration refusal, explicit verification isolation, real-containing DB reset refusal |
+| Concurrent last real Forecast allowance | Two different simultaneous assortment requests with one remaining allowance produced exactly one 201 and one 429; persisted monthly usage was 300. Executed with a file-backed SQLite database; not a claim about real-mode PostgreSQL concurrency |
+| Fresh migration round trip | SQLite upgrade to current head, Alembic schema check, downgrade to base and upgrade all passed; no public PostgreSQL result inferred |
+| Additional focused API checks | Final combined backend suite: 151 passed; one upstream Starlette/AnyIO deprecation warning |
+| Final current-source tests/lint/types/build | 151 backend and 78 frontend tests passed; strict TypeScript, ESLint, Ruff and the production frontend build passed. Prior 86 backend / 63 frontend counts below are historical |
+| New Render migration / Vercel release | Pending; no new cloud success claimed here |
+| Private actual XLSX | Untouched single questionnaire response, zero verified dated sales observations; original/preparation outputs remain local and ignored |
+
+The new code is designed to keep the public service an anonymous synthetic demo while a separate REAL installation requires organization-owned sessions and an active manually activated Forecast subscription. Authentication/tenant tests are HTTP integration tests with only the raw database dependency replaced: the request scope and server gates remain active. This is application-level tenant isolation, not database RLS or penetration testing. Password recovery, email verification, MFA, roles, rate limiting and real payments remain absent.
+
+## Historical unified-product release: executed status
 
 **The unified-product code release is deployed and verified.** Local tests/build, PostgreSQL migration and **45/45 public API/integration checks** passed. Public browser checks below are limited to the flows actually completed; broader coverage is not inferred. Release identifiers below distinguish the first verified code release from later documentation and wording refreshes.
 
-| Current-source check | Actual status at this documentation update |
+| Historical unified-source check | Actual result at that release |
 |---|---|
 | New Forecast targeted tests | 18 passed: savings formulas/invalid inputs, pricing/config/paid modal, backtest source/insufficient/zero-WAPE states, computed explanations and interactive savings |
 | New Forecast TypeScript/ESLint | Type checking passed; lint passed with zero warnings after these feature changes |
@@ -48,7 +64,7 @@ The new-product suite verified public navigation/redirects, persisted demo origi
 
 Two simultaneous identical import requests both returned 200 in the observed schedule: one imported one row and one reported one duplicate. Exactly one record/stock increment persisted. This demonstrates the observed effective deduplication; it does not claim that this schedule returned a 409 conflict.
 
-The order race requested one unit twice: A returned 409 and B returned 201, with only order 26 stored. Cancellation and listing deactivation restored original seed stock, and **this race alone** had zero impact deltas. QA products 7/8 and listings 21/22 were deactivated with QA stock reconciled to zero. The new-product and compatibility suites retain labeled synthetic production, sales/collection, write-off and import-audit rows for traceability. Consequently demo aggregates can include verification records; cleanup did not delete audit rows or restore every metric to its pre-test value. No database reset or deletion occurred.
+The order race requested one unit twice: A returned 409 and B returned 201, with only order 26 stored. Cancellation and listing deactivation restored original seed stock, and **this race alone** had zero impact deltas. QA products 7/8 and listings 21/22 were deactivated with QA stock reconciled to zero. The new-product and compatibility suites retain labeled synthetic production, sales/collection, write-off and import-audit rows for traceability. At that historical release, demo aggregates could include verification records; the new source adds explicit hiding/markers, whose public migration remains to be checked. Historical cleanup did not delete audit rows or restore every metric to its pre-test value. No database reset or deletion occurred.
 
 ### Updated public browser checks completed
 
@@ -116,7 +132,7 @@ The previous browser report is ignored `artifacts/browser-live-verification.json
 * Docker is unavailable locally. Render built/ran the updated API container; local image builds and Docker Compose startup were not executed.
 * The free PostgreSQL database was provisioned to expire **23 November 2026 at 14:00:24 Asia/Qyzylorda** and had no backups at verification. Recheck current provider state; this is a temporary demonstration tier.
 * Earlier browser checks used desktop in-app browsing. They do not certify mobile, cross-browser accessibility, load handling or full security.
-* There is no authentication, tenancy isolation, payment processor, enforced subscription quota or automatic paid-plan notification. No real confidential data belongs in the shared public deployment.
+* The historical public release had no authentication, tenancy isolation or enforced quotas. Current local source implements owner authentication/isolation/subscription enforcement only for a separate REAL deployment; the public demo remains anonymous and synthetic. No payment processor, payout or automatic paid-plan notification is implemented.
 * The private XLSX is a survey. Its untouched original and normalized/provenance outputs are not committed or uploaded. No daily sales were invented from its answers and no model was trained on them.
 * The source uses an explainable statistical forecast. Synthetic evaluation verifies calculations, not real accuracy; catalog accounting weight is not a physical food measurement.
 * The existing frontend uses source uploads and has no Git auto-deployment; the backend service can auto-deploy backend changes from main. Documentation/source edits alone do not establish a new live release.

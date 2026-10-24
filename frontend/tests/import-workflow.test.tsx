@@ -63,6 +63,20 @@ async function upload(user: ReturnType<typeof userEvent.setup>, filename = "synt
 }
 
 describe("verified import workflow", () => {
+  it("imports sales-only Forecast observations including zero sales without inventing production or stock", async () => {
+    const { requests } = mockImportApi({ checked: { mode: "observations", recognized_columns: { date: "date", sold: "quantity", product: "product_id", location: "location_id" }, missing_values: { remaining: 1, produced: 1 }, preview_rows: [{ row: 2, status: "ready", record: { product_id: 1, location_id: 1, date: "2026-10-24", sold: 0, remaining: null, produced: null, product_name: "Круассан", location_name: "Есиль", unit: "шт." } }] } });
+    const imported = vi.fn(); const user = userEvent.setup(); render(<ImportWorkflow initialMode="observations" onImported={imported}/>);
+    await acknowledge(user); await upload(user);
+    expect(screen.getByRole("combobox", { name: /Продано \*/ })).toHaveValue("quantity");
+    expect(screen.queryByRole("combobox", { name: "Тип для всего листа" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Проверить и показать строки" }));
+    expect(await screen.findByText(/Пропущенные значения: remaining: 1; produced: 1/)).toBeInTheDocument();
+    expect(screen.getByText("0 шт.")).toBeInTheDocument();
+    const options = JSON.parse(String(requests.at(-1)!.body.get("options"))) as ImportOptions;
+    expect(options.mode).toBe("observations"); expect(options.column_mapping).not.toHaveProperty("kind"); expect(options.column_mapping).not.toHaveProperty("quantity");
+    await user.click(screen.getByRole("checkbox", { name: /^Я проверил сопоставление/ })); await user.click(screen.getByRole("button", { name: "Подтвердить импорт" }));
+    await waitFor(() => expect(imported).toHaveBeenCalledOnce());
+  });
   it("requires an explicit source and synthetic acknowledgement, and blocks real files in DEMO before upload", async () => {
     const { requests } = mockImportApi();
     const user = userEvent.setup();

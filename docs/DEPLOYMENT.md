@@ -1,8 +1,8 @@
 # SAQTA public demo deployment
 
-The unified SAQTA product is publicly deployed with **Vercel frontend + Render API + Render PostgreSQL**. The synthetic demo has no authentication. Code release `416220352ee4a8852035a0eb5fc4581fda85299f` was verified on **24 October 2026**, including the additive PostgreSQL import migration and **45/45 public API/integration checks**. Earlier release evidence is preserved separately below.
+The existing SAQTA synthetic demo uses **Vercel frontend + Render API + Render PostgreSQL**. **The new architecture/assortment/subscription/5% commission source is not declared deployed by this document: new release and live PostgreSQL verification are pending.** The previously verified unified release (final documentation commit `19618ed`, first code `4162203`) remains historical evidence. Its 45 public checks do not establish current-source behavior. New real-mode authentication/subscription code does not turn the public anonymous demo into a private customer service.
 
-## Verified public resources
+## Previously verified public resources
 
 Verified on **24 October 2026**, Asia/Qyzylorda:
 
@@ -27,7 +27,7 @@ The database was created on 24 October 2026 and expires **23 November 2026 at 14
 
 ## Existing service configuration
 
-### Verified unified-product code release
+### Historical verified unified-product release
 
 | Resource/check | Executed result |
 |---|---|
@@ -46,21 +46,22 @@ The single-unit order race returned one 201 and one 409, storing only order 26. 
 
 These identifiers record the **first verified code release**. Later documentation and wording refreshes retain this backend implementation. Check the production alias and release evidence for the current frontend deployment; the hashes above identify the first approved snapshot. This is not a broad load test.
 
-### Update order for the unified product
+### Safe release order for this architecture update
 
-Current local checks are complete: 86 backend tests, 63 frontend tests across 12 files, Ruff, strict TypeScript, zero-warning ESLint and the production frontend build (12 static pages). Fresh SQLite migrations through c83f42d78b91 and synthetic seeding passed. Separate public checks confirmed the updated PostgreSQL migration, deployed endpoints and 45/45 API/integration checks; their evidence is recorded below and in VERIFICATION.md.
+Final source tests/build and new public checks must be recorded in `VERIFICATION.md`; previous 86/63 tests and 45 live checks belong to the historical release. This update keeps Next.js/FastAPI/PostgreSQL and the three-item product navigation. Public rollout must remain `WORKSPACE_MODE=demo` with synthetic records only; real registration/paid activation must not be simulated there.
 
-The new source keeps the existing Next.js/FastAPI/PostgreSQL stack. It uses Forecast's five internal views, free Save publication and About; legacy URLs redirect into Forecast. Prices/quotas are preliminary configuration, not enforced subscriptions. Payment is not connected.
+1. Run final Pytest, Ruff, frontend tests, strict TypeScript, ESLint and production build. Review `DATA_REPORT.md`: the actual workbook is one survey response, not dated sales history. Use generated synthetic fixtures for all public verification.
+2. Prepare the reviewed source manifest from committed files, excluding `data/private/`, actual XLSX/XLS sources, `.env`, credentials/tokens, local DBs, `.vercel` state, `artifacts/`, caches and dependencies. Inspect the manifest rather than relying only on ignore patterns. Do not upload the original survey or private normalization outputs.
+3. Back up durable data before migration. Apply **API first**, running `alembic upgrade head` from existing `c83f42d78b91` through `b7a1f2d4e6c8` → `d1e2f3a4b5c6` → `e4f5a6b7c8d9`. These add owner/session/subscription/usage, sourced observations/assortment runs, and order settlement/idempotency/verification markers. They do not reset or delete customer records. Unambiguous order ownership is backfilled; historical collected commission is an explicitly marked model estimate with null recording time, not a charge.
+4. Inspect Render build/runtime logs for `PostgresqlImpl`, all new revisions and connected `/api/health`; wait for LIVE. Do not run reset or seed-overwrite. Confirm `/api/subscription` says DEMO/unpaid, real registration is refused, and normal catalog/analytics hide explicit verification markers. No external PostgreSQL allowlist opening is required for API verification.
+5. Exercise the new API on generated synthetic records with `X-SAQTA-Verification: include`: observation CSV/XLSX inspect/map/preview/confirmation, explicit zeros, absent stock as null, malformed/duplicate/conflicting rows, assortment-wide run, request replay, reserve/cancel/collect/oversell and exact discounted-price 5% settlement. Restore test stock/deactivate listings and retain marked traces; never delete unrelated records. Test paid/expired/tenant isolation in an isolated REAL configuration, not by relabeling the public demo.
+6. Release the Vercel frontend only after the new backend routes/migration are healthy. Keep `frontend` root, outside-root source access, Node 24, `npm ci`, `npm run build` and the exact HTTPS API/CORS origin. The docs copy script publishes README/BRAND/API_CONTRACT only, not private reports/internal documentation.
+7. Verify the production alias in the browser: persistent Forecast/Save/About navigation, automatically calculated full assortment, optional detail/branch filters, import statuses/warnings, demo vs real entitlement text, mobile menu, and Save publication/order/commission breakdown. Verify old redirects and downloadable docs. API health alone is not UI verification.
+8. Record exact source/deployment IDs, timestamps, migration dialect/head, test counts and limitations after execution. Until then, report the architecture source as prepared locally, not publicly updated. No payment, payout, subscription purchase, private workbook upload or notification setup is part of this demo release.
 
-1. Run the complete backend/frontend tests, lint, strict types and production build on the final tree. Inspect the sanitized source report; the real workbook is a single survey response with no verified daily sales history.
-2. Prepare a reviewed **synthetic-only source package**. Exclude `data/private/`, every real XLSX/XLS file, local databases, `.env`, tokens, `.vercel` state, `artifacts/`, caches and dependencies. Git ignore rules are a safeguard; inspect the actual upload manifest as well. Do not copy the private original or normalized survey into frontend public assets or the API image.
-3. Preserve the existing database. Arrange a backup/export before migration for durable installations. Apply additive Alembic revision `c83f42d78b91` after `ee2260d736c6`; it creates import provenance/fingerprint tables without resetting the ledger. Never run demo reset during a release. Install the updated lock, including openpyxl 3.1.5 and et_xmlfile 2.0.0.
-4. Release the API first to the intended existing service. Confirm provider build/runtime status, PostgreSQL migration through the new revision, `/api/health`, and `/api/backtest` with synthetic IDs. Exercise inspect → preview → commit and repeated-file deduplication with a clearly synthetic fixture, checking unchanged balances on rejection. A local SQLite migration test is not a PostgreSQL verification.
-5. Build/release the frontend against the intended HTTPS API URL and exact CORS origin. The existing project requires the monorepo source with `frontend` root and outside-root build access. Its copy script publishes **only README, BRAND and API_CONTRACT**; `docs/internal/` and private data reports are not downloadable assets.
-6. Verify the real public origin after the production alias updates: Forecast navigation and explanations; backtest metrics/source warnings; savings known examples; preliminary pricing and the informational paid-plan modal; preview errors/duplicates; free listing announcement generation/edit/copy; reserve/cancel/collect and oversell rejection; legacy redirects; mobile navigation. Do not infer UI success from API health alone.
-7. Record exact release IDs, migration result, test counts, timestamps and any failures in `VERIFICATION.md`. Until those checks finish, the new release is unverified. No real workbook upload, subscription activation, notification setup or payment is part of this release.
+### Separate private REAL installation
 
-The real-data preparation outputs remain ignored and local. If a private deployment is required later, use a separate real-origin database, disable auto-seeding and implement access controls before importing confidential files. Changing an environment variable cannot relabel an existing demo database.
+Use a different backend/database and HTTPS frontend, `WORKSPACE_MODE=real`, `AUTO_SEED_DEMO=false`, exact allowed origins, and optionally `AUTH_REGISTRATION_ENABLED=false` after onboarding. After migrations, registration creates one organization/real first location and a hashed-password owner, without any synthetic history. Login uses an expiring revocable opaque bearer session. No seed is required. The operator can run `python -m app.subscription_admin --email owner@example.com --plan starter --days 30` (or Pro) to activate a real subscription without charging a payment. There is no public self-activation endpoint. Starter limits are 20 active products / 300 successful runs per month / 1 location; Pro 100 / 1,000 / 10; Free has no real Forecast runs. See `ACCESS.md` for commands, security boundaries and missing recovery/MFA/rate-limiting features. Do not onboard sensitive records without independent security, backup/restore and retention review.
 
 ### Render backend
 
@@ -141,13 +142,13 @@ python scripts/verify_live.py --frontend-url https://saqta-batyrkekw.vercel.app 
 
 The script requires a synthetic demo before writing. It never resets the database, records QA entity IDs, reconciles QA stock and deactivates its test product/listing. Read-only checks are the default when `--write-demo` is omitted. `--allow-local` enables local rehearsal only.
 
-Use an unauthenticated browser to verify dashboard filtering, forecast explanation, inventory forms, order confirmation/cancellation/collection, impact, import preview/commit, savings, pricing and responsive navigation. API checks alone do not verify browser interactions or layout.
+For the synthetic public demo, use an unauthenticated browser to verify dashboard filtering, forecast explanation, inventory forms, order confirmation/cancellation/collection, impact, import preview/commit, savings, pricing and responsive navigation. API checks alone do not verify browser interactions or layout.
 
 ## Public demo limits
 
 Public visitors can read/change synthetic records and reset the demo. No private bakery data, personal customer information or real payments belong here. Listings expire after pickup windows; restarting preserves existing records. The explicitly confirmed demo reset creates fresh synthetic records when needed. Recovered weight is accounting weight from catalog values, not physical weighing. Synthetic impact and forecast accuracy are not real-world operating results.
 
-Authentication, tenant isolation, durable backups, restore drills, rate limiting, broader PostgreSQL concurrency scenarios and load testing remain operational follow-up work. Local Docker Compose was not executed; Render's container build, startup and live database integration were verified.
+Separate real-mode authentication, organization isolation and subscription checks are implemented in the new source and tested locally; they do not enable private use of the public demo. Durable backups, restore drills, rate limiting, independent security review, broader PostgreSQL concurrency scenarios and load testing remain follow-up work. Local Docker Compose was not executed; Render's container build, startup and live database integration were verified.
 
 ## Sources
 

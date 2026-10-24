@@ -7,14 +7,15 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.config import now_utc, today_local
-from app.db.session import get_db, require_row
+from app.db.session import scoped_db, require_row
 from app.forecasting.baseline import backtest
 from app.models import BakeryLocation, Product
-from app.services.inventory import history_rows
+from app.services.inventory import sales_history_rows
 from app.services.workspace import is_demo
+from app.services.subscriptions import require_forecast_access
 
 router = APIRouter(prefix="/api", tags=["Forecast"])
-DB = Annotated[Session, Depends(get_db)]
+DB = Annotated[Session, Depends(scoped_db)]
 
 
 class BacktestMetrics(BaseModel):
@@ -78,6 +79,7 @@ def historical_backtest(
     test_days: int = Query(7, ge=1, le=30),
     end_date: date | None = None,
 ):
+    require_forecast_access(db)
     product = require_row(db, Product, product_id, "Товар")
     location = require_row(db, BakeryLocation, location_id, "Точка")
     if product.bakery_id != location.bakery_id:
@@ -85,7 +87,7 @@ def historical_backtest(
     cutoff = end_date or today_local()
     if cutoff > today_local():
         raise HTTPException(422, "Конец исторической проверки не может быть в будущем")
-    history = [row for row in history_rows(db, product_id, location_id) if row["date"] <= cutoff]
+    history = [row for row in sales_history_rows(db, product_id, location_id) if row["date"] <= cutoff]
     try:
         result = backtest(history, min_train_days=min_train_days, test_days=test_days, end_date=cutoff)
     except ValueError as exc:
@@ -97,14 +99,14 @@ def historical_backtest(
         product_id=product.id, product_name=product.name, location_id=location.id,
         demo_data=demo, data_source="synthetic" if demo else "real", generated_at=now_utc().isoformat(),
         observation_source={
-            "days_with_sales_records": len(history) - zero_days,
-            "days_without_sales_records": zero_days,
+            "days_with_sales_records": len(history),
+            "days_without_sales_records": 0,
             "missing_calendar_days": missing_days,
-            "zero_sales_interpretation": "При наличии производства или списания без записи продаж модель учёта использует 0. Это может быть как нулевой спрос, так и пропуск; проверьте исходные записи. Дни без любых записей не добавляются.",
+            "zero_sales_interpretation": "Учитываются только наблюдаемые продажи. Нулевые продажи должны быть указаны явно. Дни только с производством или списанием не превращаются в 0.",
         },
     )
     if zero_days:
-        result["warnings"].append(f"В истории {zero_days} дней без записей продаж, но с другими учётными записями. Они интерпретированы как 0; полнота учёта требует проверки.")
+        result["warnings"].append(f"В истории {zero_days} явно подтверждённых наблюдений с нулевыми продажами.")
     if missing_days:
         result["warnings"].append(f"Внутри истории отсутствуют {missing_days} календарных дней. Они не заполнены нулями; число наблюдений отличается от календарной длительности.")
     if demo:

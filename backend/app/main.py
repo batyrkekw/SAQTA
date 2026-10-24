@@ -9,13 +9,17 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from app.api.routes import router
 from app.api.forecast_tools import router as forecast_tools_router
 from app.api.imports import router as imports_router
+from app.api.assortment import router as assortment_router
+from app.api.auth import router as auth_router
 from app.core.config import get_settings
 
-app = FastAPI(title="SAQTA API", version="1.0.0", description="Прогноз спроса, учёт пекарни и демо-витрина SAQTA Save. Без аутентификации; только изолированное демо.")
-app.add_middleware(CORSMiddleware, allow_origins=get_settings().cors_origins, allow_credentials=False, allow_methods=["GET", "POST", "PATCH", "OPTIONS"], allow_headers=["Content-Type"])
+app = FastAPI(title="SAQTA API", version="1.1.0", description="Прогноз спроса и SAQTA Save. DEMO использует синтетические данные; реальный режим требует учётной записи организации и действующего тарифа Forecast.")
+app.add_middleware(CORSMiddleware, allow_origins=get_settings().cors_origins, allow_credentials=False, allow_methods=["GET", "POST", "PATCH", "OPTIONS"], allow_headers=["Content-Type", "Authorization", "X-SAQTA-Verification", "Idempotency-Key"])
 app.include_router(router)
 app.include_router(forecast_tools_router)
 app.include_router(imports_router)
+app.include_router(assortment_router)
+app.include_router(auth_router)
 
 
 @app.exception_handler(RequestValidationError)

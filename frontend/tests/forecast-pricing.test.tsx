@@ -7,14 +7,15 @@ import { PRICING, PRICING_CONNECTION_COPY } from "../src/features/forecast/prici
 
 describe("Forecast pricing keeps proposed plans separate from real subscriptions", () => {
   it("uses the single proposed price configuration and keeps Save free", () => {
-    expect(PRICING.plans.map(plan => [plan.name, plan.monthlyKzt, plan.productLimit, plan.forecastLimit, plan.locationLimit])).toEqual([["Free", 0, 3, 10, 1], ["Starter", 15000, 20, 300, 1], ["Pro", 30000, 100, 1000, null]]);
+    expect(PRICING.plans.map(plan => [plan.name, plan.monthlyKzt, plan.productLimit, plan.forecastLimit, plan.locationLimit])).toEqual([["Free", 0, 3, 0, 1], ["Starter", 15000, 20, 300, 1], ["Pro", 30000, 100, 1000, 10]]);
     expect(PRICING.saveFeeKzt).toBe(0);
     expect(PRICING.saveCommissionPercent).toBe(0);
-    expect(PRICING.quotasEnforced).toBe(false);
+    expect(PRICING.saveSalesCommissionPercent).toBe(5);
+    expect(PRICING.quotasEnforced).toBe(true);
     expect(PRICING.paymentsConnected).toBe(false);
     render(<PricingPanel />);
-    expect(screen.getByRole("link", { name: /Начать бесплатно/ })).toHaveAttribute("href", "/forecast?view=forecast");
-    expect(screen.getByText(/Квоты пока не применяются/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Открыть рабочее пространство/ })).toHaveAttribute("href", "/forecast?view=forecast");
+    expect(screen.getByText(/сервер проверяет организацию/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Открыть SAQTA Save/ })).toHaveAttribute("href", "/save");
   });
   it.each(["Starter", "Pro"])("choosing %s only opens the exact preparation notice", async plan => {

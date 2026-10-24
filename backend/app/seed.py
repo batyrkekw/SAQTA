@@ -28,8 +28,9 @@ def seed_database(db: Session, reset=False, empty=False):
     if reset:
         if get_settings().workspace_mode != "demo":
             raise ValueError("Reset is allowed only with WORKSPACE_MODE=demo")
-        source = db.scalar(select(ApplicationSettings.workspace_mode).limit(1))
-        if source == "real":
+        settings_table = ApplicationSettings.__table__
+        has_real = db.connection().scalar(select(settings_table.c.id).where(settings_table.c.workspace_mode == "real").limit(1))
+        if has_real is not None:
             raise ValueError("Reset is disabled for a persisted real-data workspace; use a separate demo database")
         for table in reversed(Base.metadata.sorted_tables):
             db.execute(delete(table))
@@ -83,7 +84,10 @@ def seed_database(db: Session, reset=False, empty=False):
                                              pickup_start=pickup - timedelta(hours=2), pickup_deadline=pickup + timedelta(hours=2), status="inactive", description="Архивный демо-заказ")
                     db.add(listing)
                     db.flush()
-                    order = Order(customer_name="Демо-покупатель", status="collected", total_kzt=save_sales * listing.discounted_price_kzt, created_at=pickup, collected_at=pickup)
+                    sale_total = save_sales * listing.discounted_price_kzt
+                    order = Order(bakery_id=owner.id, customer_name="Демо-покупатель", status="collected", total_kzt=sale_total,
+                                  commission_tiyn=sale_total * 5, seller_proceeds_tiyn=sale_total * 95,
+                                  created_at=pickup, collected_at=pickup)
                     db.add(order)
                     db.flush()
                     db.add(OrderItem(order_id=order.id, listing_id=listing.id, quantity=save_sales, unit_price_kzt=listing.discounted_price_kzt, weight_grams=product.weight_grams))

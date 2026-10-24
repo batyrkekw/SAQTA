@@ -42,8 +42,9 @@ KIND_ALIASES = {"production": "production", "производство": "product
 
 class ImportOptions(Input):
     source_origin: Literal["demo", "real"]
+    mode: Literal["ledger", "observations"] = "ledger"
     sheet: str | None = Field(default=None, max_length=120)
-    column_mapping: dict[str, str] = Field(default_factory=dict, max_length=8)
+    column_mapping: dict[str, str] = Field(default_factory=dict, max_length=12)
     default_kind: Literal["production", "sales", "waste"] | None = None
     default_product_id: int | None = Field(default=None, gt=0)
     default_location_id: int | None = Field(default=None, gt=0)
@@ -152,12 +153,16 @@ def inspect_file(db: Session, content: bytes, filename: str, source_origin: str)
     settings = guard_origin(db, source_origin)
     tables = read_tables(content, filename)
     selected = next((table for table in tables if table["row_count"]), tables[0] if tables else {"name": "", "columns": [], "rows": []})
+    from app.services.observation_import import observation_mapping
+    observed_mapping = observation_mapping(selected["columns"])
     return {"file_sha256": hashlib.sha256(content).hexdigest(), "workspace_mode": settings.workspace_mode,
             "source_origin": source_origin, "sheets": [{k: table[k] for k in ("name", "columns", "row_count")} for table in tables],
             "selected_sheet": selected["name"], "columns": selected["columns"],
             "sample_rows": [{"row": number, "values": {field: text(value) for field, value in row.items()}} for number, row in selected["rows"][:5]],
             "warnings": [f"Лист «{table['name']}»: пропущено полностью пустых строк — {table['blank_rows_skipped']}." for table in tables if table["blank_rows_skipped"]],
             "suggested_mapping": suggested_mapping(selected["columns"]), "classification": classification(selected["columns"]),
+            "suggested_observation_mapping": observed_mapping,
+            "suggested_mode": "observations" if "sold" in observed_mapping and "date" in observed_mapping and "kind" not in suggested_mapping(selected["columns"]) else "ledger",
             "limits": {"max_bytes": MAX_BYTES, "max_rows": MAX_ROWS, "max_columns": MAX_COLUMNS, "formats": ["csv", "xlsx"]}}
 
 
@@ -359,10 +364,16 @@ def prepare(db: Session, content: bytes, filename: str, options: ImportOptions):
 
 
 def preview_import(db: Session, content: bytes, filename: str, options: ImportOptions):
+    if options.mode == "observations":
+        from app.services.observation_import import prepare_observations
+        return prepare_observations(db, content, filename, options)[0]
     return prepare(db, content, filename, options)[0]
 
 
 def commit_import(db: Session, content: bytes, filename: str, options: ImportOptions, preview_token: str, confirm: str):
+    if options.mode == "observations":
+        from app.services.observation_import import commit_observations
+        return commit_observations(db, content, filename, options, preview_token, confirm)
     if confirm != "IMPORT SAQTA":
         raise HTTPException(422, "Подтвердите проверенный импорт")
     response, entries, settings = prepare(db, content, filename, options)

@@ -3,12 +3,13 @@ export const PRICING = {
   currency: "KZT",
   saveFeeKzt: 0,
   saveCommissionPercent: 0,
-  quotasEnforced: false,
+  saveSalesCommissionPercent: 5,
+  quotasEnforced: true,
   paymentsConnected: false,
   plans: [
-    { id: "free", name: "Free", monthlyKzt: 0, productLimit: 3, forecastLimit: 10, locationLimit: 1, description: "Познакомиться с планированием на основе данных", features: ["Прогноз спроса по истории продаж", "Рекомендация с учётом остатков", "Объяснение расчёта"], featured: false },
+    { id: "free", name: "Free", monthlyKzt: 0, productLimit: 3, forecastLimit: 0, locationLimit: 1, description: "Каталог и бесплатное размещение остатков; Forecast требует активного платного тарифа", features: ["Бесплатная публикация в SAQTA Save", "Каталог и операционный учёт", "Отдельное демо на синтетических данных"], featured: false },
     { id: "starter", name: "Starter", monthlyKzt: 15000, productLimit: 20, forecastLimit: 300, locationLimit: 1, description: "Регулярно планировать производство одной пекарни", features: ["Возможности Free", "Учёт и импорт истории", "Тренды продаж и списаний", "Калькулятор сценарной экономии"], featured: true },
-    { id: "pro", name: "Pro", monthlyKzt: 30000, productLimit: 100, forecastLimit: 1000, locationLimit: null, description: "Проверять прогнозы и сравнивать несколько точек", features: ["Возможности Starter", "Историческая проверка MAE и WAPE", "Сравнение с простым прогнозом", "Несколько настроенных точек"], featured: false },
+    { id: "pro", name: "Pro", monthlyKzt: 30000, productLimit: 100, forecastLimit: 1000, locationLimit: 10, description: "Проверять прогнозы и сравнивать несколько точек", features: ["Возможности Starter", "Историческая проверка MAE и WAPE", "Сравнение с простым прогнозом", "Несколько настроенных точек"], featured: false },
   ],
 } as const;
 

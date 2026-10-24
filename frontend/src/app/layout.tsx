@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import { WorkspaceLayout } from '@/components/workspace-layout';
 
 export const metadata: Metadata = {
   title: { default: 'SAQTA — сохраняем еду с помощью данных', template: '%s · SAQTA' },
@@ -10,5 +11,5 @@ export const metadata: Metadata = {
 };
 export const viewport: Viewport = { themeColor: '#123C2F' };
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="ru"><body>{children}</body></html>;
+  return <html lang="ru"><body><WorkspaceLayout>{children}</WorkspaceLayout></body></html>;
 }

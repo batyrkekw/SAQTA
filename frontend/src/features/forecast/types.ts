@@ -11,9 +11,9 @@ export type ExplanationDay = {
   weekday_difference: number | null;
   weighted_demand: number;
   predicted_demand: number;
-  available_inventory: number;
+  available_inventory: number | null;
   buffered_demand: number;
-  recommended_production: number;
+  recommended_production: number | null;
   demand_formula: string;
   production_formula: string;
 };
@@ -21,7 +21,7 @@ export type DetailedForecast = Forecast & {
   explanation_components?: {
     history_days: number;
     safety_buffer_percent: number;
-    existing_inventory: number;
+    existing_inventory: number | null;
     days: ExplanationDay[];
     limitations: string[];
   };

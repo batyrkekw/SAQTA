@@ -85,8 +85,34 @@ def record_json(db: Session, row, kind: str):
 
 
 def history_rows(db: Session, product_id: int, location_id: int) -> list[dict]:
+    """Complete movement ledger, including production-only days, for balance validation.
+
+    Forecasting uses sales_history_rows instead: absence of a sale is not a zero.
+    """
     data = {}
     for model, name in ((ProductionRecord, "production"), (SalesRecord, "sales"), (WasteRecord, "waste")):
         for row in db.scalars(select(model).where(model.product_id == product_id, model.location_id == location_id).order_by(model.date)):
             data.setdefault(row.date, {"date": row.date, "production": 0, "sales": 0, "waste": 0})[name] += row.quantity
+    return [data[key] for key in sorted(data)]
+
+
+def sales_history_rows(db: Session, product_id: int, location_id: int) -> list[dict]:
+    """Only explicit sales observations; imported daily totals take precedence on overlap.
+
+    A wide-file row represents a complete observed daily total. Adding ledger sales
+    for that same date would double count it. The separate movement ledger remains
+    unchanged and is never used to infer unobserved zero sales.
+    """
+    from app.models import ForecastObservation
+
+    movements = {row["date"]: row for row in history_rows(db, product_id, location_id)}
+    data = {}
+    for sale in db.scalars(select(SalesRecord).where(SalesRecord.product_id == product_id, SalesRecord.location_id == location_id)):
+        if sale.date not in data:
+            data[sale.date] = {**movements[sale.date], "source": "ledger", "explicit_zero": False}
+    for row in db.scalars(select(ForecastObservation).where(ForecastObservation.product_id == product_id, ForecastObservation.location_id == location_id)):
+        data[row.date] = {"date": row.date, "sales": row.sold, "production": row.produced,
+                          "waste": None, "remaining": row.remaining, "source": "imported",
+                          "source_origin": row.source_origin, "batch_id": row.batch_id,
+                          "explicit_zero": row.sold == 0, "overlaps_ledger": row.date in data}
     return [data[key] for key in sorted(data)]

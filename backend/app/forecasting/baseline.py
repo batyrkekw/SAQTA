@@ -32,7 +32,7 @@ def prediction_components(history: list[dict], target: date) -> dict:
     """Actual inputs and coefficients used by the unchanged statistical baseline."""
     observed = _observed_history(history, target)
     if len(observed) < 3:
-        raise InsufficientHistory("Нужно минимум 3 дня истории продаж и производства")
+        raise InsufficientHistory("Нужно минимум 3 наблюдаемых дня продаж; производство без продаж не заменяет наблюдение")
     recent_rows = observed[-7:]
     weekday_rows = [row for row in observed if row["date"].weekday() == target.weekday()][-4:]
     recent = mean(row["sales"] for row in recent_rows)
@@ -140,7 +140,7 @@ def backtest(history: list[dict], min_train_days: int = 14, test_days: int = 7, 
     return result
 
 
-def generate(history: list[dict], target: date, horizon: int, inventory: int, buffer_percent: int) -> dict:
+def generate(history: list[dict], target: date, horizon: int, inventory: int | None, buffer_percent: int) -> dict:
     if not 1 <= horizon <= 14:
         raise ValueError("Горизонт прогноза: от 1 до 14 дней")
     observed = _observed_history(history, target)
@@ -151,22 +151,24 @@ def generate(history: list[dict], target: date, horizon: int, inventory: int, bu
         forecast_date = target + timedelta(days=offset)
         components = prediction_components(observed, forecast_date)
         demand = components["predicted_demand"]
-        production = recommend(demand, remaining, buffer_percent)
+        production = recommend(demand, remaining, buffer_percent) if remaining is not None else None
         buffered = (demand * (100 + buffer_percent) + 99) // 100
         components.update(
             available_inventory=remaining, safety_buffer_percent=buffer_percent, buffered_demand=buffered,
             recommended_production=production,
-            production_formula=f"max(0, ceil({demand} × (1 + {buffer_percent} / 100)) − {remaining}) = max(0, {buffered} − {remaining}) = {production} шт.",
+            production_formula=f"max(0, ceil({demand} × (1 + {buffer_percent} / 100)) − {remaining}) = max(0, {buffered} − {remaining}) = {production} шт." if remaining is not None else "Остаток не подтверждён: объём производства не рассчитан. Целевой спрос с буфером показан отдельно.",
         )
         days_explained.append(components)
         daily.append({"date": forecast_date.isoformat(), "predicted_demand": demand, "recommended_production": production})
         # Only existing stock carries forward. Forecast surplus is not assumed to remain eligible tomorrow.
-        remaining = max(0, remaining - demand)
+        remaining = max(0, remaining - demand) if remaining is not None else None
     total = sum(r["predicted_demand"] for r in daily)
-    production = sum(r["recommended_production"] for r in daily)
+    production = sum(r["recommended_production"] for r in daily) if inventory is not None else None
     mae, points = evaluate(observed)
-    expected_surplus = max(0, inventory + production - total)
-    if horizon == 1:
+    expected_surplus = max(0, inventory + production - total) if inventory is not None else None
+    if inventory is None:
+        explanation = f"Прогноз спроса — {total} шт. Остаток неизвестен, поэтому рекомендуемое производство, фактический избыток и дефицит не рассчитаны. Загрузите подтверждённый остаток."
+    elif horizon == 1:
         first = days_explained[0]
         if first["same_weekday_mean"] is None:
             comparison = "Совпадающих дней недели пока нет; использовано только недавнее среднее."
@@ -182,7 +184,7 @@ def generate(history: list[dict], target: date, horizon: int, inventory: int, bu
     limitations = [
         "Прогноз не гарантирует спрос; он использует только прошлые продажи без погоды, праздников и промо-факторов.",
         "Недавнее среднее берётся по последним 7 наблюдаемым дням, а не обязательно по 7 календарным дням; совпадающие дни недели — последние 4 доступных наблюдения.",
-        "Пустые календарные дни не добавляются. Если в учётной истории есть производство или списание без продажи, существующая модель учёта трактует продажи этого дня как 0; отличить нулевой спрос от пропуска без проверки исходных записей нельзя.",
+        "Пропущенные дни не добавляются и не трактуются как 0 продаж. Нулевые продажи учитываются только при явном наблюдении 0 в импортированной истории.",
         "Текущий остаток исключает резерв SAQTA Save. Рекомендация предполагает его пригодность к продаже; свежесть и срок хранения необходимо проверить.",
         "Будущие продажи не подставляются в историю. Для нескольких дней переносится только неиспользованный текущий остаток; прогнозный излишек новой выпечки не считается пригодным к переносу автоматически.",
     ]
@@ -191,7 +193,7 @@ def generate(history: list[dict], target: date, horizon: int, inventory: int, bu
         "recommended_production": production,
         "existing_inventory": inventory,
         "expected_surplus": expected_surplus,
-        "stockout_risk": "повышенный" if buffer_percent == 0 else "снижен буфером, но не исключён",
+        "stockout_risk": "не определён: остаток неизвестен" if inventory is None else "повышенный" if buffer_percent == 0 else "снижен буфером, но не исключён",
         "method": "recent_weekday_baseline_v1",
         "explanation": explanation + " Расчёт: 60% недавнего среднего + 40% аналогичных дней недели, при отсутствии совпадений — только недавнее среднее. Прогноз не гарантирует спрос.",
         "explanation_components": {"history_days": len(observed), "safety_buffer_percent": buffer_percent, "existing_inventory": inventory, "days": days_explained, "limitations": limitations},

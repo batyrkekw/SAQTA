@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.core.config import aware, get_settings, now_utc, today_local
 from app.forecasting.baseline import InsufficientHistory, predict
 from app.models import BakeryLocation, InventorySnapshot, Order, OrderItem, Product, ProductionRecord, SalesRecord, SurplusListing, WasteRecord
-from app.services.inventory import history_rows
+from app.services.inventory import sales_history_rows
 from app.services.workspace import is_demo
 
 
@@ -37,15 +37,19 @@ def inventory_report(db: Session, location_id=None, start_date=None, end_date=No
     products = list(db.scalars(select(Product).order_by(Product.id)))
     locations = list(db.scalars(select(BakeryLocation).where(BakeryLocation.id == location_id))) if location_id else list(db.scalars(select(BakeryLocation)))
     snapshots = {(s.product_id, s.location_id): s for s in db.scalars(select(InventorySnapshot))}
+    production_pairs = {(row.product_id, row.location_id) for row in db.scalars(select(ProductionRecord))}
     result = []
     for product in products:
         for location in locations:
             key = (product.id, location.id)
             stock = snapshots.get(key)
+            stock_known = bool(stock and (key in production_pairs or stock.on_hand > 0 or stock.reserved > 0))
             result.append({"id": stock.id if stock else 0, "product_id": product.id, "product_name": product.name,
                            "category": product.category, "location_id": location.id, "location_name": location.name,
                            **{kind: totals[kind][key] for kind in totals}, "on_hand": stock.on_hand if stock else 0,
                            "reserved": stock.reserved if stock else 0, "available": stock.on_hand - stock.reserved if stock else 0,
+                           "stock_known": stock_known,
+                           "stock_warning": None if stock_known else "Учётный остаток не подтверждён. Добавьте проверенные движения; импорт истории продаж не создаёт запас автоматически.",
                            "price_kzt": product.price_kzt, "cost_kzt": product.cost_kzt, "weight_grams": product.weight_grams})
     return result
 
@@ -66,7 +70,7 @@ def dashboard(db: Session, location_id=None, start_date=None, end_date=None, los
     historical_forecasts = defaultdict(list)
     for product_id in products:
         for loc_id in locations:
-            history = [r for r in history_rows(db, product_id, loc_id) if r["date"] <= end]
+            history = [r for r in sales_history_rows(db, product_id, loc_id) if r["date"] <= end]
             try:
                 next_demand += round(predict(history, end + timedelta(days=1)))
             except InsufficientHistory:

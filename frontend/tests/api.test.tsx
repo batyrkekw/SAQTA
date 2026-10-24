@@ -1,9 +1,21 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { api, ApiError, query, useApi } from '../src/lib/api';
+import { api, ApiError, query, setSessionToken, useApi } from '../src/lib/api';
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => { vi.unstubAllGlobals(); window.sessionStorage.clear(); });
 describe('API failure handling and changing filters', () => {
+  it('adds the session bearer to real API requests and clears private cached data on logout', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ organization: 'Своя организация' }))).mockResolvedValueOnce(new Response(JSON.stringify({ detail: 'Войдите' }), { status: 401 }));
+    vi.stubGlobal('fetch', fetchMock);
+    setSessionToken('opaque-test-session');
+    const { result } = renderHook(() => useApi<{ organization: string }>('/settings'));
+    await waitFor(() => expect(result.current.data?.organization).toBe('Своя организация'));
+    expect((fetchMock.mock.calls[0][1].headers as Headers).get('Authorization')).toBe('Bearer opaque-test-session');
+    act(() => setSessionToken(null));
+    expect(result.current.data).toBeNull();
+    await waitFor(() => expect(result.current.error).toBe('Войдите'));
+    expect((fetchMock.mock.calls[1][1].headers as Headers).has('Authorization')).toBe(false);
+  });
   it('retains structured CSV row errors for correction', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ detail: { message: 'Импорт отменён', errors: [{ row: 3, message: 'Недостаточно запаса' }] } }), { status: 422 })));
     try { await api('/import'); throw new Error('Expected validation failure'); }

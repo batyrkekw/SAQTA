@@ -5,10 +5,11 @@ import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { BarChart3, Calculator, ChartNoAxesCombined, Database, Layers3 } from "lucide-react";
-import { Loading } from "@/components/ui";
+import { Loading, Notice } from "@/components/ui";
+import { ForecastAccessProvider, useForecastAccess } from "./access-panel";
 
 const loading = () => <Loading label="Открываем инструмент…" />;
-const ForecastTool = dynamic(() => import("./forecast-tool"), { loading });
+const ForecastTool = dynamic(() => import("./assortment-panel"), { loading });
 const BacktestPanel = dynamic(() => import("./backtest-panel"), { loading });
 const SavingsCalculator = dynamic(() => import("./savings-calculator"), { loading });
 const PricingPanel = dynamic(() => import("./pricing-panel"), { loading });
@@ -35,10 +36,15 @@ function ResultsWorkspace() {
   return <div className="space-y-6"><BacktestPanel /><details className="rounded-2xl border border-[#DCE5D5] bg-[#F0F4E8] p-5" open={overviewOpen} onToggle={event => setOverviewOpen(event.currentTarget.open)}><summary className="cursor-pointer text-sm font-semibold text-[#123C2F]">Продажи, остатки и рекомендации по записям</summary>{overviewOpen && <div className="mt-6"><DashboardWorkspace /></div>}</details><details className="rounded-2xl border border-[#DCE5D5] bg-[#F0F4E8] p-5" open={impactOpen} onToggle={event => setImpactOpen(event.currentTarget.open)}><summary className="cursor-pointer text-sm font-semibold text-[#123C2F]">Подтверждённые выдачи SAQTA Save и списания</summary>{impactOpen && <div className="mt-6"><ImpactWorkspace /></div>}</details></div>;
 }
 
-export default function ForecastWorkspace() {
+function WorkspaceContent() {
   const params = useSearchParams();
+  const access = useForecastAccess();
   const view = tabs.find(tab => tab.id === params.get("view"))?.id || "forecast";
+  const needsLogin = access && !access.loading && !access.isDemo && !access.signedIn && (view === "data" || view === "forecast" || view === "results");
+  const denied = view === "results" && !access?.canAnalyze;
   return <><nav aria-label="Инструменты SAQTA Forecast" className="mb-7 flex max-w-full flex-wrap gap-1 rounded-xl border border-[#E0E7D9] bg-white p-1.5">{tabs.map(({ id, label, icon: Icon }) => <Link key={id} href={`/forecast?view=${id}`} scroll={false} aria-current={view === id ? "page" : undefined} className={`flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-xs font-medium transition-colors sm:flex-1 ${view === id ? "bg-[#123C2F] text-[#C7F36B]" : "text-[#5D6B62] hover:bg-[#F1F5E9]"}`}><Icon size={16} strokeWidth={1.6} />{label}</Link>)}</nav>
-    <div key={view}>{view === "forecast" ? <ForecastTool /> : view === "data" ? <DataWorkspace key={String(params.get("settings"))} initialSettingsOpen={params.get("settings") === "1"} /> : view === "results" ? <ResultsWorkspace /> : view === "savings" ? <SavingsCalculator /> : <PricingPanel />}</div>
+    <div key={view}>{access?.loading ? <Loading label="Проверяем доступ…"/> : needsLogin ? <Notice>Войдите в свою организацию выше. Чужие данные и подписки недоступны.</Notice> : denied ? <Notice>Историческая проверка требует активного тарифа Forecast. Сервер не запускает её без доступа.</Notice> : view === "forecast" ? <ForecastTool /> : view === "data" ? <DataWorkspace key={String(params.get("settings"))} initialSettingsOpen={params.get("settings") === "1"} /> : view === "results" ? <ResultsWorkspace /> : view === "savings" ? <SavingsCalculator /> : <PricingPanel />}</div>
   </>;
 }
+
+export default function ForecastWorkspace() { return <ForecastAccessProvider><WorkspaceContent/></ForecastAccessProvider>; }
