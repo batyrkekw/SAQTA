@@ -1644,5 +1644,19 @@
   "Товар {0}, филиал {1}: в новом файле только {2} новых наблюдений. Для прогноза нужно минимум 3 наблюдаемые даты с учётом сохранённой истории, для выбора модели и отдельной проверки — 28.": "Product {0}, location {1}: the new file contains only {2} new observations. Forecasting needs at least 3 observed dates including saved history; model selection and a separate evaluation need 28.",
   "Укажите согласованную цену за единицу перед подтверждением": "Enter the agreed unit price before approving",
   "Цена предложения не должна превышать обычную цену": "The offer price cannot exceed the regular price",
-  "Согласованная цена за единицу, ₸": "Agreed unit price, ₸"
+  "Согласованная цена за единицу, ₸": "Agreed unit price, ₸",
+  "Анализ ваших данных · Бесплатно": "Your data, analyzed · Free",
+  "Начать работу": "Get started",
+  "Загрузите продажи из CSV или Excel. Если истории пока нет, начните с короткой анкеты.": "Upload sales from CSV or Excel. If you have no history yet, start with a short questionnaire.",
+  "Публикуйте пригодные продукты, принимайте заявки и договаривайтесь о передаче. Оплата — напрямую продавцу.": "List suitable food, accept requests and arrange pickup. Payment is made directly to the seller.",
+  "Загрузите историю продаж или заполните анкету. Получите прогноз, рекомендации и оценку качества на своих данных.": "Upload your sales history or complete a questionnaire. Get forecasts, recommendations and a quality assessment based on your data.",
+  "ОБЗОР ВОЗМОЖНОСТЕЙ": "FEATURE OVERVIEW",
+  "Результаты появятся после загрузки ваших данных. Если истории недостаточно, мы укажем ограничения.": "Results appear after you upload your data. If there is not enough history, we explain the limitations.",
+  "Реальные продажи и списания помогают оценивать решения. Подтверждённые передачи в SAVE учитываются отдельно от прогнозов.": "Actual sales and write-offs help assess decisions. Confirmed SAVE handovers are tracked separately from forecasts.",
+  "Анкета даёт предварительную оценку. История продаж позволяет проверить точность прогноза.": "The questionnaire provides a preliminary estimate. Sales history lets you check forecast accuracy.",
+  "Прогноз спроса · Спасение продуктов · Сделано в Казахстане": "Demand forecasting · Food rescue · Made in Kazakhstan",
+  "Ваши данные": "Your data",
+  "Анализ спроса": "Demand analysis",
+  "План на завтра": "Tomorrow’s plan",
+  "От ваших данных к плану": "From your data to a plan"
 }
