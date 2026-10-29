@@ -13,9 +13,11 @@ services:
           name: saqta-postgres
           property: connectionString
       - key: WORKSPACE_MODE
-        value: demo
+        value: real
       - key: AUTO_SEED_DEMO
-        value: "true"
+        value: "false"
+      - key: FORECAST_REQUIRES_SUBSCRIPTION
+        value: "false"
       - key: CORS_ORIGINS
         sync: false
 databases:

@@ -1,3 +1,5 @@
+> Historical release documentation. For the current SAVE/FORECAST workflows, free analysis, roles and rollout settings, use [the 29 October 2026 refactor report](REFACTOR_2026_10_29.md) and [README](../README.md).
+
 # Organization access and Forecast subscriptions
 
 The existing public deployment remains `WORKSPACE_MODE=demo`: anonymous access is limited to the seeded synthetic organization. The subscription endpoint reports `access_mode: demo`, `active: false`, and no paid quota. Demo access is not a payment or an activated subscription. Real registration/login is rejected in demo mode before credentials are stored.

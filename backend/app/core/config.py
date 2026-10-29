@@ -10,8 +10,12 @@ from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 class Settings(BaseSettings):
     database_url: str = "sqlite:///./saqta.db"
-    workspace_mode: Literal["demo", "real"] = "demo"
+    workspace_mode: Literal["demo", "real"] = "real"
     auto_seed_demo: bool = False
+    forecast_requires_subscription: bool = False
+    llm_base_url: str = ""
+    llm_api_key: str = ""
+    llm_model: str = "Qwen/Qwen3-0.6B"
     cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:3000", "http://127.0.0.1:3000"]
     saqta_timezone: str = "Asia/Qyzylorda"
     demo_anchor_date: date | None = None

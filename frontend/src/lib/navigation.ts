@@ -1,5 +1,1 @@
-export const productNavigation = [
-  { href: "/forecast", label: "Прогнозирование" },
-  { href: "/save", label: "SAQTA Save" },
-  { href: "/about", label: "О проекте" },
-] as const;
+export const productNavigation = [{ href: "/save", label: "SAQTA SAVE" }, { href: "/forecast", label: "SAQTA FORECAST" }] as const;

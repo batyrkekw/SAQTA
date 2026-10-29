@@ -3,7 +3,7 @@ from fastapi import HTTPException
 from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 
-from app.core.config import aware, now_utc, today_local
+from app.core.config import aware, get_settings, now_utc, today_local
 from app.models import BakeryLocation, Product, QuotaEvent, Subscription, SubscriptionUsage
 from app.services.workspace import is_demo
 
@@ -39,6 +39,8 @@ def subscription_json(db):
 
 
 def require_forecast_access(db):
+    if not get_settings().forecast_requires_subscription:
+        return {"access_mode": "free", "active": True, "limits": {"products": None, "locations": None, "forecast_runs_per_month": None}}
     result = subscription_json(db)
     if result["access_mode"] == "demo":
         return result
@@ -58,7 +60,7 @@ def consume_forecast_quota(db, idempotency_key=None):
     usage, and a stable optional request key cannot be counted twice.
     """
     subscription = require_forecast_access(db)
-    if subscription["access_mode"] == "demo":
+    if subscription["access_mode"] in {"demo", "free"}:
         return False
     owner, month = current_bakery_id(db), today_local().strftime("%Y-%m")
     if idempotency_key:

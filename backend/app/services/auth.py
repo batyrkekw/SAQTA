@@ -73,5 +73,28 @@ def bind_request_scope(db, request):
 def organization_json(db):
     user = db.get(AuthUser, db.info.get("user_id")) if db.info.get("user_id") else None
     owner = db.get(Bakery, db.info["bakery_id"])
-    return {"user": {"id": user.id, "email": user.email, "bakery_id": user.bakery_id} if user else None,
+    return {"user": {"id": user.id, "email": user.email, "bakery_id": user.bakery_id, "role": user.role, "requested_role": user.requested_role} if user else None,
             "organization": {"id": owner.id, "name": owner.name}}
+
+
+def authenticated_user(db, request):
+    """Read an identity without binding tenant scope: only for explicit public-market queries."""
+    header = request.headers.get("authorization", "")
+    if not header.startswith("Bearer ") or len(header) > 256:
+        raise HTTPException(401, "Войдите в аккаунт")
+    session = db.scalar(select(AuthSession).where(AuthSession.token_hash == token_digest(header[7:])))
+    if session is None or aware(session.expires_at) <= now_utc():
+        raise HTTPException(401, "Сессия недействительна или истекла. Войдите снова.")
+    user = db.get(AuthUser, session.user_id)
+    source = db.scalar(select(ApplicationSettings.workspace_mode).where(ApplicationSettings.bakery_id == user.bakery_id))
+    if source != "real":
+        raise HTTPException(403, "Нет доступа к рабочим данным")
+    return user
+
+
+def require_business(db):
+    if db.info.get("demo_access"):
+        return
+    user = db.get(AuthUser, db.info.get("user_id"))
+    if user is None or user.role != "business":
+        raise HTTPException(403, "Публикация доступна после подтверждения бизнес-аккаунта")

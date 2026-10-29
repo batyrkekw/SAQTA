@@ -61,7 +61,7 @@ def check_location(db, location_id):
 @router.get("/health", tags=["System"])
 def health(db: DB):
     db.execute(text("SELECT 1"))
-    return {"status": "ok", "service": "SAQTA", "database": "connected", "workspace_mode": workspace_mode(db), "demo_data": is_demo(db)}
+    return {"status": "ok", "service": "SAQTA", "database": "connected", "workspace_mode": get_settings().workspace_mode, "demo_data": get_settings().workspace_mode == "demo"}
 
 
 @router.get("/bakery", tags=["Workspace"])

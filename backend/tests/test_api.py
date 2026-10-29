@@ -143,7 +143,8 @@ def test_reset_refused_in_real_workspace(client):
         assert client.post("/api/demo/reset", json={"confirm": "RESET SAQTA DEMO"}).status_code == 401
         # Merely changing the environment must never relabel synthetic records as real.
         assert client.get("/api/settings").status_code == 401
-        assert client.get("/api/health").json()["demo_data"] is True
+        assert client.get("/api/health").json()["demo_data"] is False
+        assert client.get("/api/market/listings").json() == []  # Synthetic stock is still excluded.
     finally:
         settings.workspace_mode = original
 

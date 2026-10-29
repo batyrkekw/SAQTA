@@ -1,3 +1,5 @@
+> Historical release documentation. For the current SAVE/FORECAST workflows, free analysis, roles and rollout settings, use [the 29 October 2026 refactor report](REFACTOR_2026_10_29.md) and [README](../README.md).
+
 # SAQTA public API contract
 
 Local base: `http://127.0.0.1:8000/api`. The frontend API base is configured through `NEXT_PUBLIC_API_URL`, including `/api`. FastAPI publishes `/docs` and `/openapi.json` at the backend origin.

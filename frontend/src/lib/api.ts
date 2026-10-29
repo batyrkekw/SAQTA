@@ -59,3 +59,10 @@ export function useReference() {
 }
 export function defaultPeriod(days = 30) { const end = new Date(); const start = new Date(); start.setDate(start.getDate() - days + 1); const fmt = (date: Date) => date.toLocaleDateString("en-CA", { timeZone: "Asia/Qyzylorda" }); return { start: fmt(start), end: fmt(end) }; }
 export async function downloadCsv(params: Record<string, string | number | undefined> = {}) { const token = sessionToken(); const response = await fetch(`${API_URL}/export${query(params)}`, ...(token ? [{ headers: { Authorization: `Bearer ${token}` } }] as const : [])); if (!response.ok) throw new Error("Не удалось выгрузить CSV. Проверьте вход и права доступа."); const blob = await response.blob(); const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url; anchor.download = "saqta-records.csv"; anchor.click(); URL.revokeObjectURL(url); }
+
+export async function downloadFile(path: string, filename: string) {
+  const response = await fetch(`${API_URL}${path}`, { headers: authenticatedHeaders({}), cache: 'no-store' });
+  if (!response.ok) throw new ApiError('Не удалось скачать файл. Проверьте вход и повторите.', response.status);
+  const url = URL.createObjectURL(await response.blob());
+  const anchor = document.createElement('a'); anchor.href = url; anchor.download = filename; anchor.click(); URL.revokeObjectURL(url);
+}

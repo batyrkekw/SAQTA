@@ -32,10 +32,10 @@ MAX_SHEETS = 25
 MAX_XLSX_EXPANDED_BYTES = 32 * 1024 * 1024
 FIELDS = {"date", "quantity", "kind", "product", "location", "unit", "unit_price_kzt", "reason"}
 ALIASES = {
-    "date": {"date", "дата", "дата продажи"}, "quantity": {"quantity", "количество", "кол-во", "продано"},
-    "kind": {"kind", "тип", "тип записи"}, "product": {"product", "product_id", "product_name", "товар", "продукт"},
-    "location": {"location", "location_id", "location_name", "точка", "филиал"}, "unit": {"unit", "единица", "ед. изм."},
-    "unit_price_kzt": {"unit_price_kzt", "цена", "цена ₸", "цена kzt"}, "reason": {"reason", "причина"},
+    "date": {"date", "дата", "дата продажи", "күн", "күні", "сату күні"}, "quantity": {"quantity", "количество", "кол-во", "продано"},
+    "kind": {"kind", "тип", "тип записи"}, "product": {"product", "product_id", "product_name", "товар", "продукт", "өнім", "тауар", "sku", "product name"},
+    "location": {"location", "location_id", "location_name", "точка", "филиал", "орын", "нүкте", "дүкен"}, "unit": {"unit", "единица", "ед. изм.", "өлшем бірлігі", "бірлік"},
+    "unit_price_kzt": {"unit_price_kzt", "цена", "цена ₸", "цена kzt", "price", "баға", "бағасы"}, "reason": {"reason", "причина"},
 }
 KIND_ALIASES = {"production": "production", "производство": "production", "выпуск": "production", "sales": "sales", "продажи": "sales", "продажа": "sales", "waste": "waste", "списание": "waste", "списания": "waste"}
 
@@ -44,12 +44,14 @@ class ImportOptions(Input):
     source_origin: Literal["demo", "real"]
     mode: Literal["ledger", "observations"] = "ledger"
     sheet: str | None = Field(default=None, max_length=120)
-    column_mapping: dict[str, str] = Field(default_factory=dict, max_length=12)
+    column_mapping: dict[str, str] = Field(default_factory=dict, max_length=24)
     default_kind: Literal["production", "sales", "waste"] | None = None
     default_product_id: int | None = Field(default=None, gt=0)
     default_location_id: int | None = Field(default=None, gt=0)
     date_format: Literal["iso", "dmy"] = "iso"
     number_format: Literal["dot", "comma"] = "dot"
+    create_products: bool = False
+    default_unit: str | None = Field(default=None, min_length=1, max_length=20)
     source_label: str = Field(default="", max_length=120)
 
 
@@ -77,7 +79,16 @@ def read_tables(content: bytes, filename: str):
     raw_sheets = []
     if suffix == ".csv":
         try:
-            decoded = content.decode("utf-8-sig")
+            try:
+                decoded = content.decode("utf-8-sig")
+                encoding = "UTF-8"
+            except UnicodeDecodeError:
+                if content.startswith((b'\xff\xfe', b'\xfe\xff')):
+                    decoded, encoding = content.decode('utf-16'), 'UTF-16'
+                else:
+                    decoded, encoding = content.decode('cp1251'), 'Windows-1251'
+            if '\x00' in decoded:
+                raise UnicodeDecodeError('utf-8', content, 0, 1, 'binary input')
             try:
                 dialect = csv.Sniffer().sniff(decoded[:4096], delimiters=",;\t")
             except csv.Error:
@@ -134,12 +145,12 @@ def read_tables(content: bytes, filename: str):
             if len(row) != len(columns):
                 raise HTTPException(422, {"message": "Число ячеек не совпадает с заголовком", "errors": [{"row": number, "field": "file", "message": "Проверьте разделитель и количество столбцов"}]})
             data.append((number, dict(zip(columns, row, strict=True))))
-        tables.append({"name": name, "columns": columns, "rows": data, "row_count": len(data), "blank_rows_skipped": blank_rows})
+        tables.append({"name": name, "columns": columns, "rows": data, "row_count": len(data), "blank_rows_skipped": blank_rows, "encoding": encoding if suffix == ".csv" else "XLSX"})
     return tables
 
 
 def suggested_mapping(columns):
-    return {field: column for field, aliases in ALIASES.items() for column in columns if key(column) in aliases}
+    return {field: matches[0] for field, aliases in ALIASES.items() if len(matches := [column for column in columns if key(column) in aliases]) == 1}
 
 
 def classification(columns):
@@ -152,16 +163,16 @@ def classification(columns):
 def inspect_file(db: Session, content: bytes, filename: str, source_origin: str):
     settings = guard_origin(db, source_origin)
     tables = read_tables(content, filename)
-    selected = next((table for table in tables if table["row_count"]), tables[0] if tables else {"name": "", "columns": [], "rows": []})
+    selected = next((table for table in tables if table["name"] == "HistoricalData"), None) or next((table for table in tables if table["row_count"]), tables[0] if tables else {"name": "", "columns": [], "rows": []})
     from app.services.observation_import import observation_mapping
     observed_mapping = observation_mapping(selected["columns"])
     return {"file_sha256": hashlib.sha256(content).hexdigest(), "workspace_mode": settings.workspace_mode,
-            "source_origin": source_origin, "sheets": [{k: table[k] for k in ("name", "columns", "row_count")} for table in tables],
+            "source_origin": source_origin, "sheets": [{**{k: table[k] for k in ("name", "columns", "row_count")}, "mapping": observation_mapping(table["columns"])} for table in tables],
             "selected_sheet": selected["name"], "columns": selected["columns"],
             "sample_rows": [{"row": number, "values": {field: text(value) for field, value in row.items()}} for number, row in selected["rows"][:5]],
             "warnings": [f"Лист «{table['name']}»: пропущено полностью пустых строк — {table['blank_rows_skipped']}." for table in tables if table["blank_rows_skipped"]],
             "suggested_mapping": suggested_mapping(selected["columns"]), "classification": classification(selected["columns"]),
-            "suggested_observation_mapping": observed_mapping,
+            "suggested_observation_mapping": observed_mapping, "encoding": selected.get("encoding", "XLSX"),
             "suggested_mode": "observations" if "sold" in observed_mapping and "date" in observed_mapping and "kind" not in suggested_mapping(selected["columns"]) else "ledger",
             "limits": {"max_bytes": MAX_BYTES, "max_rows": MAX_ROWS, "max_columns": MAX_COLUMNS, "formats": ["csv", "xlsx"]}}
 
@@ -207,7 +218,7 @@ def parse_date(value, date_format):
 
 def unit_key(value):
     normalized = key(value).rstrip(".")
-    return "шт" if normalized in {"шт", "штука", "штук", "штуки", "pcs", "pc", "unit", "units"} else normalized
+    return "шт" if normalized in {"шт", "штука", "штук", "штуки", "pcs", "pc", "unit", "units", "дана"} else normalized
 
 
 def resolve(value, default_id, objects, label):

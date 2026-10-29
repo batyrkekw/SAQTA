@@ -60,7 +60,7 @@ def test_listing_creation_edit_and_release_allocated_stock(client):
     assert result["reserved"] == stock["reserved"]
     payload["quantity"] = 99999
     assert client.post("/api/listings", json=payload).status_code == 409
-    payload["quantity"], payload["discounted_price_kzt"] = 1, 1200
+    payload["quantity"], payload["discounted_price_kzt"] = 1, 1201  # Above the original price is invalid.
     assert client.post("/api/listings", json=payload).status_code == 422
 
 

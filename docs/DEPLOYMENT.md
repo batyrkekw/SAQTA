@@ -1,3 +1,5 @@
+> Historical release documentation. For the current SAVE/FORECAST workflows, free analysis, roles and rollout settings, use [the 29 October 2026 refactor report](REFACTOR_2026_10_29.md) and [README](../README.md).
+
 # SAQTA public demo deployment
 
 The existing SAQTA synthetic demo uses **Vercel frontend + Render API + Render PostgreSQL**. **The new architecture/assortment/subscription/5% commission source is not declared deployed by this document: new release and live PostgreSQL verification are pending.** The previously verified unified release (final documentation commit `19618ed`, first code `4162203`) remains historical evidence. Its 45 public checks do not establish current-source behavior. New real-mode authentication/subscription code does not turn the public anonymous demo into a private customer service.

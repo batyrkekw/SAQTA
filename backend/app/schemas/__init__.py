@@ -64,6 +64,9 @@ class ListingCreate(Input):
     location_id: int = Field(gt=0)
     quantity: int = Field(gt=0, le=100_000)
     discounted_price_kzt: int = Field(ge=0, le=10_000_000)
+    terms: Literal["discounted", "free", "negotiated"] = "discounted"
+    bulk_available: bool = False
+    expires_at: datetime | None = None
     pickup_start: datetime
     pickup_deadline: datetime
     description: str = Field(default="", max_length=1000)

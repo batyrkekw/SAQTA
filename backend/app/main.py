@@ -1,3 +1,4 @@
+from app.api import market, analysis
 import logging
 
 from fastapi import FastAPI, Request
@@ -13,8 +14,8 @@ from app.api.assortment import router as assortment_router
 from app.api.auth import router as auth_router
 from app.core.config import get_settings
 
-app = FastAPI(title="SAQTA API", version="1.1.0", description="Прогноз спроса и SAQTA Save. DEMO использует синтетические данные; реальный режим требует учётной записи организации и действующего тарифа Forecast.")
-app.add_middleware(CORSMiddleware, allow_origins=get_settings().cors_origins, allow_credentials=False, allow_methods=["GET", "POST", "PATCH", "OPTIONS"], allow_headers=["Content-Type", "Authorization", "X-SAQTA-Verification", "Idempotency-Key"])
+app = FastAPI(title="SAQTA API", version="2.0.0", description="SAQTA SAVE marketplace and private SAQTA FORECAST workflows.")
+app.add_middleware(CORSMiddleware, allow_origins=get_settings().cors_origins, allow_credentials=False, allow_methods=["GET", "POST", "PUT", "PATCH", "OPTIONS"], allow_headers=["Content-Type", "Authorization", "X-SAQTA-Verification", "Idempotency-Key"])
 app.include_router(router)
 app.include_router(forecast_tools_router)
 app.include_router(imports_router)
@@ -38,3 +39,6 @@ async def integrity_error(request: Request, exc: IntegrityError):
 async def database_error(request: Request, exc: SQLAlchemyError):
     logging.getLogger("saqta").error("Database operation failed: %s", type(exc).__name__)
     return JSONResponse(status_code=503, content={"detail": "База данных временно недоступна. Повторите запрос позже."})
+
+app.include_router(market.router)
+app.include_router(analysis.router)

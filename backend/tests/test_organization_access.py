@@ -17,6 +17,7 @@ from app.services.auth import check_password
 
 @pytest.fixture
 def real_client(monkeypatch):
+    monkeypatch.setattr(get_settings(), "forecast_requires_subscription", True)
     monkeypatch.setattr(get_settings(), "workspace_mode", "real")
     engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
     @event.listens_for(engine, "connect")
@@ -55,6 +56,10 @@ def activate(factory, bakery_id, plan="starter", expired=False):
 
 
 def catalog_history(client, factory, owner, headers):
+    # This fixture represents an operator-verified business, not self-assigned privileges.
+    with factory() as db:
+        db.get(AuthUser, owner['user']['id']).role = 'business'
+        db.commit()
     product = client.post("/api/products", headers=headers, json={"name": "Fresh bread", "category": "Bread", "price_kzt": 1000, "cost_kzt": 300, "weight_grams": 200}).json()
     location = client.get("/api/locations", headers=headers).json()[0]
     with factory() as db:
@@ -256,8 +261,11 @@ def test_real_test_marker_cannot_create_or_reveal_foreign_data(real_client):
 
 
 def test_free_save_catalog_and_fourth_listing_do_not_require_forecast_subscription(real_client):
-    client, _ = real_client
-    _, headers = register(client)
+    client, factory = real_client
+    account, headers = register(client)
+    with factory() as db:
+        db.get(AuthUser, account['user']['id']).role = 'business'
+        db.commit()
     products = []
     for index in range(5):
         response = client.post("/api/products", headers=headers, json={"name": f"Free Save product {index + 1}", "category": "Bread", "price_kzt": 1000})
@@ -279,6 +287,7 @@ def test_free_save_catalog_and_fourth_listing_do_not_require_forecast_subscripti
 
 
 def test_atomic_last_forecast_allowance_with_two_concurrent_requests(tmp_path, monkeypatch):
+    monkeypatch.setattr(get_settings(), "forecast_requires_subscription", True)
     monkeypatch.setattr(get_settings(), "workspace_mode", "real")
     engine = build_engine(f"sqlite:///{tmp_path / 'quota-race.db'}")
     Base.metadata.create_all(engine)

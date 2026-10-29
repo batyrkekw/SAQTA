@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from sqlalchemy import BigInteger, Boolean, CheckConstraint, Date, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
+from sqlalchemy import BigInteger, Boolean, CheckConstraint, Date, DateTime, ForeignKey, Index, Integer, LargeBinary, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.config import now_utc
@@ -36,6 +36,7 @@ class Product(TimestampMixin, Base):
     category: Mapped[str] = mapped_column(String(60))
     unit: Mapped[str] = mapped_column(String(20), default="шт.")
     price_kzt: Mapped[int] = mapped_column(Integer)
+    price_known: Mapped[bool] = mapped_column(Boolean, default=True, server_default="1")
     cost_kzt: Mapped[int | None] = mapped_column(Integer, nullable=True)
     weight_grams: Mapped[int] = mapped_column(Integer, default=0)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
@@ -100,20 +101,29 @@ class SurplusListing(TimestampMixin, Base):
     available_quantity: Mapped[int] = mapped_column(Integer)
     reserved_quantity: Mapped[int] = mapped_column(Integer, default=0)
     collected_quantity: Mapped[int] = mapped_column(Integer, default=0)
-    original_price_kzt: Mapped[int] = mapped_column(Integer)
+    original_price_kzt: Mapped[int | None] = mapped_column(Integer, nullable=True)
     discounted_price_kzt: Mapped[int] = mapped_column(Integer)
     pickup_start: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     pickup_deadline: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     status: Mapped[str] = mapped_column(String(20), default="active", index=True)
     description: Mapped[str] = mapped_column(String(1000), default="")
+    terms: Mapped[str] = mapped_column(String(20), default="discounted", server_default="discounted")
+    bulk_available: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    photo: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
+    photo_mime: Mapped[str | None] = mapped_column(String(30), nullable=True)
     is_test_data: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
-    __table_args__ = (CheckConstraint("quantity > 0 AND available_quantity >= 0 AND reserved_quantity >= 0 AND collected_quantity >= 0", name="listing_nonnegative"), CheckConstraint("discounted_price_kzt >= 0 AND discounted_price_kzt < original_price_kzt", name="listing_discount"),)
+    __table_args__ = (CheckConstraint("quantity > 0 AND available_quantity >= 0 AND reserved_quantity >= 0 AND collected_quantity >= 0", name="listing_nonnegative"), CheckConstraint("discounted_price_kzt >= 0 AND (original_price_kzt IS NULL OR discounted_price_kzt <= original_price_kzt)", name="listing_discount"),)
 
 
 class Order(TimestampMixin, Base):
     __tablename__ = "orders"
     id: Mapped[int] = mapped_column(primary_key=True)
     bakery_id: Mapped[int | None] = mapped_column(ForeignKey("bakeries.id"), nullable=True, index=True)
+    buyer_id: Mapped[int | None] = mapped_column(ForeignKey("auth_users.id"), nullable=True, index=True)
+    kind: Mapped[str] = mapped_column(String(20), default="individual", server_default="individual")
+    beneficiaries: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    logistics: Mapped[str] = mapped_column(String(1000), default="", server_default="")
     customer_name: Mapped[str] = mapped_column(String(100))
     status: Mapped[str] = mapped_column(String(20), default="reserved", index=True)
     total_kzt: Mapped[int] = mapped_column(BigInteger)
@@ -157,3 +167,5 @@ class ApplicationSettings(TimestampMixin, Base):
 from app.models.imports import ImportBatch, ImportFingerprint  # noqa: E402,F401
 from app.models.identity import AuthSession, AuthUser, QuotaEvent, Subscription, SubscriptionUsage  # noqa: E402,F401
 from app.models.observations import ForecastObservation, ForecastRun  # noqa: E402,F401
+
+from app.models.workflows import BusinessProfile, OrderEvent  # noqa: E402,F401

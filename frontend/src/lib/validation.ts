@@ -17,14 +17,14 @@ export const validationMessage: z.core.$ZodErrorMap = issue => {
 
 export function formValidationMessage(form: HTMLFormElement): string | null {
   for (const field of Array.from(form.elements)) {
-    if (!(field instanceof HTMLInputElement) || field.disabled || field.readOnly) continue;
-    if (field.minLength > 0 && field.value && field.value.length < field.minLength) return `Минимум ${field.minLength} символов`;
-    if (field.maxLength > 0 && field.value.length > field.maxLength) return `Максимум ${field.maxLength} символов`;
+    if (!(field instanceof HTMLInputElement || field instanceof HTMLSelectElement || field instanceof HTMLTextAreaElement) || field.disabled || ("readOnly" in field && field.readOnly)) continue;
+    if ("minLength" in field && field.minLength > 0 && field.value && field.value.length < field.minLength) return `Минимум ${field.minLength} символов`;
+    if ("maxLength" in field && field.maxLength > 0 && field.value.length > field.maxLength) return `Максимум ${field.maxLength} символов`;
     if (field.validity.valid) continue;
     if (field.validity.valueMissing) return 'Заполните все обязательные поля';
-    if (field.validity.typeMismatch && field.type === 'email') return 'Введите корректный email';
-    if (field.validity.tooShort) return `Минимум ${field.minLength} символов`;
-    if (field.validity.tooLong) return `Максимум ${field.maxLength} символов`;
+    if (field.validity.typeMismatch && field instanceof HTMLInputElement && field.type === 'email') return 'Введите корректный email';
+    if (field.validity.tooShort && "minLength" in field) return `Минимум ${field.minLength} символов`;
+    if (field.validity.tooLong && "maxLength" in field) return `Максимум ${field.maxLength} символов`;
     return 'Проверьте введённое значение';
   }
   return null;

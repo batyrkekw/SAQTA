@@ -37,6 +37,9 @@ def get_db():
 def scoped_db(request: Request, db: Annotated[Session, Depends(get_db)]):
     from app.services.auth import bind_request_scope
     bind_request_scope(db, request)
+    if request.method in {"POST", "PATCH"} and request.url.path.startswith("/api/listings"):
+        from app.services.auth import require_business
+        require_business(db)
     return db
 
 

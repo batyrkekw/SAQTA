@@ -1,7 +1,7 @@
 """Sales observations are evidence for forecasting, never invented stock movements."""
 from datetime import date
 
-from sqlalchemy import CheckConstraint, Date, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import CheckConstraint, Date, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.session import Base
@@ -19,6 +19,10 @@ class ForecastObservation(TimestampMixin, Base):
     remaining: Mapped[int | None] = mapped_column(nullable=True)
     produced: Mapped[int | None] = mapped_column(nullable=True)
     unit_price_kzt: Mapped[int | None] = mapped_column(nullable=True)
+    waste: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    opening: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    revenue: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    context_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     source_origin: Mapped[str] = mapped_column(String(10))
     batch_id: Mapped[int] = mapped_column(ForeignKey("import_batches.id"), index=True)
     source_row: Mapped[int] = mapped_column()

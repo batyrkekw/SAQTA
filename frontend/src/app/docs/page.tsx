@@ -1,2 +1,2 @@
-import Content from "./content";
-export default function Page() { return <Content />; }
+import {redirect} from 'next/navigation';
+export default function Page(){redirect('/forecast');}

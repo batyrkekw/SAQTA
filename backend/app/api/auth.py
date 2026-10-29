@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import Field, field_validator
@@ -32,6 +32,7 @@ class Credentials(Input):
 
 class RegisterRequest(Credentials):
     bakery_name: str = Field(min_length=2, max_length=120)
+    requested_role: Literal["consumer", "business", "charity"] = "consumer"
     location_name: str = Field(default="Основная точка", min_length=2, max_length=120)
     address: str = Field(min_length=3, max_length=250)
     city: str = Field(default="Астана", min_length=2, max_length=100)
@@ -68,7 +69,7 @@ def register(payload: RegisterRequest, db: DB):
     db.add(BakeryLocation(bakery_id=owner.id, name=payload.location_name, address=payload.address, city=payload.city))
     db.add(ApplicationSettings(bakery_id=owner.id, workspace_mode="real", currency="KZT", safety_buffer_percent=10))
     db.add(Subscription(bakery_id=owner.id, plan="free", status="inactive"))
-    user = AuthUser(bakery_id=owner.id, email=payload.email, password_hash=hash_password(payload.password))
+    user = AuthUser(bakery_id=owner.id, email=payload.email, password_hash=hash_password(payload.password), role="consumer", requested_role=payload.requested_role)
     db.add(user)
     db.flush()
     return session_response(db, user)
@@ -111,7 +112,7 @@ def subscription(db: ScopedDB):
 @router.post("/locations", status_code=201)
 def create_location(payload: LocationRequest, db: ScopedDB):
     current = subscription_json(db)
-    if current["access_mode"] != "demo":
+    if get_settings().forecast_requires_subscription and current["access_mode"] != "demo":
         if current["plan"] != "pro" or not current["active"]:
             raise HTTPException(403, "Добавление филиалов доступно в активном тарифе Pro; у организации уже есть основная точка.")
         if (db.scalar(select(func.count()).select_from(BakeryLocation)) or 0) >= PLANS["pro"]["locations"]:

@@ -16,6 +16,9 @@ for port in sys.argv[1:]:
 PY
 (
   cd "$saqta_root/backend"
+  export WORKSPACE_MODE="${WORKSPACE_MODE:-real}"
+  export AUTO_SEED_DEMO=false
+  .venv/bin/python -m alembic upgrade head
   export CORS_ORIGINS="http://127.0.0.1:$saqta_web_port,http://localhost:$saqta_web_port"
   exec .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port "$saqta_api_port"
 ) &

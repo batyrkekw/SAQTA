@@ -10,7 +10,11 @@ from app.seed import seed_database
 
 
 @pytest.fixture
-def database():
+def database(monkeypatch):
+    # These existing fixtures intentionally exercise the isolated synthetic workspace.
+    from app.core.config import get_settings
+    monkeypatch.setattr(get_settings(), "workspace_mode", "demo")
+    monkeypatch.setattr(get_settings(), "forecast_requires_subscription", True)
     engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
 
     @event.listens_for(engine, "connect")

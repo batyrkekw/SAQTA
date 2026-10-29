@@ -1,5 +1,2 @@
-import { redirect } from "next/navigation";
-
-export default function LegacyEconomics() {
-  redirect("/forecast?view=pricing");
-}
+import {redirect} from 'next/navigation';
+export default function Page(){redirect('/forecast');}
