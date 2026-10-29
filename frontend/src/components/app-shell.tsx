@@ -1,1 +1,1 @@
-export { AppShell, default } from "./saqta-shell";
+export { AppShell,default } from "./saqta-shell";

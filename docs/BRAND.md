@@ -46,7 +46,7 @@ Pair forest text with lime. Do not use white text on lime. Green/forest buttons 
 
 ## Typography
 
-The interface uses a modern sans-serif stack, `Inter`, system UI, `Segoe UI`, sans-serif. Self-hosted Inter is optional; the implementation intentionally works without downloading a font. The wordmark uses its own vector paths. Use Russian as the primary interface language and `ru-KZ` locale for tenge values.
+The interface uses a modern sans-serif stack, `Inter`, system UI, `Segoe UI`, sans-serif. Self-hosted Inter is optional; the implementation intentionally works without downloading a font. The wordmark uses its own vector paths. Support Russian, Kazakh and English with Russian as the initial interface language. Use `ru-KZ`, `kk-KZ` or `en-GB` for dates and numbers according to the selected language; all monetary amounts remain in tenge.
 
 Use short, sentence-case headings. Public headline: 48–76 px responsive. Application page titles: 26–32 px. Section headings: 18–24 px. Body: 14–16 px; labels and metadata: at least 12 px. Use weights 400, 500, 600, and 700; do not simulate an outlined wordmark using text.
 

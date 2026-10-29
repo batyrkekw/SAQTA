@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import type { Location, Product } from "@/types/api";
+import type { Location,Product } from "@/types/api";
+import { useCallback,useEffect,useState } from "react";
 
 export const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api").replace(/\/$/, "");
 const SESSION_KEY = `saqta.session.v1:${API_URL}`;

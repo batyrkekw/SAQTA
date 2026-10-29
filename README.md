@@ -355,3 +355,25 @@ Roadmap: verified daily bakery data; opening-day/availability and stockout-aware
 ## Brand assets
 
 Original editable assets live in `frontend/public/brand/`: `saqta-symbol.svg`, `saqta-logo.svg`, `saqta-logo-dark.svg`, `favicon.svg`, `app-icon.svg`. The protected grain symbol combines preservation, food and a rising data signal. `docs/BRAND.md` documents colors, typography, spacing and correct usage. No third-party logos, invented customer references or partnerships are used.
+
+## Interface languages and the local redesign
+
+The public site and application support **Қазақша, Русский and English**. The language switcher is available in the public header and workspace toolbar. Russian remains the initial language; a selection is saved under `saqta.language.v1` in localStorage. Switching does not remount the workspace or clear an open form. Tabs synchronize their language preferences, and a blocked storage API still permits switching within the current tab.
+
+- `frontend/src/components/language-provider.tsx` supplies the React context, persistence, localized document language/title, and number/date formatters.
+- `frontend/src/lib/i18n/en.json` and `kk.json` contain translations keyed by the Russian source message. There are no translation-service calls at runtime.
+- `frontend/src/lib/i18n/translate.ts` also handles complete legacy API message templates containing `{0}`, `{1}`, etc. Add matching keys and interpolation slots to both catalogs when adding UI copy.
+- Stored product names, addresses, uploaded records and descriptions are never rewritten by a language change. Known demo labels are localized for display; custom text retains its source language. Downloadable source documentation retains its original language.
+- The landing page retains SAQTA's forest/lime identity with warm paper, a responsive photographic hero and clearer product navigation. Image attribution is in `frontend/public/images/README.md`.
+
+After installing dependencies and preparing the demo database as described above, start both services from the repository root:
+
+```sh
+./scripts/dev-local.sh
+```
+
+The launcher uses http://127.0.0.1:3000 for the site and http://127.0.0.1:8001/api for the API, sets the browser API URL and CORS origins, checks for occupied ports, and stops both services on Ctrl+C. Override the ports with `SAQTA_WEB_PORT` and `SAQTA_API_PORT`. Local environments and databases are ignored by Git. For hosted builds, configure `NEXT_PUBLIC_API_URL` for the deployed backend.
+
+Localization regression checks are in `frontend/tests/i18n.test.tsx` and `frontend/tests/i18n-flows.test.tsx`, including state preservation, persistence, blocked storage, SSR defaults, catalog parity, nested API messages, numeric validation and sign-in errors in all three languages.
+
+The browser audit covers the public pages, every Forecast view, expanded results and settings, Save tabs, mobile navigation, product/record/listing forms, legacy redirects and the 404 page. Client validation stores source messages so switching languages also updates errors that are already visible.

@@ -1,15 +1,14 @@
-import type { Metadata, Viewport } from 'next';
-import './globals.css';
+import { LanguageProvider } from '@/components/language-provider';
 import { WorkspaceLayout } from '@/components/workspace-layout';
+import type { Metadata,Viewport } from 'next';
+import './globals.css';
 
 export const metadata: Metadata = {
-  title: { default: 'SAQTA — сохраняем еду с помощью данных', template: '%s · SAQTA' },
-  description: 'Прогноз спроса, управление производством и продажа подходящих остатков для пекарен. Астана, Казахстан.',
   applicationName: 'SAQTA',
   icons: { icon: '/brand/favicon.svg', apple: '/brand/app-icon.svg' },
   manifest: '/manifest.webmanifest',
 };
 export const viewport: Viewport = { themeColor: '#123C2F' };
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="ru"><body><WorkspaceLayout>{children}</WorkspaceLayout></body></html>;
+  return <html lang="ru" data-scroll-behavior="smooth"><body><LanguageProvider><WorkspaceLayout>{children}</WorkspaceLayout></LanguageProvider></body></html>;
 }
