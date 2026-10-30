@@ -96,3 +96,5 @@ main { min-width: 0; }
 @media (max-width: 420px) { .public-header-inner { padding: 14px 18px; gap: 12px; } .header-actions { gap: 6px; } .language-switcher button { min-width: 31px; } .home-hero { padding: 20px 20px 35px; } .hero-visual { min-height: 430px; border-bottom-right-radius: 60px; } .hero-photo-top { left: 18px; right: 18px; } .hero-edition { display: none; } .hero-insight { left: 15px; right: 15px; padding: 15px 12px; gap: 9px; } .hero-insight p { font-size: 12px; } }
 .header-actions > a.btn-primary { display: none; }
 @media (min-width: 768px) { .header-actions > a.btn-primary { display: inline-flex; } }
+
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }

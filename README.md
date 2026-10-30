@@ -2,7 +2,7 @@
 
 SAQTA combines **SAVE**, a marketplace for available food, and **FORECAST**, private demand analysis based on a business’s own data. The interface supports **Қазақша · Русский · English**, including forms, validation, notifications and charts.
 
-The home page at `/` introduces the product, explains both workflows and links to SAVE and FORECAST. The SAQTA logo returns to this overview from either module.
+The home page at `/` offers direct access to SAVE and FORECAST, an interactive buyer/business overview and a short FAQ. Decorative motion can be paused and respects reduced-motion preferences. The SAQTA logo returns to this overview from either module.
 
 The existing stack is preserved: **Next.js / React / TypeScript → FastAPI / SQLAlchemy → PostgreSQL**, with SQLite for local development. Production targets remain Vercel and Render. There is no Go server in this repository.
 
