@@ -10,6 +10,7 @@ import {
   Search,
   ShoppingBag,
 } from "lucide-react";
+import { ProductIntro } from "@/components/product-intro";
 import { useI18n } from "@/components/language-provider";
 import {
   Badge,
@@ -20,7 +21,6 @@ import {
   Loading,
   Modal,
   Notice,
-  PageHeader,
 } from "@/components/ui";
 import {
   API_URL,
@@ -172,8 +172,8 @@ function MarketplaceContent() {
   }
   return (
     <div className="space-y-7">
-      <PageHeader
-        eyebrow="SAQTA SAVE"
+      <ProductIntro
+        kind="save"
         title={t("Хорошая еда. Новая возможность.")}
         description={t(
           "Выбирайте продукты поблизости и забирайте в удобное время.",
@@ -194,8 +194,8 @@ function MarketplaceContent() {
           </button>
         }
       />
-      <div className="flex flex-wrap justify-between gap-4 border-b border-[#dfe6db] pb-4">
-        <div className="flex gap-2">
+      <div className="workspace-toolbar">
+        <div className="workspace-segments">
           {(
             [
               "offers",
@@ -205,6 +205,7 @@ function MarketplaceContent() {
           ).map((item) => (
             <button
               key={item}
+              aria-pressed={view === item}
               className={view === item ? "btn-primary" : "btn-secondary"}
               onClick={() =>
                 item === "offers"
@@ -223,7 +224,7 @@ function MarketplaceContent() {
           ))}
         </div>
         <button
-          className={`flex items-center gap-2 text-sm ${charity ? "font-bold text-[#237a57]" : "muted"}`}
+          className="workspace-charity"
           aria-pressed={charity}
           onClick={() => {
             setCharity(!charity);
@@ -237,7 +238,7 @@ function MarketplaceContent() {
       {notice && <Notice kind="success">{t(notice)}</Notice>}
       {error && <Notice kind="error">{t(error)}</Notice>}
       {view === "offers" && (
-        <div className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-6">
+        <div className="save-filters grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-6">
           <Field label={t("Поиск")}>
             <div className="relative">
               <Search
@@ -324,9 +325,9 @@ function MarketplaceContent() {
             {offers.data.map((offer) => (
               <article
                 key={offer.id}
-                className="overflow-hidden rounded-3xl border border-[#dfe6db] bg-white"
+                className="save-offer"
               >
-                <div className="relative flex h-44 items-center justify-center overflow-hidden bg-[#e9eee2]">
+                <div className="save-offer-photo">
                   {offer.photo_url ? (
                     <Image
                       unoptimized

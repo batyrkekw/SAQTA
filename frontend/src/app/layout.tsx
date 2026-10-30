@@ -3,6 +3,7 @@ import { LanguageProvider } from '@/components/language-provider';
 import { WorkspaceLayout } from '@/components/workspace-layout';
 import type { Metadata,Viewport } from 'next';
 import './globals.css';
+import '@/components/product-theme.css';
 
 export const metadata: Metadata = {
   applicationName: 'SAQTA',

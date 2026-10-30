@@ -182,3 +182,20 @@
   .page *, .page *::before, .page *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
   .heroArt:hover .photo { transform: scale(1.06) rotate(-5deg); }
 }
+
+/* Alternating paper, forest and warm clay sections. */
+.productBand { background: #173e31; color: #f1f5e7; }
+.productBand .eyebrow { color: #bdd19e; }
+.productBand .sectionHeading h2 .serif { color: #d4ed8c; }
+.productBand .tabs { background: #ffffff0d; border: 1px solid #d4e2bd28; }
+.productBand .tabs button { color: #d3dec8; }
+.productBand .tabs button[aria-selected=true] { background: #d4ed8c; color: #173e31; }
+.productBand .pathPanel { color: #173e31; }
+.productBand .forecast { background: #264c3b; border: 1px solid #d7e6bb28; color: #f4f7e9; }
+.product { padding-block: 74px 80px; }
+.questions { padding-top: 73px; }
+.closing { background: #173e31; color: #f0f5e4; }
+.closing h2 span { color: #d4ed8c; }
+.closing a { background: #d4ed8c; color: #173e31; }
+.closing a:hover { background: #e2f4b4; }
+@media (max-width: 760px) { .product { padding-block: 53px; } .questions { padding-top: 51px; } }

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent }
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowDown, ArrowRight, ArrowUpRight, Check, Leaf, Pause, Play, ShoppingBag, Sparkles, TrendingUp } from "lucide-react";
+import { HomeCommunity, HomePricing } from "@/components/home-community";
 import { ProductHeader } from "@/components/product-header";
 import { useI18n } from "@/components/language-provider";
 import styles from "./home.module.css";
@@ -122,6 +123,7 @@ export default function Home() {
           <span className={styles.origin}>{t("Сделано в Казахстане")}<span aria-hidden="true">↗</span></span>
         </div>
 
+        <div className={styles.productBand}>
         <section id="product" className={styles.product} aria-labelledby="product-title" data-reveal>
           <div className={styles.sectionHeading}>
             <div><p className={styles.eyebrow}>{t("ВЫБЕРИТЕ СВОЙ ПУТЬ")}</p><h2 id="product-title">{t("Одна идея.")} <span className={styles.serif}>{t("Два простых пути.")}</span></h2></div>
@@ -150,6 +152,10 @@ export default function Home() {
           </div>
         </section>
 
+        </div>
+        <HomeCommunity />
+        <HomePricing />
+
         <section className={styles.questions} aria-labelledby="questions-title" data-reveal>
           <div><p className={styles.eyebrow}>{t("ВСЁ ПРОСТО")}</p><h2 id="questions-title">{t("Пара вопросов")}<br /><span className={styles.serif}>{t("перед началом.")}</span></h2><Sparkles size={30} className={styles.sparkle} aria-hidden="true" /></div>
           <div className={styles.answers}>{questions.map(([question, answer]) => <details key={question}><summary>{t(question)}<span className={styles.plus} aria-hidden="true" /></summary><p>{t(answer)}</p></details>)}</div>
@@ -162,7 +168,7 @@ export default function Home() {
       <footer className={styles.footer}>
         <Link href="/" aria-label={t("SAQTA — главная")}><Image src="/brand/saqta-logo.svg" width={112} height={25} alt="SAQTA" /></Link>
         <p>© {new Date().getFullYear()} SAQTA · {t("Сохраняем то, что ценно.")}</p>
-        <nav aria-label={t("Навигация в подвале")}><Link href="/save">SAVE<ArrowUpRight size={13} aria-hidden="true" /></Link><Link href="/forecast">FORECAST<ArrowUpRight size={13} aria-hidden="true" /></Link></nav>
+        <nav aria-label={t("Навигация в подвале")}><a href="#pricing">{t("Тарифы")}<ArrowUpRight size={13} aria-hidden="true" /></a><Link href="/save">SAVE<ArrowUpRight size={13} aria-hidden="true" /></Link><Link href="/forecast">FORECAST<ArrowUpRight size={13} aria-hidden="true" /></Link></nav>
       </footer>
     </div>
   );

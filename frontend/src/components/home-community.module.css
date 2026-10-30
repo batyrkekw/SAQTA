@@ -1,0 +1,87 @@
+.inner { max-width: 1296px; margin: auto; }
+.community { background: #efe7d9; padding: 78px 5% 88px; color: #173e31; }
+.heading { display: flex; justify-content: space-between; align-items: flex-end; gap: 30px; margin-bottom: 32px; }
+.kicker { font-size: 9px; font-weight: 600; letter-spacing: .16em; margin-bottom: 17px; color: #71805f; }
+.heading h2 { font-size: clamp(33px,3.6vw,48px); line-height: 1.08; letter-spacing: -.045em; font-weight: 500; }
+.heading h2 em { font-family: Georgia, serif; font-weight: 400; }
+.disclosure { max-width: 300px; color: #736f5d; font-size: 11px; line-height: 1.8; }
+.disclosure > span { display: block; width: fit-content; margin-bottom: 10px; padding: 5px 9px; border: 1px solid #928e6d40; border-radius: 999px; color: #596342; font-size: 10px; }
+.stories { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 18px; }
+.story { display: flex; flex-direction: column; min-width: 0; padding: 29px; border-radius: 22px; background: #fffdf4; border: 1px solid #e2ddca; transition: transform .3s, box-shadow .3s; }
+.story:nth-child(2) { background: #e2e8d2; border-color: #d4dcc5; }
+.story:hover { transform: translateY(-5px); box-shadow: 0 15px 25px #4b56300a; }
+.quoteTop { display: flex; justify-content: space-between; align-items: center; color: #8a9a6d; margin-bottom: 20px; }
+.quoteTop span { font-size: 9px; color: #817d69; }
+.story blockquote { font-family: Georgia, serif; font-size: 18px; line-height: 1.65; letter-spacing: -.02em; flex: 1; }
+.story figcaption { display: flex; align-items: center; gap: 12px; margin-top: 30px; padding-top: 19px; border-top: 1px solid #173e3112; }
+.avatar { display: grid; place-items: center; height: 42px; flex: 0 0 42px; border-radius: 50%; background: #d8dfc2; color: #586b43; font-family: Georgia,serif; font-size: 21px; }
+.avatar1 { background: #c8d4b0; }
+.avatar2 { background: #edcfaa; color: #846137; }
+.story strong { display: block; font-size: 12px; font-weight: 550; }
+.story small { display: block; margin-top: 3px; font-size: 10px; color: #788066; }
+.pricing { padding: 80px 5% 74px; background: #153d30; color: #f5f5e8; }
+.pricing .kicker { color: #b5ca93; }
+.pricing h2 em { color: #d1e899; }
+.billing { display: flex; padding: 5px; gap: 4px; border: 1px solid #c5d5a830; border-radius: 999px; background: #ffffff06; flex-shrink: 0; }
+.billing button { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 10px 18px; border-radius: 999px; font-size: 11px; color: #cfdbc2; transition: background .2s, color .2s; }
+.billing button[aria-pressed=true] { background: #d4ed8c; color: #153d30; }
+.billing button span { font-size: 9px; opacity: .8; }
+.pricingNote { max-width: 800px; color: #c8d7bc; font-size: 11px; line-height: 1.8; margin: 0 0 32px; }
+.pricingNote span { display: inline-block; color: #e6efc6; border: 1px solid #d7e3b048; border-radius: 5px; padding: 3px 7px; margin-right: 10px; font-size: 9px; }
+.plans { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 20px; align-items: stretch; }
+.plan { position: relative; display: flex; flex-direction: column; min-width: 0; padding: 31px 28px; border: 1px solid #e5e7d5; border-radius: 23px; transition: transform .3s, box-shadow .3s; }
+.plan:hover { transform: translateY(-6px); }
+.tier0 { background: #f5f5eb; color: #173e31; }
+.tier1 { background: #dbe9b9; color: #173e31; border-color: #d8eaa6; box-shadow: 0 15px 40px #061c1d25; }
+.tier2 { background: #234a3a; color: #f0ecd8; border-color: #c5ae77; box-shadow: inset 0 0 0 5px #d5bf8220, 0 20px 45px #071f1b45; }
+.tier2::before { content: ''; position: absolute; width: 170px; height: 170px; right: -40px; top: -50px; border-radius: 50%; border: 1px solid #c5ae7720; pointer-events: none; clip-path: inset(50px 40px 0 0); }
+.planTop { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 27px; }
+.planTop > span:last-child { text-align: right; font-size: 9px; opacity: .75; }
+.planIcon { display: grid; place-items: center; width: 43px; height: 43px; flex: 0 0 43px; border-radius: 14px; background: #173e310b; }
+.tier1 .planIcon { background: #173e3112; }
+.tier2 .planIcon { color: #e9d4a3; background: #e2cc8e14; border: 1px solid #d6c08f40; }
+.plan h3 { font-size: 34px; font-family: Georgia, serif; font-weight: 400; letter-spacing: -.04em; }
+.planDescription { font-size: 12px; opacity: .75; line-height: 1.8; margin-top: 8px; min-height: 44px; }
+.price { display: flex; flex-wrap: wrap; align-items: baseline; gap: 7px; margin-top: 25px; }
+.price strong { font-size: clamp(28px,2.7vw,38px); font-weight: 500; letter-spacing: -.05em; white-space: nowrap; }
+.price span { font-size: 10px; opacity: .7; }
+.billingNote { font-size: 10px; opacity: .65; margin-top: 5px; min-height: 30px; line-height: 1.6; }
+.features { margin: 23px 0 27px; padding-top: 23px; border-top: 1px solid #173e311a; display: flex; flex-direction: column; gap: 13px; flex: 1; }
+.tier2 .features { border-color: #e7d79a25; }
+.features li { display: flex; align-items: flex-start; gap: 9px; font-size: 11px; line-height: 1.65; }
+.features svg { flex-shrink: 0; margin-top: 2px; opacity: .7; }
+.features small { display: block; font-size: 8px; opacity: .65; }
+.planButton { display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%; padding: 14px 19px; min-height: 48px; border-radius: 999px; font-size: 11px; font-weight: 600; border: 1px solid #173e312f; transition: background .2s; }
+.planButton:hover { background: #173e3110; }
+.tier1 .planButton { background: #173e31; color: #f3f7e6; border-color: #173e31; }
+.tier1 .planButton:hover { background: #2a5941; }
+.tier2 .planButton { background: #e9d5a0; color: #244434; border-color: #e9d5a0; }
+.tier2 .planButton:hover { background: #f5e2b4; }
+.planFootnote { margin-top: 25px; color: #b7c8a9; font-size: 10px; line-height: 1.8; text-align: center; }
+.planDialog { color: #173e31; font-size: 12px; line-height: 1.8; }
+.dialogBadge { display: inline-block; padding: 4px 10px; background: #eee4ce; border-radius: 99px; font-size: 10px; }
+.dialogPrice { display: flex; gap: 10px; align-items: baseline; margin: 15px 0 0; font-size: 34px; font-weight: 500; letter-spacing: -.04em; }
+.dialogPrice span { font-size: 12px; letter-spacing: 0; }
+.planDialog ul { display: grid; gap: 10px; margin: 23px 0; }
+.planDialog li { display: flex; gap: 9px; align-items: center; }
+.planDialog li svg { flex-shrink: 0; }
+.dialogNotice { background: #eef1e4; padding: 16px; border-radius: 13px; margin-bottom: 22px; }
+.closeDialog { display: flex; gap: 6px; align-items: center; padding: 12px 0; margin-top: 7px; font-size: 11px; color: #6c775f; }
+@media (max-width: 1050px) { .plan { padding: 27px 21px; } .story { padding: 23px; } .story blockquote { font-size: 16px; } }
+@media (max-width: 760px) {
+  .community, .pricing { padding: 55px 6%; }
+  .heading { align-items: flex-start; flex-direction: column; gap: 22px; }
+  .heading h2 { font-size: 36px; }
+  .disclosure { max-width: 420px; font-size: 10px; }
+  .stories, .plans { grid-template-columns: 1fr; gap: 17px; }
+  .story { padding: 26px; }
+  .story blockquote { font-size: 18px; }
+  .story figcaption { margin-top: 24px; }
+  .plan { padding: 29px; }
+  .planDescription { min-height: 0; }
+  .price strong { font-size: 37px; }
+  .billingNote { min-height: 0; }
+  .features { margin-top: 22px; }
+  .pricingNote span { margin-bottom: 8px; }
+}
+@media (prefers-reduced-motion: reduce) { .plan, .story, .billing button, .planButton { transition: none; transform: none !important; } }

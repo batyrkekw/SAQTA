@@ -1,4 +1,6 @@
 "use client";
+import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 import { createContext, useContext, type ReactNode } from "react";
 import { ProductHeader } from "./product-header";
 import { useI18n } from "./language-provider";
@@ -17,13 +19,14 @@ export function AppShell({
   if (nested) return <>{children}</>;
   return (
     <ShellContext value={true}>
+      <div className="workspace-surface">
       <a href="#main-content" className="sr-only focus:not-sr-only focus:p-4">
         {t("Перейти к содержимому")}
       </a>
       <ProductHeader />
       <main
         id="main-content"
-        className="mx-auto min-h-[calc(100dvh-160px)] max-w-[1360px] px-5 py-8 md:px-12 md:py-10"
+        className="workspace-main"
       >
         {title && (
           <header className="mb-8">
@@ -33,10 +36,14 @@ export function AppShell({
         )}
         {children}
       </main>
-      <footer className="mx-auto flex max-w-[1360px] flex-wrap justify-between gap-3 border-t border-[#dfe6db] px-5 py-6 text-xs text-[#637369] md:px-12">
-        <span>© {new Date().getFullYear()} SAQTA</span>
-        <span>{t("Меньше потерь. Больше пользы.")}</span>
+      <footer className="workspace-footer">
+        <div className="workspace-footer-inner">
+          <span className="workspace-footer-brand">SAQTA</span>
+          <span>© {new Date().getFullYear()} · {t("Меньше потерь. Больше пользы.")}</span>
+          <Link href="/">{t("Обзор проекта")}<ArrowUpRight size={15} aria-hidden="true" /></Link>
+        </div>
       </footer>
+      </div>
     </ShellContext>
   );
 }

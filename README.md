@@ -4,6 +4,8 @@ SAQTA combines **SAVE**, a marketplace for available food, and **FORECAST**, pri
 
 The home page at `/` offers direct access to SAVE and FORECAST, an interactive buyer/business overview and a short FAQ. Decorative motion can be paused and respects reduced-motion preferences. The SAQTA logo returns to this overview from either module.
 
+SAVE and FORECAST share the home page’s forest-green, paper and warm-clay visual style. Home testimonials are explicitly labeled fictional examples, pending real interviews. Start / Growth / Scale pricing is a preliminary concept: no payments are accepted and no proposed plan limits are enforced. Current product access remains free.
+
 The existing stack is preserved: **Next.js / React / TypeScript → FastAPI / SQLAlchemy → PostgreSQL**, with SQLite for local development. Production targets remain Vercel and Render. There is no Go server in this repository.
 
 ## Run locally

@@ -2,7 +2,7 @@
 
 import { useI18n } from "@/components/language-provider";
 
-import { AlertCircle,ArrowDownRight,ArrowUpRight,Check,LoaderCircle,RefreshCw,X } from "lucide-react";
+import { AlertCircle,ArrowDownRight,ArrowUpRight,Check,Leaf,LoaderCircle,RefreshCw,X } from "lucide-react";
 import { useEffect,useRef,type ReactNode } from "react";
 
 export const money = (value: number) => new Intl.NumberFormat("ru-KZ", { maximumFractionDigits: 0 }).format(value) + " ₸";
@@ -20,7 +20,7 @@ export function PageHeader({ eyebrow, title, description, action, level = 1 }: {
 export function Card({ title, subtitle, children, action, className = "" }: { title?: string; subtitle?: string; children: ReactNode; action?: ReactNode; className?: string }) {
   const { t } = useI18n();
 
-  return <section className={`rounded-2xl border border-[#E5E9E0] bg-white p-5 md:p-6 ${className}`}>{title && <div className="mb-5 flex items-start justify-between gap-3"><div><h2 className="text-[15px] font-semibold tracking-[-.02em] text-[#202622]">{t(title)}</h2>{subtitle && <p className="mt-1 text-xs leading-relaxed text-[#5D6B62]">{t(subtitle)}</p>}</div>{t(action)}</div>}{t(children)}</section>;
+  return <section className={`saqta-card rounded-2xl border border-[#E5E9E0] bg-white p-5 md:p-6 ${className}`}>{title && <div className="mb-5 flex items-start justify-between gap-3"><div><h2 className="text-[15px] font-semibold tracking-[-.02em] text-[#202622]">{t(title)}</h2>{subtitle && <p className="mt-1 text-xs leading-relaxed text-[#5D6B62]">{t(subtitle)}</p>}</div>{t(action)}</div>}{t(children)}</section>;
 }
 
 export function Metric({ label, value, note, icon, accent = false, trend }: { label: string; value: string; note?: string; icon: ReactNode; accent?: boolean; trend?: "up" | "down" }) {
@@ -37,7 +37,7 @@ export function ErrorState({ error, retry }: { error: string; retry: () => void 
  return <div role="alert" className="my-6 rounded-2xl border border-red-200 bg-red-50 p-6"><div className="flex items-center gap-2 font-semibold text-red-800"><AlertCircle size={18} />{t("Не удалось получить данные")}</div><p className="mt-2 text-sm text-red-700">{t(error)}</p><button className="btn-secondary mt-4" onClick={retry}><RefreshCw size={15} />{t("Повторить")}</button></div>; }
 export function Empty({ title = "Пока нет данных", description = "Добавьте записи или измените фильтры." }: { title?: string; description?: string }) {
   const { t } = useI18n();
- return <div className="py-12 text-center"><div className="mx-auto mb-3 h-9 w-9 rounded-xl border border-dashed border-[#ADBDAE] bg-[#F7F7F2]" /><p className="text-sm font-medium text-[#123C2F]">{t(title)}</p><p className="mt-1 text-xs text-[#5D6B62]">{t(description)}</p></div>; }
+ return <div className="saqta-empty"><span className="saqta-empty-icon" aria-hidden="true"><Leaf size={31} strokeWidth={1.25} /></span><p className="saqta-empty-title">{t(title)}</p><p className="saqta-empty-description">{t(description)}</p></div>; }
 export function Notice({ children, kind = "info" }: { children: ReactNode; kind?: "info" | "success" | "error" }) {
   const { t } = useI18n();
  return <div role={kind === "error" ? "alert" : "status"} className={`flex items-start gap-2.5 rounded-xl border p-3.5 text-xs leading-relaxed ${kind === "error" ? "border-red-200 bg-red-50 text-red-800" : kind === "success" ? "border-[#CBE3D0] bg-[#EDF7EC] text-[#237A57]" : "border-[#E4E8DE] bg-[#F2F5EC] text-[#60715F]"}`}>{kind === "success" ? <Check className="mt-0.5 shrink-0" size={15} /> : <AlertCircle className="mt-0.5 shrink-0" size={15} />}<div>{t(children)}</div></div>; }
@@ -65,7 +65,7 @@ export function Modal({ title, children, onClose }: { title: string; children: R
     document.addEventListener("keydown", trapFocus);
     return () => { document.removeEventListener("keydown", trapFocus); document.body.style.overflow = previousOverflow; previousFocus?.focus(); };
   }, []);
-  return <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#123C2F]/40 p-4 backdrop-blur-sm" onClick={onClose}><section ref={dialogRef} role="dialog" aria-modal="true" aria-label={t(title)} tabIndex={-1} className="max-h-[90vh] w-full max-w-xl overflow-auto rounded-2xl bg-white p-6 shadow-xl" onClick={e => e.stopPropagation()} onKeyDown={e => { if (e.key === "Escape") onClose(); }}><div className="mb-6 flex items-center justify-between gap-4"><h2 className="text-xl font-semibold text-[#123C2F]">{t(title)}</h2><button aria-label={t("Закрыть")} onClick={onClose} className="rounded-lg p-2 hover:bg-[#F2F5EC]"><X size={20} /></button></div>{t(children)}</section></div>;
+  return <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#123C2F]/40 p-4 backdrop-blur-sm" onClick={onClose}><section ref={dialogRef} role="dialog" aria-modal="true" aria-label={t(title)} tabIndex={-1} className="saqta-modal max-h-[90vh] w-full max-w-xl overflow-auto rounded-2xl bg-white p-6 shadow-xl" onClick={e => e.stopPropagation()} onKeyDown={e => { if (e.key === "Escape") onClose(); }}><div className="mb-6 flex items-center justify-between gap-4"><h2 className="text-xl font-semibold text-[#123C2F]">{t(title)}</h2><button aria-label={t("Закрыть")} onClick={onClose} className="rounded-lg p-2 hover:bg-[#F2F5EC]"><X size={20} /></button></div>{t(children)}</section></div>;
 }
 export function Field({ label, children, hint, error }: { label: string; children: ReactNode; hint?: string; error?: string }) {
   const { t } = useI18n();

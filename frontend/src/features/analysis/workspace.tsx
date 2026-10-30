@@ -9,6 +9,7 @@ import {
   Play,
   RefreshCw,
 } from "lucide-react";
+import { ProductIntro } from "@/components/product-intro";
 import { useI18n } from "@/components/language-provider";
 import {
   Card,
@@ -18,7 +19,6 @@ import {
   Loading,
   Modal,
   Notice,
-  PageHeader,
   today,
 } from "@/components/ui";
 import { errorMessage, post, useApi } from "@/lib/api";
@@ -99,8 +99,8 @@ function AnalysisWorkspaceContent() {
   }
   return (
     <div className="space-y-7">
-      <PageHeader
-        eyebrow="SAQTA FORECAST"
+      <ProductIntro
+        kind="forecast"
         title={t("Планируйте по своим данным.")}
         description={t(
           "Загрузите продажи или расскажите о бизнесе — SAQTA поможет выбрать следующий шаг.",
@@ -126,22 +126,13 @@ function AnalysisWorkspaceContent() {
           ].map(({ key, title, description, icon: Icon }) => (
             <button
               key={key}
-              className={`group flex items-start gap-5 rounded-3xl border p-6 text-left transition-colors md:p-8 ${key === "import" ? "border-[#123c2f] bg-[#123c2f] text-white hover:bg-[#20503c]" : "border-[#dfe6db] bg-white hover:bg-[#f0f5e8]"}`}
+              className={`forecast-choice forecast-choice--${key}`}
               onClick={() => select(key)}
             >
-              <Icon
-                size={30}
-                className={
-                  key === "import"
-                    ? "shrink-0 text-[#c7f36b]"
-                    : "shrink-0 text-[#65824a]"
-                }
-              />
+              <Icon size={30} aria-hidden="true" />
               <div className="flex-1">
-                <h2 className="text-lg font-semibold">{t(title)}</h2>
-                <p
-                  className={`mt-2 max-w-md text-sm leading-6 ${key === "import" ? "text-[#c8dbc8]" : "text-[#637369]"}`}
-                >
+                <h2>{t(title)}</h2>
+                <p>
                   {t(description)}
                 </p>
               </div>
@@ -151,7 +142,7 @@ function AnalysisWorkspaceContent() {
         </div>
       )}
       {!account && !accountLoading && (
-        <Card>
+        <Card className="forecast-account-card">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <h2 className="font-semibold">
@@ -171,7 +162,7 @@ function AnalysisWorkspaceContent() {
       )}
       {account && (
         <>
-          <div className="flex flex-wrap gap-2">
+          <div className="forecast-tools">
             {view !== "home" && (
               <button className="btn-secondary" onClick={() => setView("home")}>
                 {t("К результатам")}
