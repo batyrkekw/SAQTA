@@ -1,5 +1,5 @@
 "use client";
-import { useState, type FormEvent } from "react";
+import { useId, useState, type FormEvent } from "react";
 import Image from "next/image";
 import {
   ArrowUpRight,
@@ -89,13 +89,29 @@ const statusLabel: Record<string, string> = {
   inactive: "Неактивно",
   expired: "Время истекло",
 };
+type OfferSort = "default" | "price" | "discount" | "pickup";
+type OrderFilter = "all" | "active" | "collected" | "cancelled";
+const orderFilters: { value: OrderFilter; label: string }[] = [
+  { value: "all", label: "Все заявки" },
+  { value: "active", label: "В работе" },
+  { value: "collected", label: "Выданные" },
+  { value: "cancelled", label: "Отменённые" },
+];
+function discountPercent(offer: Offer) {
+  return offer.terms !== "negotiated" && offer.original_price_kzt && offer.original_price_kzt > 0
+    ? (1 - offer.discounted_price_kzt / offer.original_price_kzt) * 100
+    : -1;
+}
+function matchesOrderFilter(order: Order, filter: OrderFilter) {
+  return filter === "all" || (filter === "active" ? ["pending", "reserved"].includes(order.status) : order.status === filter);
+}
 export default function Marketplace() {
   const { account } = useAccount();
   return <MarketplaceContent key={account?.user.id ?? "anonymous"} />;
 }
 
 function MarketplaceContent() {
-  const { t, money, pickupTime } = useI18n();
+  const { t, money, pickupTime, number } = useI18n();
   const { account, open } = useAccount();
   const [view, setView] = useState<"offers" | "orders" | "manage">("offers");
   const [search, setSearch] = useState(""),
@@ -104,6 +120,10 @@ function MarketplaceContent() {
     [price, setPrice] = useState(""),
     [discount, setDiscount] = useState(""),
     [charity, setCharity] = useState(false);
+  const [sort, setSort] = useState<OfferSort>("default");
+  const [onlyFree, setOnlyFree] = useState(false);
+  const [pickupNow, setPickupNow] = useState<number | null>(null);
+  const [orderFilter, setOrderFilter] = useState<OrderFilter>("all");
   const [agreedPrices, setAgreedPrices] = useState<Record<number, string>>({});
   const [pickupCodes, setPickupCodes] = useState<Record<number, string>>({});
   const [selected, setSelected] = useState<Offer | null>(null),
@@ -129,6 +149,20 @@ function MarketplaceContent() {
     view === "orders" && account ? "/market/orders" : null,
   );
   const catalog = useApi<Offer[]>("/market/listings");
+  const visibleOffers = (offers.data ?? []).filter((offer) => view !== "offers" || (
+    (!onlyFree || offer.terms === "free") &&
+    (pickupNow === null || (new Date(offer.pickup_start).getTime() <= pickupNow && new Date(offer.pickup_deadline).getTime() > pickupNow))
+  )).sort((left, right) => {
+    if (sort === "price") {
+      if (left.terms === "negotiated") return right.terms === "negotiated" ? 0 : 1;
+      if (right.terms === "negotiated") return -1;
+      return left.discounted_price_kzt - right.discounted_price_kzt;
+    }
+    if (sort === "discount") return discountPercent(right) - discountPercent(left);
+    if (sort === "pickup") return new Date(left.pickup_deadline).getTime() - new Date(right.pickup_deadline).getTime();
+    return 0;
+  });
+  const visibleOrders = (orders.data ?? []).filter((order) => matchesOrderFilter(order, orderFilter));
   function reload() {
     offers.reload();
     orders.reload();
@@ -325,10 +359,47 @@ function MarketplaceContent() {
               setPrice("");
               setDiscount("");
               setCharity(false);
+              setOnlyFree(false);
+              setPickupNow(null);
             }}
           >
             {t("Сбросить фильтры")}
           </button>
+        </div>
+      )}
+      {view !== "orders" && (
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="space-y-3">
+            {view === "offers" && <div role="group" aria-label={t("Быстрые фильтры предложений")} className="flex flex-wrap gap-2">
+              {[
+                { label: "Бесплатно", active: onlyFree, toggle: () => setOnlyFree((current) => !current) },
+                { label: "Скидка от 50%", active: discount === "50", toggle: () => setDiscount((current) => current === "50" ? "" : "50") },
+                { label: "Можно забрать сейчас", active: pickupNow !== null, toggle: () => setPickupNow((current) => current === null ? Date.now() : null) },
+              ].map((filter) => <button key={filter.label} type="button" aria-pressed={filter.active} onClick={filter.toggle} className={filter.active ? "btn-primary !px-3 !py-2 !text-xs" : "btn-secondary !px-3 !py-2 !text-xs"}>{t(filter.label)}</button>)}
+            </div>}
+            {!offers.loading && !offers.error && <p role="status" className="text-xs text-[#637369]">{t("Найдено предложений")}: {number(visibleOffers.length)}</p>}
+          </div>
+          <div className="flex flex-wrap items-end gap-3">
+            <Field label={t("Сортировка предложений")}>
+              <select className="field" value={sort} onChange={(event) => setSort(event.target.value as OfferSort)}>
+                <option value="default">{t("По умолчанию")}</option>
+                <option value="price">{t("Сначала дешевле")}</option>
+                <option value="discount">{t("Сначала большая скидка")}</option>
+                <option value="pickup">{t("Скоро закончится выдача")}</option>
+              </select>
+            </Field>
+            <button type="button" className="btn-secondary" disabled={offers.loading} onClick={() => { if (pickupNow !== null) setPickupNow(Date.now()); offers.reload(); catalog.reload(); }}>{t("Обновить предложения")}</button>
+          </div>
+        </div>
+      )}
+      {view === "orders" && !orders.loading && !orders.error && orders.data && (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div role="group" aria-label={t("Фильтр статуса заявок")} className="flex flex-wrap gap-2">
+            {orderFilters.map((filter) => <button key={filter.value} type="button" aria-label={t(filter.label)} aria-pressed={orderFilter === filter.value} className={orderFilter === filter.value ? "btn-primary" : "btn-secondary"} onClick={() => setOrderFilter(filter.value)}>
+              {t(filter.label)} <span className="rounded-full bg-black/5 px-2 py-0.5 text-xs">{number(orders.data!.filter((order) => matchesOrderFilter(order, filter.value)).length)}</span>
+            </button>)}
+          </div>
+          <button type="button" className="btn-secondary" onClick={orders.reload}>{t("Обновить заявки")}</button>
         </div>
       )}
       {view !== "orders" ? (
@@ -336,9 +407,9 @@ function MarketplaceContent() {
           <ErrorState error={offers.error} retry={offers.reload} />
         ) : offers.loading ? (
           <Loading label={t("Загружаем предложения…")} />
-        ) : offers.data?.length ? (
+        ) : visibleOffers.length ? (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {offers.data.map((offer) => (
+            {visibleOffers.map((offer) => (
               <article
                 key={offer.id}
                 className="save-offer"
@@ -476,9 +547,9 @@ function MarketplaceContent() {
         <ErrorState error={orders.error} retry={orders.reload} />
       ) : orders.loading ? (
         <Loading />
-      ) : orders.data?.length ? (
+      ) : visibleOrders.length ? (
         <div className="space-y-4">
-          {orders.data.map((order) => (
+          {visibleOrders.map((order) => (
             <Card key={order.id}>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className="font-semibold">
@@ -600,9 +671,9 @@ function MarketplaceContent() {
       ) : (
         <Card>
           <Empty
-            title={t("Заявок пока нет")}
+            title={t(orderFilter === "all" ? "Заявок пока нет" : "В этом статусе заявок нет")}
             description={t(
-              "Выберите продукты на витрине, чтобы оформить первую заявку.",
+              orderFilter === "all" ? "Выберите продукты на витрине, чтобы оформить первую заявку." : "Выберите другой статус, чтобы увидеть остальные заявки.",
             )}
           />
         </Card>
@@ -662,13 +733,21 @@ function Reservation({
   close: () => void;
   done: () => void;
 }) {
-  const { t, money, pickupTime } = useI18n();
+  const { t, money, pickupTime, number } = useI18n();
+  const quantityId = useId();
   const { account, open } = useAccount();
   const [bulk, setBulk] = useState(offer.terms === "negotiated"),
     [quantity, setQuantity] = useState(1),
     [error, setError] = useState(""),
     [pending, setPending] = useState(false);
   const [requestKey] = useState(() => crypto.randomUUID());
+  const validQuantity = Number.isInteger(quantity) && quantity >= 1 && quantity <= offer.available_quantity;
+  const savings = validQuantity && offer.terms !== "negotiated" && offer.original_price_kzt !== null
+    ? Math.max(0, offer.original_price_kzt - offer.discounted_price_kzt) * quantity
+    : 0;
+  function changeQuantity(amount: number) {
+    setQuantity((current) => Math.min(offer.available_quantity, Math.max(1, (Number.isFinite(current) ? Math.trunc(current) : 1) + amount)));
+  }
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const data = new FormData(e.currentTarget);
@@ -765,17 +844,34 @@ function Reservation({
                 className="field"
               />
             </Field>
-            <Field label={t("Количество")}>
-              <input
-                type="number"
-                min={1}
-                max={offer.available_quantity}
-                required
-                value={quantity}
-                onChange={(e) => setQuantity(Number(e.target.value))}
-                className="field"
-              />
-            </Field>
+            <div className="space-y-2">
+              <label htmlFor={quantityId} className="text-xs font-medium text-[#536257]">{t("Количество")}</label>
+              <div className="flex items-center gap-2">
+                <button type="button" className="btn-secondary !px-4" aria-label={t("Уменьшить количество")} disabled={pending || offer.available_quantity < 1 || (validQuantity && quantity <= 1)} onClick={() => changeQuantity(-1)}><span aria-hidden="true">−</span></button>
+                <input
+                  id={quantityId}
+                  aria-describedby={`${quantityId}-stock`}
+                  type="number"
+                  min={1}
+                  max={offer.available_quantity}
+                  step={1}
+                  required
+                  value={Number.isNaN(quantity) ? "" : quantity}
+                  onChange={(event) => setQuantity(event.currentTarget.valueAsNumber)}
+                  className="field text-center"
+                />
+                <button type="button" className="btn-secondary !px-4" aria-label={t("Увеличить количество")} disabled={pending || offer.available_quantity < 1 || (validQuantity && quantity >= offer.available_quantity)} onClick={() => changeQuantity(1)}><span aria-hidden="true">+</span></button>
+              </div>
+              <p id={`${quantityId}-stock`} className="text-xs text-[#637369]">{t("Доступно")}: {number(offer.available_quantity)} {t(offer.unit)}</p>
+            </div>
+            <div role="status" aria-label={t("Расчёт бронирования")} className="space-y-2 rounded-xl border border-[#dbe6d4] bg-[#f1f5e9] p-4">
+              <div className="flex items-center justify-between gap-3 text-sm">
+                <span>{t("Итого при получении")}</span>
+                <strong>{!validQuantity ? t("Укажите корректное количество") : offer.terms === "negotiated" ? t("По согласованию") : money(quantity * offer.discounted_price_kzt)}</strong>
+              </div>
+              {validQuantity && offer.terms !== "negotiated" && <p className="text-xs text-[#637369]">{number(quantity)} {t(offer.unit)} × {money(offer.discounted_price_kzt)}</p>}
+              {savings > 0 && <p className="text-xs text-[#237a57]">{t("Экономия относительно обычной цены")}: {money(savings)}</p>}
+            </div>
             {offer.bulk_available && account.user.role === "charity" && (
               <label className="flex gap-2 text-sm">
                 <input
@@ -817,6 +913,7 @@ function Reservation({
               className="btn-primary w-full"
               disabled={
                 pending ||
+                !validQuantity ||
                 offer.available_quantity < 1 ||
                 offer.status !== "active" ||
                 new Date(offer.pickup_deadline) <= new Date()
@@ -830,7 +927,7 @@ function Reservation({
                     : "Забронировать",
               )}{" "}
               ·{" "}
-              {offer.terms === "negotiated"
+              {!validQuantity ? t("Укажите корректное количество") : offer.terms === "negotiated"
                 ? t("По согласованию")
                 : money(quantity * offer.discounted_price_kzt)}
             </button>

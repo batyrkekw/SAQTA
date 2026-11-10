@@ -3,6 +3,7 @@ import {
   createContext,
   useContext,
   useState,
+  useRef,
   type FormEvent,
   type ReactNode,
 } from "react";
@@ -11,7 +12,7 @@ import { formValidationMessage } from "@/lib/validation";
 import { useI18n } from "@/components/language-provider";
 import { LegalConsent } from "@/components/legal-consent";
 import { Field, Modal, Notice } from "@/components/ui";
-import { LogIn, LogOut, UserRound } from "lucide-react";
+import { Eye, EyeOff, LoaderCircle, LogIn, LogOut, UserRound } from "lucide-react";
 export type Account = {
   user: {
     id: number;
@@ -55,7 +56,7 @@ export function AccountButton() {
       aria-label={t(account ? "Мой аккаунт" : "Войти")}
     >
       <UserRound size={16} />
-      <span className="hidden sm:inline">
+      <span>
         {t(account ? "Мой аккаунт" : "Войти")}
       </span>
     </button>
@@ -68,8 +69,11 @@ function AccountModal({ close }: { close: () => void }) {
     [role, setRole] = useState("consumer"),
     [error, setError] = useState(""),
     [pending, setPending] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const submitting = useRef(false);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submitting.current) return;
     setError("");
     const data = new FormData(event.currentTarget);
     if (register && data.get("consent") !== "on") {
@@ -82,6 +86,7 @@ function AccountModal({ close }: { close: () => void }) {
       return;
     }
     const get = (name: string) => String(data.get(name) || "").trim();
+    submitting.current = true;
     setPending(true);
     try {
       const result = await post<{ token: string }>(
@@ -106,6 +111,7 @@ function AccountModal({ close }: { close: () => void }) {
     } catch (reason) {
       setError(errorMessage(reason));
     } finally {
+      submitting.current = false;
       setPending(false);
     }
   }
@@ -130,7 +136,7 @@ function AccountModal({ close }: { close: () => void }) {
             ? "Создать аккаунт"
             : "С возвращением",
       )}
-      onClose={close}
+      onClose={() => { if (!pending) close(); }}
     >
       {account ? (
         <div className="space-y-4">
@@ -166,7 +172,12 @@ function AccountModal({ close }: { close: () => void }) {
           noValidate
           onSubmit={(event) => void submit(event)}
           className="space-y-4"
+          aria-busy={pending}
         >
+          <p className="text-sm text-[#536257]">{t(register ? "Создайте аккаунт для бронирований и работы со своими данными." : "Войдите с email и паролем, указанными при регистрации.")}</p>
+          <button type="button" disabled={pending} className="btn-secondary w-full" onClick={() => { setRegister(!register); setError(""); setShowPassword(false); }}>
+            {t(register ? "Уже есть аккаунт" : "Создать аккаунт")}
+          </button>
           <Field label="Email">
             <input
               name="email"
@@ -180,7 +191,7 @@ function AccountModal({ close }: { close: () => void }) {
           <Field label={t("Пароль")} hint={t("Не менее 10 символов")}>
             <input
               name="password"
-              type="password"
+              type={showPassword ? "text" : "password"}
               autoComplete={register ? "new-password" : "current-password"}
               minLength={10}
               maxLength={128}
@@ -188,6 +199,9 @@ function AccountModal({ close }: { close: () => void }) {
               className="field"
             />
           </Field>
+          <button type="button" className="flex items-center gap-2 text-sm text-[#237A57]" aria-pressed={showPassword} onClick={() => setShowPassword(value => !value)}>
+            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}{t(showPassword ? "Скрыть пароль" : "Показать пароль")}
+          </button>
           {register && (
             <>
               <Field label={t("Имя или название организации")}>
@@ -253,27 +267,19 @@ function AccountModal({ close }: { close: () => void }) {
             </>
           )}
           {register && <LegalConsent />}
+          {error && <Notice kind="error">{t(error)}</Notice>}
           <button
             type="submit"
             className="btn-primary w-full"
             disabled={pending}
           >
-            <LogIn size={16} />
+            {pending ? <LoaderCircle className="animate-spin" size={16} /> : <LogIn size={16} />}
             {t(pending ? "Сохраняем…" : register ? "Создать аккаунт" : "Войти")}
           </button>
-          <button
-            type="button"
-            className="w-full text-sm underline underline-offset-4"
-            onClick={() => {
-              setRegister(!register);
-              setError("");
-            }}
-          >
-            {t(register ? "Уже есть аккаунт" : "Создать аккаунт")}
-          </button>
+          {pending && <p role="status" className="text-xs text-[#536257]">{t("Ожидаем ответ сервера, не более 20 секунд…")}</p>}
         </form>
       )}
-      {error && (
+      {account && error && (
         <div className="mt-4">
           <Notice kind="error">{t(error)}</Notice>
         </div>

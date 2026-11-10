@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowDown, ArrowRight, ArrowUpRight, Check, Leaf, Pause, Play, ShoppingBag, Sparkles, TrendingUp } from "lucide-react";
 import { HomeCommunity, HomePricing } from "@/components/home-community";
+import { HomeDay } from "@/components/home-day";
 import { ProductHeader } from "@/components/product-header";
 import { useI18n } from "@/components/language-provider";
 import styles from "./home.module.css";
@@ -153,6 +154,7 @@ export default function Home() {
         </section>
 
         </div>
+        <HomeDay />
         <HomeCommunity />
         <HomePricing />
 

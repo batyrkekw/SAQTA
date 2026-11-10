@@ -28,7 +28,7 @@ export class ApiError extends Error {
   constructor(message: string, status: number, rows: { row: number; message: string }[] = []) { super(message); this.name = "ApiError"; this.status = status; this.rows = rows; }
 }
 
-export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
+async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   let response: Response;
   try { response = await fetch(`${API_URL}${path}`, { ...init, headers: authenticatedHeaders(init), cache: "no-store" }); }
   catch { throw new ApiError("Нет связи с сервером SaqtaFood. Проверьте подключение и повторите запрос.", 0); }
@@ -38,6 +38,26 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     throw new ApiError(detail, response.status, rows);
   }
   return response.json() as Promise<T>;
+}
+// Authentication must always release the form, including a stalled response body.
+// A timed-out registration may have committed: offer sign-in rather than retrying it automatically.
+export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
+  if (!path.startsWith('/auth/')) return request<T>(path, init);
+  const controller = new AbortController();
+  const onAbort = () => controller.abort();
+  init.signal?.addEventListener('abort', onAbort, { once: true });
+  if (init.signal?.aborted) controller.abort();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      reject(new ApiError(path === '/auth/register'
+        ? 'Сервер не ответил вовремя. Если аккаунт уже создан, попробуйте войти с теми же данными.'
+        : 'Сервер не ответил вовремя. Повторите попытку через несколько секунд.', 0));
+    }, 20_000);
+  });
+  try { return await Promise.race([request<T>(path, { ...init, signal: controller.signal }), deadline]); }
+  finally { clearTimeout(timer); init.signal?.removeEventListener('abort', onAbort); }
 }
 export function post<T>(path: string, body: unknown) { return api<T>(path, { method: "POST", body: JSON.stringify(body) }); }
 export function patch<T>(path: string, body: unknown) { return api<T>(path, { method: "PATCH", body: JSON.stringify(body) }); }

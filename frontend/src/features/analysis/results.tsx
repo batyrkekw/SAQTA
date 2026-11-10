@@ -12,6 +12,7 @@ import {
 import { useI18n } from "@/components/language-provider";
 import { Badge, Card, Notice } from "@/components/ui";
 import type { AnalysisItem, AnalysisReport } from "./types";
+import { DailyPlan } from "./daily-plan";
 const methods: Record<string, string> = {
   last: "Последнее наблюдение",
   mean7: "Среднее последних 7 наблюдений",
@@ -281,6 +282,7 @@ export function Results({ report }: { report: AnalysisReport }) {
           {pickupTime(report.created_at)} · {report.horizon_days} {t("дней")}
         </p>
       </div>
+      <DailyPlan key={report.run_id} report={report} />
       {report.items.length ? (
         report.items.map((item) => (
           <ResultItem

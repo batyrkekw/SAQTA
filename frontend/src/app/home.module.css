@@ -199,3 +199,83 @@
 .closing a { background: #d4ed8c; color: #173e31; }
 .closing a:hover { background: #e2f4b4; }
 @media (max-width: 760px) { .product { padding-block: 53px; } .questions { padding-top: 51px; } }
+
+.daySection { max-width: 1440px; margin: auto; padding: 84px 5% 90px; }
+.dayHeading { display: flex; align-items: flex-end; justify-content: space-between; gap: 40px; margin-bottom: 32px; }
+.dayHeading h2 { margin-top: 16px; font-size: clamp(32px, 3.2vw, 45px); font-weight: 500; line-height: 1.15; letter-spacing: -.045em; }
+.dayHeading h2 .serif { color: #72834f; }
+.dayHeading > p { max-width: 340px; font-size: 13px; line-height: 1.85; color: var(--soft); }
+.dayTimeline { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+.dayTimeline button { display: flex; align-items: center; gap: 15px; text-align: left; min-height: 93px; padding: 21px 23px; border: 1px solid #173e3124; border-radius: 16px; transition: background .2s, border-color .2s, color .2s; }
+.dayTimeline button:hover { background: #e8eddb; border-color: #7f9265; }
+.dayTimeline button[aria-pressed=true] { color: #f4f7e9; background: #173e31; border-color: #173e31; }
+.dayTimeline button > svg { flex-shrink: 0; }
+.dayTimeline strong { display: block; font-size: 14px; font-weight: 600; }
+.dayTimeline time { margin-left: 8px; font-size: 11px; opacity: .65; font-weight: 400; }
+.dayTimeline small { display: block; margin-top: 5px; font-size: 11px; line-height: 1.5; opacity: .75; }
+.dayStep { margin-left: auto; font-size: 10px; opacity: .45; }
+.dayWorkspace { --scene: #e8edda; --scene-accent: #5d7640; display: grid; grid-template-columns: 1.05fr 1fr; border: 1px solid #173e311c; border-radius: 24px; overflow: hidden; }
+.dayWorkspace[data-stage=daytime] { --scene: #f0e9d4; --scene-accent: #7d6537; }
+.dayWorkspace[data-stage=evening] { --scene: #eeded1; --scene-accent: #925e40; }
+.dayScene { padding: 30px 36px 27px; background: var(--scene); transition: background .25s; }
+.daySceneTop { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.dayProduct { border: 1px solid #173e312e; padding: 7px 9px; border-radius: 6px; font-size: 9px; letter-spacing: .08em; }
+.dayExample { font-size: 10px; color: #58684e; }
+.dayClock { display: flex; align-items: center; gap: 18px; margin: 24px 0 18px; color: var(--scene-accent); }
+.dayClock span { font-size: clamp(52px, 5.2vw, 72px); font-weight: 350; line-height: 1; letter-spacing: -.06em; font-variant-numeric: tabular-nums; }
+.dayScene h3 { font-size: 27px; font-weight: 500; line-height: 1.2; letter-spacing: -.035em; }
+.dayDescription { min-height: 72px; margin-top: 13px; font-size: 12px; line-height: 1.85; color: #53624d; }
+.dayFlow { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 14px; margin-top: 23px; padding-block: 19px; border-block: 1px solid #173e3121; }
+.dayFlow > svg { transform: rotate(-90deg); color: var(--scene-accent); }
+.dayFlow dt { font-size: 9px; color: #58684e; margin-bottom: 6px; }
+.dayFlow dd { font-size: 12px; font-weight: 550; line-height: 1.6; }
+.dayAction { display: inline-flex; align-items: center; gap: 22px; min-height: 44px; margin-top: 15px; font-size: 12px; font-weight: 650; }
+.dayAction svg { transition: transform .2s; }
+.dayAction:hover svg { transform: translate(2px, -2px); }
+.dayChecklist { padding: 35px 36px 27px; background: #fffef8; }
+.dayChecklistHeading { display: flex; align-items: center; gap: 12px; }
+.dayChecklistIcon { display: grid; place-items: center; height: 37px; width: 37px; border: 1px solid #173e3128; border-radius: 50%; flex-shrink: 0; }
+.dayChecklist h3 { font-size: 20px; font-weight: 500; letter-spacing: -.025em; }
+.dayHint { margin-top: 15px; font-size: 11px; line-height: 1.8; color: #63705a; }
+.dayChecklist fieldset { border: 0; padding: 0; margin-top: 22px; min-width: 0; }
+.dayLegend { font-size: 10px; color: #63705a; margin-bottom: 8px; }
+.dayTask { display: flex; align-items: flex-start; gap: 12px; padding: 16px 0; border-bottom: 1px solid #173e311a; cursor: pointer; font-size: 12px; line-height: 1.65; }
+.dayTask input { height: 18px; width: 18px; flex: 0 0 18px; margin-top: 1px; accent-color: #173e31; cursor: pointer; }
+.dayTask input:checked + span { color: #698451; text-decoration: line-through; text-decoration-color: #9dac89; }
+.dayProgress { margin-top: 22px; }
+.dayProgress p { font-size: 11px; color: #53624d; }
+.dayProgress progress { display: block; width: 100%; height: 5px; margin-top: 10px; border: 0; border-radius: 99px; overflow: hidden; background: #e7ecdc; accent-color: #6c8c4e; }
+.dayProgress progress::-webkit-progress-bar { background: #e7ecdc; }
+.dayProgress progress::-webkit-progress-value { background: #6c8c4e; transition: width .2s; }
+.dayProgress progress::-moz-progress-bar { background: #6c8c4e; }
+.dayTip { min-height: 38px; margin-top: 14px; font-size: 10px; line-height: 1.8; color: #63705a; }
+.dayReset { display: inline-flex; align-items: center; gap: 8px; padding-block: 12px; min-height: 44px; margin-top: 6px; color: #53624d; font-size: 10px; }
+.dayReset:hover:not(:disabled) { color: #173e31; text-decoration: underline; text-underline-offset: 4px; }
+.dayReset:disabled { opacity: .45; cursor: default; }
+.daySection button:focus-visible, .daySection a:focus-visible, .dayTask input:focus-visible { outline: 2px solid #678444; outline-offset: 5px; }
+@media (max-width: 1050px) {
+  .dayTimeline button { padding: 17px; gap: 10px; }
+  .dayStep { display: none; }
+  .dayScene, .dayChecklist { padding-inline: 27px; }
+  .dayFlow { gap: 10px; }
+}
+@media (max-width: 760px) {
+  .daySection { padding: 52px 6% 58px; }
+  .dayHeading { align-items: flex-start; flex-direction: column; gap: 20px; margin-bottom: 25px; }
+  .dayHeading h2 { font-size: 33px; }
+  .dayHeading > p { max-width: 440px; font-size: 12px; }
+  .dayTimeline { gap: 7px; margin-bottom: 12px; }
+  .dayTimeline button { min-height: 108px; padding: 13px 9px; flex-direction: column; justify-content: flex-start; align-items: flex-start; gap: 9px; border-radius: 13px; }
+  .dayTimeline strong { font-size: 12px; }
+  .dayTimeline time { display: block; margin: 4px 0 0; font-size: 10px; }
+  .dayTimeline small { display: none; }
+  .dayWorkspace { grid-template-columns: 1fr; border-radius: 20px; }
+  .dayScene, .dayChecklist { padding: 25px; }
+  .dayClock { margin-block: 22px 18px; }
+  .dayClock span { font-size: 64px; }
+  .dayScene h3 { font-size: 27px; }
+  .dayDescription { min-height: 0; }
+  .dayFlow { margin-top: 20px; }
+  .dayFlow dd { font-size: 11px; }
+  .dayChecklist h3 { font-size: 21px; }
+}

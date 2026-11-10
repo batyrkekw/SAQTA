@@ -27,6 +27,7 @@ import { useAccount } from "@/features/account/account";
 import { Questionnaire } from "./questionnaire";
 import { ImportData } from "./import-data";
 import { Results } from "./results";
+import { Actuals } from "./actuals";
 import type { AnalysisReport, AnalysisState, Profile } from "./types";
 type View = "home" | "import" | "questionnaire" | "history";
 export default function AnalysisWorkspace() {
@@ -285,6 +286,16 @@ function AnalysisWorkspaceContent() {
                         {t(pending ? "Считаем…" : "Запустить анализ")}
                       </button>
                     </div>
+                    <div className="mt-4 flex flex-wrap items-center gap-2">
+                      <span className="text-xs muted">{t("Быстрый период")}:</span>
+                      <button type="button" className="btn-secondary aria-pressed:border-[#237a57] aria-pressed:bg-[#eaf3e6]" disabled={pending} aria-pressed={horizon === "1"} onClick={() => setHorizon("1")}>
+                        {t("На завтра")}
+                      </button>
+                      <button type="button" className="btn-secondary aria-pressed:border-[#237a57] aria-pressed:bg-[#eaf3e6]" disabled={pending} aria-pressed={horizon === "7"} onClick={() => setHorizon("7")}>
+                        {t("На неделю")}
+                      </button>
+                      <span className="text-xs muted">{t("Новый расчёт начинается с завтрашнего дня.")}</span>
+                    </div>
                   </Card>
                 )}
                 {view === "home" &&
@@ -491,56 +502,5 @@ function Daily({
         <Notice>{t("Сначала добавьте товары через анкету или импорт.")}</Notice>
       )}
     </Modal>
-  );
-}
-function Actuals({ run }: { run: number }) {
-  const { t } = useI18n();
-  const [open, setOpen] = useState(false);
-  const actuals = useApi<
-    {
-      product: string;
-      date: string;
-      predicted: number;
-      actual: number;
-      error: number;
-    }[]
-  >(open ? `/analysis/runs/${run}/actuals` : null);
-  return (
-    <details
-      className="mt-4 text-xs"
-      onToggle={(e) => setOpen(e.currentTarget.open)}
-    >
-      <summary>{t("Сравнить с фактическими продажами")}</summary>
-      {actuals.error ? (
-        <p>{t(actuals.error)}</p>
-      ) : actuals.data?.length ? (
-        <div className="mt-3 overflow-auto">
-          <table>
-            <thead>
-              <tr>
-                {["Товар", "Дата", "Прогноз", "Факт", "Ошибка"].map((s) => (
-                  <th key={s}>{t(s)}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {actuals.data.map((row, i) => (
-                <tr key={i}>
-                  <td>{row.product}</td>
-                  <td>{row.date}</td>
-                  <td>{row.predicted}</td>
-                  <td>{row.actual}</td>
-                  <td>{row.error}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <p className="mt-3 muted">
-          {t("Фактические продажи за прогнозный период ещё не записаны.")}
-        </p>
-      )}
-    </details>
   );
 }
