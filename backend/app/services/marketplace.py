@@ -1,13 +1,16 @@
 from datetime import timedelta
 import hashlib
+import hmac
 import json
+import secrets
 
 from fastapi import HTTPException
 from sqlalchemy import select, text, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.core.config import aware, now_utc, today_local
+from app.core.config import aware, get_settings, now_utc, today_local
+from app.core.rate_limit import limiter
 from app.db.session import require_row
 from app.models import BakeryLocation, Order, OrderItem, OrderEvent, Bakery, Product, SalesRecord, SurplusListing
 from app.schemas import ListingCreate, ListingPatch, OrderCreate
@@ -82,8 +85,36 @@ def patch_listing(db: Session, listing_id: int, payload: ListingPatch):
 
 
 def _order_request_hash(payload: OrderCreate):
-    return hashlib.sha256(json.dumps({"customer_name": payload.customer_name, "items": sorted(
+    return hashlib.sha256(json.dumps({"customer_name": payload.customer_name, "customer_phone": payload.customer_phone, "items": sorted(
         [(item.listing_id, item.quantity) for item in payload.items])}, ensure_ascii=False, sort_keys=True).encode()).hexdigest()
+
+
+def _pickup_code_in_use(db, owner_id, code):
+    # The unique index also covers hidden synthetic rows. This technical occupancy
+    # check must match that index, not the ORM's user-facing provenance filter.
+    orders = Order.__table__.c
+    return db.scalar(select(orders.id).where(orders.bakery_id == owner_id, orders.pickup_code == code,
+                                            orders.status.in_(["reserved", "pending"]))) is not None
+
+
+def _assign_pickup_code(db, order):
+    # Order and stock writes already started the outer transaction. In particular,
+    # this must not be SQLite's first SAVEPOINT: releasing that would commit early.
+    for _ in range(32):
+        code = f"{secrets.randbelow(1_000_000):06d}"
+        if _pickup_code_in_use(db, order.bakery_id, code):
+            continue
+        try:
+            with db.begin_nested():
+                order.pickup_code = code
+                db.flush()
+            return
+        except IntegrityError:
+            # A concurrent reservation may have claimed the same code after lookup.
+            # Roll back only the code assignment, preserving atomic stock changes.
+            if not _pickup_code_in_use(db, order.bakery_id, code):
+                raise
+    raise HTTPException(503, "Не удалось создать код получения. Повторите бронирование позже.")
 
 
 def create_order(db: Session, payload: OrderCreate):
@@ -121,6 +152,7 @@ def _create_order(db: Session, payload: OrderCreate):
                 raise HTTPException(409, "Этот ключ заказа уже использован с другими данными")
             return existing
     order = Order(bakery_id=owner_id, customer_name=payload.customer_name, status="reserved", total_kzt=0,
+                  customer_phone=payload.customer_phone, consent_given_at=now_utc(),
                   idempotency_key=payload.idempotency_key, request_hash=request_hash,
                   is_test_data=first_listing.is_test_data or bool(db.info.get("include_test_data")))
     db.add(order)
@@ -147,15 +179,23 @@ def _create_order(db: Session, payload: OrderCreate):
         order.total_kzt += listing.discounted_price_kzt * line.quantity
         db.expire(listing)
     db.flush()
+    _assign_pickup_code(db, order)
     return order
 
 
-def transition_order(db: Session, order_id: int, action: str, expired: bool = False):
+def transition_order(db: Session, order_id: int, action: str, expired: bool = False, *, pickup_code: str | None = None):
     order = require_row(db, Order, order_id, "Заказ")
     items = list(db.scalars(select(OrderItem).where(OrderItem.order_id == order.id).order_by(OrderItem.listing_id)))
     if action == "collect" and order.status != "reserved":
         raise HTTPException(409, "Сначала подтвердите заявку")
     if action == "collect":
+        settings = get_settings()
+        limiter.check("pickup-order", f"{order.bakery_id}:{order.id}", limit=settings.rate_limit_pickup_max_attempts,
+                      window=settings.rate_limit_pickup_window_seconds)
+        if pickup_code is None:
+            raise HTTPException(422, "Укажите шестизначный код получения")
+        if order.pickup_code is None or not hmac.compare_digest(pickup_code, order.pickup_code):
+            raise HTTPException(422, "Неверный код получения")
         for item in items:
             listing = db.get(SurplusListing, item.listing_id)
             if aware(listing.pickup_start) > now_utc() or aware(listing.pickup_deadline) <= now_utc():
@@ -221,7 +261,7 @@ def listing_json(db: Session, row):
     }
 
 
-def order_json(db: Session, row):
+def order_json(db: Session, row, *, actor=None):
     items = []
     price_approved = db.scalar(select(OrderEvent.id).where(OrderEvent.order_id == row.id, OrderEvent.status == "reserved").limit(1)) is not None
     for item in db.scalars(select(OrderItem).where(OrderItem.order_id == row.id)):
@@ -231,7 +271,13 @@ def order_json(db: Session, row):
                       "terms": listing.terms, "price_agreed": listing.terms != "negotiated" or price_approved,
                       "original_unit_price_kzt": listing.original_price_kzt, "pickup_deadline": aware(listing.pickup_deadline),
                       "location_name": db.get(BakeryLocation, listing.location_id).name})
-    return {"id": row.id, "status": row.status, "customer_name": row.customer_name, "total_kzt": row.total_kzt,
+    private = {}
+    if actor is not None and (actor.id == row.buyer_id or (actor.role == "business" and actor.bakery_id == row.bakery_id)):
+        private = {"customer_phone": row.customer_phone,
+                   "consent_given_at": aware(row.consent_given_at) if row.consent_given_at else None}
+    if actor is not None and actor.id == row.buyer_id:
+        private["pickup_code"] = row.pickup_code
+    return {"id": row.id, "status": row.status, "customer_name": row.customer_name, "total_kzt": row.total_kzt, **private,
             "created_at": aware(row.created_at), "items": items, "settlement": settlement_json(row),
             "buyer_id": row.buyer_id, "kind": row.kind, "beneficiaries": row.beneficiaries, "logistics": row.logistics,
             "events": [{"status": event.status, "created_at": aware(event.created_at)} for event in db.scalars(select(OrderEvent).where(OrderEvent.order_id == row.id).order_by(OrderEvent.id))]}

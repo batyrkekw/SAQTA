@@ -1,4 +1,6 @@
-# SAQTA installed versions
+> **Исторический документ.** Сведения ниже относятся к прежнему состоянию проекта и могут быть устаревшими. Текущая функциональность, настройки и локальный запуск описаны в [актуальном README](../README.md). Старые цифры и записи о размещении не подтверждают текущие результаты или публичный запуск.
+
+# SaqtaFood installed versions
 
 Recorded on **24 October 2026** from the local installation. Frontend versions were checked with `npm ls --depth=0`; backend versions were checked with `python -m pip list --format=json` and agree with `backend/requirements.lock.txt`. These are the versions actually installed for verification, not a list of proposed dependencies.
 

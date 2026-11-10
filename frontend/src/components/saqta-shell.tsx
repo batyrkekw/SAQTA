@@ -38,9 +38,13 @@ export function AppShell({
       </main>
       <footer className="workspace-footer">
         <div className="workspace-footer-inner">
-          <span className="workspace-footer-brand">SAQTA</span>
+          <span className="workspace-footer-brand">SaqtaFood</span>
           <span>© {new Date().getFullYear()} · {t("Меньше потерь. Больше пользы.")}</span>
           <Link href="/">{t("Обзор проекта")}<ArrowUpRight size={15} aria-hidden="true" /></Link>
+          <nav aria-label={t("Правовые документы")} className="flex flex-wrap gap-4">
+            <Link href="/privacy">{t("Политика конфиденциальности")}</Link>
+            <Link href="/terms">{t("Пользовательское соглашение")}</Link>
+          </nav>
         </div>
       </footer>
       </div>

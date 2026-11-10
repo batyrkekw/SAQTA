@@ -40,7 +40,7 @@ def real_client(monkeypatch):
 
 
 def register(client, suffix="a"):
-    response = client.post("/api/auth/register", json={"email": f"owner-{suffix}@example.test", "password": "long-local-password", "bakery_name": f"Bakery {suffix}", "address": f"Private address {suffix}"})
+    response = client.post("/api/auth/register", json={"email": f"owner-{suffix}@example.test", "password": "long-local-password", "bakery_name": f"Bakery {suffix}", "address": f"Private address {suffix}", "consent": True})
     assert response.status_code == 201, response.text
     body = response.json()
     return body, {"Authorization": f"Bearer {body['token']}"}
@@ -152,14 +152,14 @@ def test_active_import_preview_commit_and_tenant_scope(real_client):
     options["default_product_id"] = pb["id"]
     foreign = client.post("/api/imports/preview", headers=ha, files=files, data={"options": json.dumps(options)})
     assert foreign.status_code in (404, 422) or not foreign.json()["can_commit"]
-    assert client.post("/api/demo/reset", headers=ha, json={"confirmation": "RESET SAQTA"}).status_code in (403, 422)
+    assert client.post("/api/demo/reset", headers=ha, json={"confirmation": "RESET SaqtaFood"}).status_code in (403, 422)
 
 
 def test_demo_explicitly_not_paid_and_real_registration_blocked(client):
     result = client.get("/api/subscription")
     assert result.status_code == 200
     assert result.json()["access_mode"] == "demo" and result.json()["active"] is False
-    assert client.post("/api/auth/register", json={"email": "demo@example.test", "password": "long-enough-password", "bakery_name": "Private", "address": "Private address"}).status_code == 403
+    assert client.post("/api/auth/register", json={"email": "demo@example.test", "password": "long-enough-password", "bakery_name": "Private", "address": "Private address", "consent": True}).status_code == 403
 
 
 def test_session_expiry_and_pro_location_creation(real_client):
@@ -214,12 +214,12 @@ def test_save_orders_and_mutations_are_isolated_without_forecast_subscription(re
     listing_b = listing(pb, lb, hb)
     assert len(client.get("/api/listings", headers=ha).json()) == 1
     assert client.patch(f"/api/listings/{listing_b['id']}", headers=ha, json={"status": "inactive"}).status_code == 404
-    assert client.post("/api/orders", headers=ha, json={"customer_name": "Tenant A", "items": [{"listing_id": listing_b["id"], "quantity": 1}]}).status_code == 404
-    order_b = client.post("/api/orders", headers=hb, json={"customer_name": "Tenant B", "items": [{"listing_id": listing_b["id"], "quantity": 1}]}).json()
+    assert client.post("/api/orders", headers=ha, json={"customer_phone": "+77000000000", "consent": True, "customer_name": "Tenant A", "items": [{"listing_id": listing_b["id"], "quantity": 1}]}).status_code == 404
+    order_b = client.post("/api/orders", headers=hb, json={"customer_phone": "+77000000000", "consent": True, "customer_name": "Tenant B", "items": [{"listing_id": listing_b["id"], "quantity": 1}]}).json()
     assert client.get("/api/orders", headers=ha).json() == []
     for action in ("cancel", "collect"):
         assert client.post(f"/api/orders/{order_b['id']}/{action}", headers=ha).status_code == 404
-    collected = client.post(f"/api/orders/{order_b['id']}/collect", headers=hb)
+    collected = client.post(f"/api/orders/{order_b['id']}/collect", headers=hb, json={"pickup_code": order_b["pickup_code"]})
     assert collected.status_code == 200 and collected.json()["status"] == "collected", collected.text
     assert client.get("/api/impact", headers=ha).json()["recovered_units"] == 0
     assert client.get("/api/impact", headers=hb).json()["recovered_units"] == 1

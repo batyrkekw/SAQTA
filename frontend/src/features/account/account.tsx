@@ -9,6 +9,7 @@ import {
 import { api, post, setSessionToken, useApi, errorMessage } from "@/lib/api";
 import { formValidationMessage } from "@/lib/validation";
 import { useI18n } from "@/components/language-provider";
+import { LegalConsent } from "@/components/legal-consent";
 import { Field, Modal, Notice } from "@/components/ui";
 import { LogIn, LogOut, UserRound } from "lucide-react";
 export type Account = {
@@ -70,12 +71,16 @@ function AccountModal({ close }: { close: () => void }) {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
+    const data = new FormData(event.currentTarget);
+    if (register && data.get("consent") !== "on") {
+      setError("Подтвердите согласие на обработку персональных данных");
+      return;
+    }
     const problem = formValidationMessage(event.currentTarget);
     if (problem) {
       setError(problem);
       return;
     }
-    const data = new FormData(event.currentTarget);
     const get = (name: string) => String(data.get(name) || "").trim();
     setPending(true);
     try {
@@ -91,6 +96,7 @@ function AccountModal({ close }: { close: () => void }) {
                 city: get("city") || "Не указано",
                 location_name: get("location") || "Основная точка",
                 requested_role: role,
+                consent: data.get("consent") === "on",
               }
             : {}),
         },
@@ -193,7 +199,7 @@ function AccountModal({ close }: { close: () => void }) {
                   required
                 />
               </Field>
-              <Field label={t("Как вы будете пользоваться SAQTA?")}>
+              <Field label={t("Как вы будете пользоваться SaqtaFood?")}>
                 <select
                   value={role}
                   onChange={(e) => setRole(e.target.value)}
@@ -246,6 +252,7 @@ function AccountModal({ close }: { close: () => void }) {
               )}
             </>
           )}
+          {register && <LegalConsent />}
           <button
             type="submit"
             className="btn-primary w-full"

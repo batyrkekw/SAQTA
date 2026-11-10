@@ -28,14 +28,14 @@ export function generateListingCopy(input: ListingCopyInput, language: Language 
   const discount = Math.round((1 - input.discountedPriceKzt / input.originalPriceKzt) * 100);
   const unit = tr(input.unit.trim());
   const lines = [
-    `${input.productName.trim()} · SAQTA Save`,
+    `${input.productName.trim()} · SaqtaFood Save`,
     tr(`Количество: ${input.quantity} ${unit}`),
     tr(`Обычная цена: ${money(input.originalPriceKzt)} за ${unit}`),
     tr(`Цена со скидкой: ${money(input.discountedPriceKzt)} за ${unit} (−${discount}%)`),
     tr(`Самовывоз: ${time(start)} — ${time(end)}. Время Астаны (UTC+5).`),
     ...(input.location?.trim() ? [tr(`Место получения: ${input.location.trim()}`)] : []),
     ...(input.details?.trim() ? [input.details.trim()] : []),
-    tr("Оформите демо-заказ в SAQTA Save. Реальная оплата не проводится."),
+    tr("Оформите демо-заказ в SaqtaFood Save. Реальная оплата не проводится."),
   ];
   const copy = lines.join("\n");
   if (copy.length > 1000) throw new Error("Текст длиннее 1 000 символов. Сократите исходное описание.");

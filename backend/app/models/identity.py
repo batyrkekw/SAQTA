@@ -14,6 +14,7 @@ class AuthUser(TimestampMixin, Base):
     bakery_id: Mapped[int] = mapped_column(ForeignKey("bakeries.id"), unique=True)
     email: Mapped[str] = mapped_column(String(254), unique=True)
     password_hash: Mapped[str] = mapped_column(String(250))
+    consent_given_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     role: Mapped[str] = mapped_column(String(20), default="consumer", server_default="consumer")
     requested_role: Mapped[str] = mapped_column(String(20), default="consumer", server_default="consumer")
     __table_args__ = (CheckConstraint("role IN ('consumer','business','charity')", name="user_role_valid"),

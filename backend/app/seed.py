@@ -1,4 +1,4 @@
-"""Reproducible synthetic data for an isolated SAQTA demo database."""
+"""Reproducible synthetic data for an isolated SaqtaFood demo database."""
 import argparse
 import random
 from datetime import datetime, time, timedelta, timezone
@@ -36,7 +36,7 @@ def seed_database(db: Session, reset=False, empty=False):
             db.execute(delete(table))
         db.flush()
         db.expunge_all()
-    owner = Bakery(name="SAQTA · демо-пекарня" if not empty else "Моя пекарня", city="Астана")
+    owner = Bakery(name="SaqtaFood · демо-пекарня" if not empty else "Моя пекарня", city="Астана")
     db.add(owner)
     db.flush()
     locations = [BakeryLocation(bakery_id=owner.id, name="Есиль · Кабанбай батыра", address="Астана, пр. Кабанбай батыра, 17 (демо-адрес)"),
@@ -103,9 +103,10 @@ def seed_database(db: Session, reset=False, empty=False):
                                                   pickup_deadline=timestamp + timedelta(hours=12), description="Синтетическое предложение. Свежая выпечка для самовывоза; состав и аллергены уточняйте в пекарне."))
         active.append(listing)
     for index in range(3):
-        order = create_order(db, OrderCreate(customer_name=f"Демо-покупатель {index + 1}", items=[OrderLine(listing_id=active[index].id, quantity=2)]))
+        order = create_order(db, OrderCreate(customer_name=f"Демо-покупатель {index + 1}", customer_phone="+77000000000", consent=True,
+                                            items=[OrderLine(listing_id=active[index].id, quantity=2)]))
         if index == 0:
-            transition_order(db, order.id, "collect")
+            transition_order(db, order.id, "collect", pickup_code=order.pickup_code)
         elif index == 2:
             transition_order(db, order.id, "cancel")
     db.flush()

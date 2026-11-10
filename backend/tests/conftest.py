@@ -9,6 +9,14 @@ from app.main import app
 from app.seed import seed_database
 
 
+@pytest.fixture(autouse=True)
+def reset_request_limits():
+    from app.core.rate_limit import limiter
+    limiter.reset()
+    yield
+    limiter.reset()
+
+
 @pytest.fixture
 def database(monkeypatch):
     # These existing fixtures intentionally exercise the isolated synthetic workspace.
@@ -43,3 +51,15 @@ def client(database):
     with TestClient(app) as api:
         yield api
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def pickup_code(database):
+    """Synthetic demo has no logged-in buyer; read its real generated code in tests."""
+    from app.models import Order
+
+    def read(order_id):
+        with database() as db:
+            return db.get(Order, order_id).pickup_code
+
+    return read

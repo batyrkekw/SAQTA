@@ -175,7 +175,7 @@ export function Questionnaire({
   }
   async function exportBook() {
     try {
-      await downloadFile("/analysis/profile.xlsx", "saqta-business.xlsx");
+      await downloadFile("/analysis/profile.xlsx", "SaqtaFood-business.xlsx");
     } catch (reason) {
       setError(errorMessage(reason));
     }

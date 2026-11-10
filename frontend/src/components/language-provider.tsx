@@ -31,11 +31,18 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const language = useSyncExternalStore(subscribe, getSnapshot, () => 'ru' as Language);
   const pathname = usePathname();
   const value = useMemo(() => makeValue(language), [language]);
-  const title = pathname === '/' ? 'Сохраняем еду с помощью данных' : pathname.startsWith('/forecast') ? 'Прогнозирование' : pathname.startsWith('/save') ? 'SAQTA Save' : pathname.startsWith('/docs') ? 'Документация' : pathname === '/about' ? 'О проекте' : 'Эта страница не найдена';
+  const title = pathname === '/' ? 'Сохраняем еду с помощью данных' : pathname.startsWith('/forecast') ? 'SaqtaFood Forecast' : pathname.startsWith('/save') ? 'SaqtaFood Save' : pathname.startsWith('/docs') ? 'Документация' : pathname === '/about' ? 'О проекте' : pathname === '/privacy' ? 'Политика конфиденциальности' : pathname === '/terms' ? 'Пользовательское соглашение' : 'Эта страница не найдена';
+  const pageTitle = title.startsWith('SaqtaFood') ? title : `${value.t(title)} · SaqtaFood`;
+  const description = value.t('Прогноз спроса и продажа подходящих остатков для пекарен Казахстана.');
   useEffect(() => { document.documentElement.lang = language; }, [language]);
   return <LanguageContext.Provider value={value}>
-    <title>{`${value.t(title)} · SAQTA`}</title>
-    <meta name="description" content={value.t('Прогноз спроса и продажа подходящих остатков для пекарен Казахстана.')} />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:site_name" content="SaqtaFood" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content={{ ru: 'ru_KZ', kk: 'kk_KZ', en: 'en_GB' }[language]} />
     {children}
   </LanguageContext.Provider>;
 }

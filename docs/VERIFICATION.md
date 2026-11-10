@@ -1,4 +1,6 @@
-# SAQTA verification record
+> **Исторический документ.** Сведения ниже относятся к прежнему состоянию проекта и могут быть устаревшими. Текущая функциональность, настройки и локальный запуск описаны в [актуальном README](../README.md). Старые цифры и записи о размещении не подтверждают текущие результаты или публичный запуск.
+
+# SaqtaFood verification record
 
 All times in this report use **24 October 2026, Asia/Qyzylorda** unless explicitly marked UTC. Local runtime: Python 3.12.5, Node.js 25.2.1, Windows PowerShell. The public service uses Node 24, a Python 3.12 container and Render PostgreSQL 17.
 
@@ -69,7 +71,7 @@ The order race requested one unit twice: A returned 409 and B returned 201, with
 ### Updated public browser checks completed
 
 * Forecast for seeded product/location 1 returned demand **58**, buffer **10%** → **64**, available inventory **15**, recommended production **49**. Expanded sources showed 18–24 October recent mean **54.57**, previous Sundays mean **62.25**, weights **0.6/0.4**, and `max(0, ceil(58 × 1.1) − 15) = 49`.
-* Backtest displayed **42** observed history dates and **7** held-out observations: SAQTA MAE **5.53**, WAPE **10.13%**; simple comparison MAE **6.29**, WAPE **11.52%**. Synthetic-origin and reliability limitations were visible. These are demonstration metrics, not real bakery accuracy.
+* Backtest displayed **42** observed history dates and **7** held-out observations: SaqtaFood MAE **5.53**, WAPE **10.13%**; simple comparison MAE **6.29**, WAPE **11.52%**. Synthetic-origin and reliability limitations were visible. These are demonstration metrics, not real bakery accuracy.
 * Paid-plan selection displayed the exact requested «Подключение тарифов» notice without payment/subscription activation. Compact navigation displayed Forecast, Save and About and closed after following a link.
 
 * The public savings calculator returned `75,000 × 50% − 15,000 = 22,500 KZT`, with the assumed reduction initially 0% and revenue/gross profit displayed separately.

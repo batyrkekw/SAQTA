@@ -21,10 +21,10 @@ def known_inventory(db: Session, product_id: int, location_id: int) -> tuple[int
         reserved = stock.reserved if stock else 0
         if latest.remaining < reserved:
             return None, {"source": "conflicting_snapshot", "as_of_date": latest.date.isoformat(),
-                          "warning": "Импортированный физический остаток меньше резерва SAQTA Save. Данные противоречат друг другу; остаток и рекомендация не рассчитаны до сверки."}
+                          "warning": "Импортированный физический остаток меньше резерва SaqtaFood Save. Данные противоречат друг другу; остаток и рекомендация не рассчитаны до сверки."}
         return latest.remaining - reserved, {"source": "imported_snapshot", "as_of_date": latest.date.isoformat(),
                                   "reserved_excluded": reserved,
-                                  "warning": "Физический остаток из последнего наблюдения за вычетом текущего резерва Save; последующие движения и пригодность необходимо проверить. Импорт не создаёт запас для SAQTA Save."}
+                                  "warning": "Физический остаток из последнего наблюдения за вычетом текущего резерва Save; последующие движения и пригодность необходимо проверить. Импорт не создаёт запас для SaqtaFood Save."}
     production = db.scalar(select(ProductionRecord.id).where(ProductionRecord.product_id == product_id, ProductionRecord.location_id == location_id).limit(1))
     # A legacy detailed forecast could create a zero snapshot without a single
     # inventory record. Such an empty row is not evidence of known zero stock.

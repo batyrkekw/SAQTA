@@ -12,21 +12,32 @@ from app.api.forecast_tools import router as forecast_tools_router
 from app.api.imports import router as imports_router
 from app.api.assortment import router as assortment_router
 from app.api.auth import router as auth_router
+from app.api.admin import router as admin_router
 from app.core.config import get_settings
 
-app = FastAPI(title="SAQTA API", version="2.0.0", description="SAQTA SAVE marketplace and private SAQTA FORECAST workflows.")
+app = FastAPI(title="SaqtaFood API", version="2.0.0", description="SaqtaFood Save marketplace and private SaqtaFood Forecast workflows.")
 app.add_middleware(CORSMiddleware, allow_origins=get_settings().cors_origins, allow_credentials=False, allow_methods=["GET", "POST", "PUT", "PATCH", "OPTIONS"], allow_headers=["Content-Type", "Authorization", "X-SAQTA-Verification", "Idempotency-Key"])
 app.include_router(router)
 app.include_router(forecast_tools_router)
 app.include_router(imports_router)
 app.include_router(assortment_router)
 app.include_router(auth_router)
+app.include_router(admin_router)
 
 
 @app.exception_handler(RequestValidationError)
 async def validation_error(request: Request, exc: RequestValidationError):
     issues = [{"field": ".".join(map(str, error["loc"])), "message": error["msg"]} for error in exc.errors()]
-    return JSONResponse(status_code=422, content={"detail": "Проверьте введённые данные. Количество должно быть положительным, цены — целыми неотрицательными числами.", "errors": issues})
+    fields = {error["loc"][-1] for error in exc.errors() if error["loc"]}
+    messages = []
+    if "customer_phone" in fields:
+        messages.append("Укажите телефон Казахстана в формате +7XXXXXXXXXX")
+    if "consent" in fields:
+        messages.append("Подтвердите согласие на обработку персональных данных")
+    if "pickup_code" in fields:
+        messages.append("Укажите шестизначный код получения")
+    detail = ". ".join(messages) or "Проверьте введённые данные. Количество должно быть положительным, цены — целыми неотрицательными числами."
+    return JSONResponse(status_code=422, content={"detail": detail, "errors": issues})
 
 
 @app.exception_handler(IntegrityError)

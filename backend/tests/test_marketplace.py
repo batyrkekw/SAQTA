@@ -14,10 +14,10 @@ from app.services.marketplace import create_order
 
 
 def order_payload(listing_id, qty=1):
-    return {"customer_name": "Демо-тест", "items": [{"listing_id": listing_id, "quantity": qty}]}
+    return {"customer_phone": "+77000000000", "consent": True, "customer_name": "Демо-тест", "items": [{"listing_id": listing_id, "quantity": qty}]}
 
 
-def test_order_reservation_cancel_collection_consistency(client):
+def test_order_reservation_cancel_collection_consistency(client, pickup_code):
     listing = client.get("/api/listings").json()[0]
     available = listing["available_quantity"]
     stock_before = next(r for r in client.get("/api/inventory").json() if r["product_id"] == listing["product_id"] and r["location_id"] == listing["location_id"])
@@ -31,7 +31,7 @@ def test_order_reservation_cancel_collection_consistency(client):
     assert next(r for r in client.get("/api/listings").json() if r["id"] == listing["id"])["available_quantity"] == available
     assert client.post(f"/api/orders/{order['id']}/cancel").status_code == 409
     second = client.post("/api/orders", json=order_payload(listing["id"], 2)).json()
-    assert client.post(f"/api/orders/{second['id']}/collect").json()["status"] == "collected"
+    assert client.post(f"/api/orders/{second['id']}/collect", json={"pickup_code": pickup_code(second["id"])}).json()["status"] == "collected"
     assert client.post(f"/api/orders/{second['id']}/collect").status_code == 409
     stock_after = next(r for r in client.get("/api/inventory").json() if r["product_id"] == listing["product_id"] and r["location_id"] == listing["location_id"])
     assert stock_after["on_hand"] == stock_before["on_hand"] - 2
@@ -41,7 +41,7 @@ def test_order_reservation_cancel_collection_consistency(client):
 def test_overselling_and_duplicate_lines_rejected(client):
     listing = client.get("/api/listings").json()[0]
     assert client.post("/api/orders", json=order_payload(listing["id"], listing["available_quantity"] + 1)).status_code == 409
-    assert client.post("/api/orders", json={"customer_name": "Тест", "items": [order_payload(listing["id"])["items"][0]] * 2}).status_code == 422
+    assert client.post("/api/orders", json={"customer_phone": "+77000000000", "consent": True, "customer_name": "Тест", "items": [order_payload(listing["id"])["items"][0]] * 2}).status_code == 422
     response = client.post("/api/orders", json=order_payload(listing["id"], listing["available_quantity"]))
     assert response.status_code == 201
     assert client.post("/api/orders", json=order_payload(listing["id"])).status_code == 409
@@ -64,11 +64,11 @@ def test_listing_creation_edit_and_release_allocated_stock(client):
     assert client.post("/api/listings", json=payload).status_code == 422
 
 
-def test_listing_deactivation_preserves_existing_orders(client):
+def test_listing_deactivation_preserves_existing_orders(client, pickup_code):
     listing = client.get("/api/listings").json()[0]
     order = client.post("/api/orders", json=order_payload(listing["id"], 2)).json()
     assert client.patch(f"/api/listings/{listing['id']}", json={"status": "inactive"}).status_code == 200
-    assert client.post(f"/api/orders/{order['id']}/collect").status_code == 200
+    assert client.post(f"/api/orders/{order['id']}/collect", json={"pickup_code": pickup_code(order["id"])}).status_code == 200
 
 
 def test_expiration_releases_listing_and_order_reservations(client, database):

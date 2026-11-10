@@ -1,7 +1,8 @@
 from datetime import date as Date, datetime
+import re
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class Input(BaseModel):
@@ -86,7 +87,40 @@ class OrderLine(Input):
     quantity: int = Field(gt=0, le=100_000)
 
 
-class OrderCreate(Input):
+class PickupRequest(Input):
+    pickup_code: str = Field(pattern=r"^[0-9]{6}$", strict=True)
+
+
+class ConsentInput(Input):
+    consent: bool = Field(strict=True)
+
+    @field_validator("consent")
+    @classmethod
+    def explicit_consent(cls, value):
+        if value is not True:
+            raise ValueError("Подтвердите согласие на обработку персональных данных")
+        return value
+
+
+class ContactConsent(ConsentInput):
+    customer_phone: str = Field(max_length=40)
+
+    @field_validator("customer_phone")
+    @classmethod
+    def kazakhstan_phone(cls, value):
+        message = "Укажите телефон Казахстана в формате +7XXXXXXXXXX"
+        if not re.fullmatch(r"\+?[0-9 ()-]+", value):
+            raise ValueError(message)
+        digits = re.sub(r"[^0-9]", "", value)
+        if len(digits) == 10:
+            digits = "7" + digits
+        elif len(digits) == 11 and digits.startswith("8"):
+            digits = "7" + digits[1:]
+        if not re.fullmatch(r"7[67][0-9]{9}", digits):
+            raise ValueError(message)
+        return "+" + digits
+
+class OrderCreate(ContactConsent):
     customer_name: str = Field(min_length=1, max_length=100)
     items: list[OrderLine] = Field(min_length=1, max_length=20)
     idempotency_key: str | None = Field(default=None, min_length=8, max_length=100, pattern=r"^[A-Za-z0-9_.:-]+$")
@@ -110,7 +144,7 @@ class BakeryPatch(Input):
 
 
 class ResetRequest(Input):
-    confirm: Literal["RESET SAQTA DEMO"]
+    confirm: Literal["RESET SAQTA DEMO", "RESET SaqtaFood DEMO"]
 
 
 class EconomicsInput(Input):

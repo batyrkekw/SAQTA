@@ -96,7 +96,7 @@
 .closing a:hover { transform: rotate(45deg); background: #286044; }
 .footer { max-width: 1440px; margin: auto; padding: 38px 5%; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
 .footer p { color: #7a836f; font-size: 10px; }
-.footer nav { display: flex; gap: 22px; }
+.footer nav { display: flex; flex-wrap: wrap; gap: 8px 22px; }
 .footer nav a { display: flex; align-items: center; gap: 5px; font-size: 9px; letter-spacing: .07em; padding-block: 10px; }
 .page [data-revealed=true] { animation: arrive .75s both; }
 @keyframes arrive { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: translateY(0); } }

@@ -28,10 +28,10 @@ def listing_for(client, price=1000):
     return listing.json()
 
 
-def test_only_collection_records_fee_on_discounted_snapshot_and_retry_cannot_repeat(client):
+def test_only_collection_records_fee_on_discounted_snapshot_and_retry_cannot_repeat(client, pickup_code):
     listing = listing_for(client)
     assert listing["publication_fee_tiyn"] == 0
-    payload = {"customer_name": "Демо", "idempotency_key": "commission-discount-001", "items": [{"listing_id": listing["id"], "quantity": 2}]}
+    payload = {"customer_phone": "+77000000000", "consent": True, "customer_name": "Демо", "idempotency_key": "commission-discount-001", "items": [{"listing_id": listing["id"], "quantity": 2}]}
     response = client.post("/api/orders", json=payload)
     assert response.status_code == 201, response.text
     order = response.json()
@@ -43,7 +43,7 @@ def test_only_collection_records_fee_on_discounted_snapshot_and_retry_cannot_rep
     assert repeated["id"] == order["id"]
     assert next(row for row in client.get("/api/listings").json() if row["id"] == listing["id"])["reserved_quantity"] == 2
     assert client.patch(f"/api/listings/{listing['id']}", json={"discounted_price_kzt": 500}).status_code == 200
-    collected = client.post(f"/api/orders/{order['id']}/collect").json()
+    collected = client.post(f"/api/orders/{order['id']}/collect", json={"pickup_code": pickup_code(order["id"])}).json()
     assert collected["settlement"]["commission_tiyn"] == 10000  # 100 KZT, not 5% of original 8000 or revised 1000.
     assert collected["settlement"]["seller_proceeds_tiyn"] == 190000
     assert collected["settlement"]["status"] == "recorded"
@@ -56,9 +56,9 @@ def test_only_collection_records_fee_on_discounted_snapshot_and_retry_cannot_rep
 
 def test_cancel_and_idempotency_mismatch_never_accrue_fee(client):
     listing = listing_for(client, price=1)
-    payload = {"customer_name": "Демо", "idempotency_key": "commission-cancel-001", "items": [{"listing_id": listing["id"], "quantity": 1}]}
+    payload = {"customer_phone": "+77000000000", "consent": True, "customer_name": "Демо", "idempotency_key": "commission-cancel-001", "items": [{"listing_id": listing["id"], "quantity": 1}]}
     order = client.post("/api/orders", json=payload).json()
-    changed = {**payload, "customer_name": "Другое имя"}
+    changed = {**payload, "customer_phone": "+77000000000", "consent": True, "customer_name": "Другое имя"}
     assert client.post("/api/orders", json=changed).status_code == 409
     cancelled = client.post(f"/api/orders/{order['id']}/cancel").json()
     assert cancelled["settlement"]["commission_tiyn"] == cancelled["settlement"]["seller_proceeds_tiyn"] == 0

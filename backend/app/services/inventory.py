@@ -34,7 +34,7 @@ def adjust_stock(db: Session, product_id: int, location_id: int, on_hand_delta: 
         InventorySnapshot.on_hand + on_hand_delta >= InventorySnapshot.reserved + reserved_delta,
     ).values(on_hand=InventorySnapshot.on_hand + on_hand_delta, reserved=InventorySnapshot.reserved + reserved_delta)
     if db.execute(stmt, execution_options={"synchronize_session": False}).rowcount != 1:
-        raise HTTPException(409, "Недостаточно доступного остатка. Проверьте количество и резерв SAQTA Save; запись не изменена.")
+        raise HTTPException(409, "Недостаточно доступного остатка. Проверьте количество и резерв SaqtaFood Save; запись не изменена.")
     db.expire(row)
 
 

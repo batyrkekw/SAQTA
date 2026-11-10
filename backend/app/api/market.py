@@ -9,13 +9,13 @@ from typing import Annotated, Literal
 import io
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from fastapi.responses import Response
-from pydantic import Field
-from sqlalchemy import or_, select
+from pydantic import Field, field_validator
+from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Session
 from app.core.config import now_utc, today_local
 from app.db.session import get_db, scoped_db, require_row
 from app.models import ApplicationSettings, BakeryLocation, Order, OrderEvent, OrderItem, Product, SurplusListing
-from app.schemas import Input, ListingCreate, ListingPatch, OrderCreate, OrderLine, RecordCreate
+from app.schemas import ContactConsent, Input, ListingCreate, ListingPatch, OrderCreate, OrderLine, RecordCreate
 from app.services.auth import authenticated_user, require_business
 from app.services.inventory import create_record
 from app.services.marketplace import (
@@ -28,7 +28,7 @@ from app.services.marketplace import (
     transition_order,
 )
 
-router = APIRouter(prefix="/api/market", tags=["SAQTA SAVE"])
+router = APIRouter(prefix="/api/market", tags=["SaqtaFood Save"])
 DB = Annotated[Session, Depends(get_db)]
 Scoped = Annotated[Session, Depends(scoped_db)]
 
@@ -203,14 +203,19 @@ async def upload_photo(listing_id: int, db: Scoped, file: UploadFile = File(...)
     return {"photo_url": f"/market/listings/{row.id}/photo"}
 
 
-class Reservation(Input):
+class Reservation(ContactConsent):
     listing_id: int = Field(gt=0)
     quantity: int = Field(gt=0, le=100_000)
     customer_name: str = Field(min_length=1, max_length=100)
-    kind: Literal["individual", "bulk"] = "individual"
+    kind: Literal["individual", "bulk", "charity"] = "individual"
     beneficiaries: int | None = Field(default=None, gt=0, le=1_000_000)
     logistics: str = Field(default="", max_length=1000)
     idempotency_key: str = Field(min_length=8, max_length=60, pattern=r"^[A-Za-z0-9_-]+$")
+
+    @field_validator("kind")
+    @classmethod
+    def charity_alias(cls, value):
+        return "bulk" if value == "charity" else value
 
 
 @router.post("/orders", status_code=201)
@@ -233,6 +238,8 @@ def reserve(payload: Reservation, request: Request, db: DB):
         db,
         OrderCreate(
             customer_name=payload.customer_name,
+            customer_phone=payload.customer_phone,
+            consent=payload.consent,
             items=[OrderLine(listing_id=offer.id, quantity=payload.quantity)],
             idempotency_key=key,
         ),
@@ -255,7 +262,7 @@ def reserve(payload: Reservation, request: Request, db: DB):
         row.status = "pending" if payload.kind == "bulk" else "reserved"
         db.add(OrderEvent(bakery_id=owner, order_id=row.id, actor_id=user.id, status=row.status))
     db.commit()
-    return order_json(db, row)
+    return order_json(db, row, actor=user)
 
 
 @router.get("/my-listings")
@@ -287,11 +294,12 @@ def orders(request: Request, db: DB):
         expire_reservations(db)
         db.info.pop("bakery_id", None)
     db.commit()
-    return [{**order_json(db, row), "seller": row.bakery_id == user.bakery_id} for row in rows]
+    return [{**order_json(db, row, actor=user), "seller": row.bakery_id == user.bakery_id} for row in rows]
 
 
 class OrderAction(Input):
     agreed_price_kzt: int | None = Field(default=None, ge=0, le=10_000_000)
+    pickup_code: str | None = Field(default=None, pattern=r"^[0-9]{6}$", strict=True)
 
 
 @router.post("/orders/{order_id}/{action}")
@@ -324,10 +332,16 @@ def order_action(
                 if offer.original_price_kzt is not None and price > offer.original_price_kzt:
                     raise HTTPException(422, "Цена предложения не должна превышать обычную цену")
                 item.unit_price_kzt = price
-        row.total_kzt = sum(item.unit_price_kzt * item.quantity for item in items)
-        row.status = "reserved"
+        # SQLite does not lock SELECT ... FOR UPDATE. A buyer may have cancelled
+        # after our read, so approval must win the pending-state transition too.
+        changed = db.execute(update(Order).where(Order.id == row.id, Order.status == "pending").values(
+            total_kzt=sum(item.unit_price_kzt * item.quantity for item in items), status="reserved"),
+            execution_options={"synchronize_session": False}).rowcount
+        if changed != 1:
+            raise HTTPException(409, "Заявка уже обработана")
+        db.refresh(row)
         db.add(OrderEvent(bakery_id=row.bakery_id, order_id=row.id, actor_id=user.id, status="reserved"))
     else:
-        row = transition_order(db, row.id, action)
+        row = transition_order(db, row.id, action, pickup_code=payload.pickup_code if payload else None)
     db.commit()
-    return order_json(db, row)
+    return order_json(db, row, actor=user)

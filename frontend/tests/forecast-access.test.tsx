@@ -26,8 +26,12 @@ describe("organization access", () => {
     await user.type(screen.getByRole("textbox", { name: "Название первой точки" }), "Центр");
     await user.type(screen.getByRole("textbox", { name: "Адрес точки" }), "Собственный адрес");
     await user.click(screen.getByRole("button", { name: "Создать организацию" }));
+    expect(screen.getByText("Подтвердите согласие на обработку персональных данных")).toBeInTheDocument();
+    expect(registration).toBeNull();
+    await user.click(screen.getByRole("checkbox", { name: "Я согласен на обработку персональных данных и принимаю Пользовательское соглашение." }));
+    await user.click(screen.getByRole("button", { name: "Создать организацию" }));
     expect(await screen.findByText(/Подписка не активирована/)).toBeInTheDocument();
-    expect(registration).toMatchObject({ email: "baker@example.test", bakery_name: "Моя пекарня", location_name: "Центр", address: "Собственный адрес", city: "Астана" });
+    expect(registration).toMatchObject({ email: "baker@example.test", bakery_name: "Моя пекарня", location_name: "Центр", address: "Собственный адрес", city: "Астана", consent: true });
     expect(screen.getByText("ANALYSIS_BLOCKED")).toBeInTheDocument();
     await waitFor(() => expect(screen.getByRole("button", { name: "Выйти из организации" })).toBeEnabled());
   });

@@ -73,6 +73,7 @@ def account(workspace, name="owner", role="consumer", approve=False):
             "bakery_name": name,
             "address": "Test pickup street",
             "requested_role": role,
+            "consent": True,
         },
     )
     assert response.status_code == 201, response.text
@@ -115,6 +116,8 @@ def reservation(client, headers, offer, **changes):
             "listing_id": offer,
             "quantity": 2,
             "customer_name": "Test recipient",
+            "customer_phone": "+77000000000",
+            "consent": True,
             "idempotency_key": "request-" + uuid4().hex,
             **changes,
         },
@@ -201,6 +204,7 @@ def test_public_empty_role_escalation_and_owner_rules(workspace):
                 "bakery_name": "Hacker",
                 "address": "abc",
                 "role": "business",
+                "consent": True,
             },
         ).status_code
         == 422
@@ -250,7 +254,7 @@ def test_bulk_approval_collection_and_expiry(workspace):
     assert reservation(client, charity, offer["id"], kind="bulk").status_code == 409
     assert client.post(f"/api/market/orders/{oid}/collect", headers=seller).status_code == 409
     assert client.post(f"/api/market/orders/{oid}/approve", headers=seller).status_code == 200
-    assert client.post(f"/api/market/orders/{oid}/collect", headers=seller).status_code == 200
+    assert client.post(f"/api/market/orders/{oid}/collect", headers=seller, json={"pickup_code": order.json()["pickup_code"]}).status_code == 200
     assert client.post(f"/api/market/orders/{oid}/collect", headers=seller).status_code == 409
     with factory() as db:
         assert db.scalar(select(InventorySnapshot)).on_hand == 0
@@ -544,5 +548,5 @@ def test_negotiated_terms_require_an_actual_agreed_price(workspace):
     confirmed = client.post(url, headers=seller, json={"agreed_price_kzt": 400})
     assert confirmed.status_code == 200, confirmed.text
     assert confirmed.json()["total_kzt"] == 800 and confirmed.json()["items"][0]["price_agreed"]
-    collected = client.post(f"/api/market/orders/{order['id']}/collect", headers=seller)
+    collected = client.post(f"/api/market/orders/{order['id']}/collect", headers=seller, json={"pickup_code": order["pickup_code"]})
     assert collected.status_code == 200 and collected.json()["total_kzt"] == 800

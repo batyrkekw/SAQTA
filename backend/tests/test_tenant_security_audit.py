@@ -90,7 +90,7 @@ def test_direct_scoped_orm_scalar_alias_subquery_update_and_orderitem_ids(real_c
             db.rollback()
     listing = client.post("/api/listings", headers=hb, json={"product_id": pb["id"], "location_id": lb["id"], "quantity": 2,
         "discounted_price_kzt": 500, "pickup_start": (now_utc() - timedelta(minutes=1)).isoformat(), "pickup_deadline": (now_utc() + timedelta(hours=1)).isoformat()}).json()
-    order = client.post("/api/orders", headers=hb, json={"customer_name": "Private B", "items": [{"listing_id": listing["id"], "quantity": 1}]}).json()
+    order = client.post("/api/orders", headers=hb, json={"customer_phone": "+77000000000", "consent": True, "customer_name": "Private B", "items": [{"listing_id": listing["id"], "quantity": 1}]}).json()
     with factory() as db:
         item_id = db.scalar(select(OrderItem.id).where(OrderItem.order_id == order["id"]))
     with factory() as db:

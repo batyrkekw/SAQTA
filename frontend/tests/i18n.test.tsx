@@ -82,7 +82,7 @@ describe('translation catalogs and formats', () => {
     const formula = '0.6 × 40.00 + 0.4 × 65.00 = 50.00; округление до целых = 50 шт.';
     expect(translateText(formula, 'en')).toBe('0.6 × 40.00 + 0.4 × 65.00 = 50.00; rounded to whole units = 50 pcs');
     expect(translateText(formula, 'kk')).toContain('бүтін санға дөңгелектеу');
-    expect(translateText('MAE SAQTA ниже ошибки простого прогноза на 12% на этой выборке.', 'en')).not.toMatch(/[А-Яа-яЁё]/);
+    expect(translateText('MAE SaqtaFood ниже ошибки простого прогноза на 12% на этой выборке.', 'en')).not.toMatch(/[А-Яа-яЁё]/);
   });
   it('formats dates and tenge without changing their numeric values', () => {
     expect(formatters('en').dateLabel('2026-10-29')).toBe('29 Oct');

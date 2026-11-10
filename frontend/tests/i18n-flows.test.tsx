@@ -30,7 +30,7 @@ describe.each<Language>(['ru', 'kk', 'en'])('%s form and response messages', lan
     const fetcher = vi.fn(async (url: string) => {
       if (url.endsWith('/health')) return new Response(JSON.stringify({ workspace_mode: 'real', demo_data: false }));
       if (url.endsWith('/subscription')) return new Response(JSON.stringify({ detail: 'Войдите в организацию' }), { status: 401 });
-      return new Response(JSON.stringify({ detail: 'Нет связи с сервером SAQTA. Проверьте подключение и повторите запрос.' }), { status: 503 });
+      return new Response(JSON.stringify({ detail: 'Нет связи с сервером SaqtaFood. Проверьте подключение и повторите запрос.' }), { status: 503 });
     });
     vi.stubGlobal('fetch', fetcher);
     render(<LanguageProvider><ForecastAccessProvider><div /></ForecastAccessProvider></LanguageProvider>);
@@ -41,6 +41,6 @@ describe.each<Language>(['ru', 'kk', 'en'])('%s form and response messages', lan
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'baker@example.test' } });
     fireEvent.change(screen.getByLabelText(new RegExp(t('Пароль'))), { target: { value: 'test-password-123' } });
     fireEvent.click(submit);
-    expect(await screen.findByText(t('Нет связи с сервером SAQTA. Проверьте подключение и повторите запрос.'))).toBeInTheDocument();
+    expect(await screen.findByText(t('Нет связи с сервером SaqtaFood. Проверьте подключение и повторите запрос.'))).toBeInTheDocument();
   });
 });

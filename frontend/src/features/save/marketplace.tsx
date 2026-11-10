@@ -11,6 +11,7 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import { ProductIntro } from "@/components/product-intro";
+import { LegalConsent } from "@/components/legal-consent";
 import { useI18n } from "@/components/language-provider";
 import {
   Badge,
@@ -62,6 +63,9 @@ type Order = {
   seller: boolean;
   kind: string;
   customer_name: string;
+  customer_phone: string | null;
+  consent_given_at: string | null;
+  pickup_code?: string | null;
   total_kzt: number;
   beneficiaries: number | null;
   logistics: string;
@@ -101,6 +105,7 @@ function MarketplaceContent() {
     [discount, setDiscount] = useState(""),
     [charity, setCharity] = useState(false);
   const [agreedPrices, setAgreedPrices] = useState<Record<number, string>>({});
+  const [pickupCodes, setPickupCodes] = useState<Record<number, string>>({});
   const [selected, setSelected] = useState<Offer | null>(null),
     [publish, setPublish] = useState(false),
     [editing, setEditing] = useState<Offer | null>(null),
@@ -138,17 +143,28 @@ function MarketplaceContent() {
     setError("");
   }
   async function action(id: number, kind: string) {
+    if (kind === "collect" && !/^[0-9]{6}$/.test(pickupCodes[id] ?? "")) {
+      setError("Укажите шестизначный код получения");
+      return;
+    }
     setPending(true);
     setError("");
     try {
       await post(
         `/market/orders/${id}/${kind}`,
-        kind === "approve" &&
+        kind === "collect"
+          ? { pickup_code: pickupCodes[id] }
+          : kind === "approve" &&
           agreedPrices[id] !== undefined &&
           agreedPrices[id] !== ""
           ? { agreed_price_kzt: Number(agreedPrices[id]) }
           : {},
       );
+      setPickupCodes((current) => {
+        const next = { ...current };
+        delete next[id];
+        return next;
+      });
       reload();
     } catch (reason) {
       setError(errorMessage(reason));
@@ -473,6 +489,12 @@ function MarketplaceContent() {
                 </Badge>
               </div>
               <div className="my-4 space-y-2">
+                {order.customer_phone && (
+                  <p className="text-sm">{t("Телефон покупателя")}: {order.customer_phone}</p>
+                )}
+                {!order.seller && order.pickup_code && (
+                  <p className="text-sm">{t("Код получения")}: <strong className="font-mono text-lg tracking-widest">{order.pickup_code}</strong></p>
+                )}
                 {order.items.map((item) => (
                   <p key={item.id} className="text-sm">
                     {item.product_name} × {item.quantity}
@@ -507,6 +529,24 @@ function MarketplaceContent() {
                     />
                   </Field>
                 )}
+              {order.seller && order.status === "reserved" && (
+                <div className="mb-4 max-w-xs">
+                  <Field label={t("Код получения покупателя")} hint={t("6 цифр, которые сообщил покупатель.")}>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="off"
+                      pattern="[0-9]{6}"
+                      maxLength={6}
+                      required
+                      className="field font-mono tracking-widest"
+                      disabled={pending}
+                      value={pickupCodes[order.id] ?? ""}
+                      onChange={(event) => setPickupCodes((current) => ({ ...current, [order.id]: event.target.value }))}
+                    />
+                  </Field>
+                </div>
+              )}
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <strong>
                   {order.items.some(
@@ -631,6 +671,15 @@ function Reservation({
   const [requestKey] = useState(() => crypto.randomUUID());
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    if (!String(data.get("customer_phone") || "").trim()) {
+      setError("Укажите телефон Казахстана в формате +7XXXXXXXXXX");
+      return;
+    }
+    if (data.get("consent") !== "on") {
+      setError("Подтвердите согласие на обработку персональных данных");
+      return;
+    }
     const problem = formValidationMessage(e.currentTarget);
     if (problem) {
       setError(problem);
@@ -640,7 +689,6 @@ function Reservation({
       open();
       return;
     }
-    const data = new FormData(e.currentTarget);
     setPending(true);
     setError("");
     try {
@@ -648,6 +696,8 @@ function Reservation({
         listing_id: offer.id,
         quantity,
         customer_name: String(data.get("name")),
+        customer_phone: String(data.get("customer_phone")).trim(),
+        consent: data.get("consent") === "on",
         kind: bulk ? "bulk" : "individual",
         beneficiaries:
           bulk && data.get("beneficiaries")
@@ -703,6 +753,18 @@ function Reservation({
                 defaultValue={account.organization.name}
               />
             </Field>
+            <Field label={t("Телефон покупателя")} hint={t("Номер Казахстана, например +7 701 123 45 67")}>
+              <input
+                type="tel"
+                name="customer_phone"
+                autoComplete="tel"
+                inputMode="tel"
+                required
+                maxLength={32}
+                placeholder="+7 701 123 45 67"
+                className="field"
+              />
+            </Field>
             <Field label={t("Количество")}>
               <input
                 type="number"
@@ -750,6 +812,7 @@ function Reservation({
                 </Notice>
               </>
             )}
+            <LegalConsent />
             <button
               className="btn-primary w-full"
               disabled={

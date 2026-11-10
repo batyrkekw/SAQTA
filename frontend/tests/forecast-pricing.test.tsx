@@ -16,7 +16,7 @@ describe("Forecast pricing keeps proposed plans separate from real subscriptions
     render(<PricingPanel />);
     expect(screen.getByRole("link", { name: /Открыть рабочее пространство/ })).toHaveAttribute("href", "/forecast?view=forecast");
     expect(screen.getByText(/сервер проверяет организацию/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Открыть SAQTA Save/ })).toHaveAttribute("href", "/save");
+    expect(screen.getByRole("link", { name: /Открыть SaqtaFood Save/ })).toHaveAttribute("href", "/save");
   });
   it.each(["Starter", "Pro"])("choosing %s only opens the exact preparation notice", async plan => {
     const user = userEvent.setup();

@@ -1,4 +1,4 @@
-> Historical release documentation. For the current SAVE/FORECAST workflows, free analysis, roles and rollout settings, use [the 29 October 2026 refactor report](REFACTOR_2026_10_29.md) and [README](../README.md).
+> **Исторический документ.** Сведения ниже относятся к прежнему состоянию проекта и могут быть устаревшими. Текущая функциональность, настройки и локальный запуск описаны в [актуальном README](../README.md). Старые цифры и записи о размещении не подтверждают текущие результаты или публичный запуск.
 
 # Organization access and Forecast subscriptions
 

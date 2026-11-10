@@ -12,7 +12,7 @@ import socket, sys
 for port in sys.argv[1:]:
     with socket.socket() as sock:
         try: sock.bind(('127.0.0.1', int(port)))
-        except OSError: sys.exit(f'Port {port} is occupied. Stop your existing SAQTA server or set SAQTA_API_PORT / SAQTA_WEB_PORT.')
+        except OSError: sys.exit(f'Port {port} is occupied. Stop your existing SaqtaFood server or set SAQTA_API_PORT / SAQTA_WEB_PORT.')
 PY
 (
   cd "$saqta_root/backend"

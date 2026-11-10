@@ -12,15 +12,16 @@ from app.analytics.reports import dashboard, impact, inventory_report, period
 from app.core.config import get_settings, now_utc, today_local
 from app.db.session import scoped_db, require_row
 from app.forecasting.baseline import InsufficientHistory, generate
-from app.models import ApplicationSettings, Bakery, BakeryLocation, Forecast, Product, SurplusListing
+from app.models import ApplicationSettings, AuthUser, Bakery, BakeryLocation, Forecast, Product, SurplusListing
 from app.models import Order as OrderModel
-from app.schemas import BakeryPatch, EconomicsInput, ForecastRequest, ListingCreate, ListingPatch, OrderCreate, ProductCreate, ProductPatch, RecordCreate, RecordPatch, ResetRequest, SettingsPatch
+from app.schemas import BakeryPatch, EconomicsInput, ForecastRequest, ListingCreate, ListingPatch, OrderCreate, PickupRequest, ProductCreate, ProductPatch, RecordCreate, RecordPatch, ResetRequest, SettingsPatch
 from app.services.csv_io import MAX_BYTES, export_csv, import_records
 from app.services.inventory import RECORD_MODELS, adjust_stock, create_record, sales_history_rows, product_json, record_json, validate_date, validate_ledger
 from app.services.assortment import known_inventory
 from app.services.marketplace import create_listing, create_order, expire_reservations, listing_json, order_json, patch_listing, transition_order
 from app.services.workspace import is_demo, workspace_mode
 from app.services.subscriptions import consume_forecast_quota, require_forecast_access
+from app.services.auth import require_business
 
 router = APIRouter(prefix="/api")
 DB = Annotated[Session, Depends(scoped_db)]
@@ -159,7 +160,7 @@ def edit_record(kind: Literal["production", "sales", "waste"], record_id: int, p
     expire(db)
     row = require_row(db, RECORD_MODELS[kind], record_id, "Запись")
     if kind == "sales" and row.source == "save":
-        raise HTTPException(409, "Продажи SAQTA Save связаны с выданным заказом и не редактируются вручную")
+        raise HTTPException(409, "Продажи SaqtaFood Save связаны с выданным заказом и не редактируются вручную")
     fields = payload.model_dump(exclude_unset=True, exclude_none=True)
     if "date" in fields:
         validate_date(fields["date"])
@@ -257,7 +258,7 @@ def economics(payload: EconomicsInput):
     return calculate(payload)
 
 
-@router.get("/listings", tags=["SAQTA Save"])
+@router.get("/listings", tags=["SaqtaFood Save"])
 def listings(db: DB, location_id: int | None = None, search: str = "", status: Literal["active", "inactive", "all"] = "active"):
     check_location(db, location_id)
     expire(db)
@@ -271,7 +272,7 @@ def listings(db: DB, location_id: int | None = None, search: str = "", status: L
     return [listing_json(db, row) for row in db.scalars(query)]
 
 
-@router.post("/listings", status_code=201, tags=["SAQTA Save"])
+@router.post("/listings", status_code=201, tags=["SaqtaFood Save"])
 def new_listing(payload: ListingCreate, db: DB):
     expire(db)
     row = create_listing(db, payload)
@@ -279,7 +280,7 @@ def new_listing(payload: ListingCreate, db: DB):
     return listing_json(db, row)
 
 
-@router.patch("/listings/{listing_id}", tags=["SAQTA Save"])
+@router.patch("/listings/{listing_id}", tags=["SaqtaFood Save"])
 def edit_listing(listing_id: int, payload: ListingPatch, db: DB):
     expire(db)
     row = patch_listing(db, listing_id, payload)
@@ -287,34 +288,42 @@ def edit_listing(listing_id: int, payload: ListingPatch, db: DB):
     return listing_json(db, row)
 
 
-@router.get("/orders", tags=["SAQTA Save"])
+@router.get("/orders", tags=["SaqtaFood Save"])
 def orders(db: DB):
     expire(db)
-    return [order_json(db, row) for row in db.scalars(select(OrderModel).order_by(OrderModel.id.desc()).limit(200))]
+    actor = db.get(AuthUser, db.info["user_id"]) if db.info.get("user_id") else None
+    return [order_json(db, row, actor=actor) for row in db.scalars(select(OrderModel).order_by(OrderModel.id.desc()).limit(200))]
 
 
-@router.post("/orders", status_code=201, tags=["SAQTA Save"])
+@router.post("/orders", status_code=201, tags=["SaqtaFood Save"])
 def new_order(payload: OrderCreate, db: DB):
     expire(db)
     row = create_order(db, payload)
+    actor = db.get(AuthUser, db.info["user_id"]) if db.info.get("user_id") else None
+    if actor is not None and row.buyer_id is None:
+        row.buyer_id = actor.id
     db.commit()
-    return order_json(db, row)
+    return order_json(db, row, actor=actor)
 
 
-@router.post("/orders/{order_id}/cancel", tags=["SAQTA Save"])
+@router.post("/orders/{order_id}/cancel", tags=["SaqtaFood Save"])
 def cancel_order(order_id: int, db: DB):
     expire(db)
     row = transition_order(db, order_id, "cancel")
     db.commit()
-    return order_json(db, row)
+    actor = db.get(AuthUser, db.info["user_id"]) if db.info.get("user_id") else None
+    return order_json(db, row, actor=actor)
 
 
-@router.post("/orders/{order_id}/collect", tags=["SAQTA Save"])
-def collect_order(order_id: int, db: DB):
+@router.post("/orders/{order_id}/collect", tags=["SaqtaFood Save"])
+def collect_order(order_id: int, db: DB, payload: PickupRequest | None = None):
+    require_row(db, OrderModel, order_id, "Заказ")
+    require_business(db)
     expire(db)
-    row = transition_order(db, order_id, "collect")
+    row = transition_order(db, order_id, "collect", pickup_code=payload.pickup_code if payload else None)
     db.commit()
-    return order_json(db, row)
+    actor = db.get(AuthUser, db.info["user_id"]) if db.info.get("user_id") else None
+    return order_json(db, row, actor=actor)
 
 
 @router.post("/import", tags=["Data"])
@@ -338,7 +347,7 @@ async def csv_import(db: DB, file: UploadFile = File(...)):
 def csv_export(db: DB, location_id: int | None = None, start_date: date | None = None, end_date: date | None = None):
     check_location(db, location_id)
     content = export_csv(db, location_id, start_date, end_date)
-    return Response(content="\ufeff" + content, media_type="text/csv; charset=utf-8", headers={"Content-Disposition": "attachment; filename=saqta-records.csv"})
+    return Response(content="\ufeff" + content, media_type="text/csv; charset=utf-8", headers={"Content-Disposition": "attachment; filename=SaqtaFood-records.csv"})
 
 
 @router.post("/demo/reset", tags=["Data"])
@@ -356,4 +365,4 @@ def reset_demo(payload: ResetRequest, db: DB):
     db.info.clear()
     result = seed_database(db, reset=True)
     db.commit()
-    return {"message": "Демонстрационные данные SAQTA восстановлены", **result, "workspace_mode": "demo"}
+    return {"message": "Демонстрационные данные SaqtaFood восстановлены", **result, "workspace_mode": "demo"}

@@ -20,7 +20,7 @@ from app.services.inventory import sales_history_rows, product_json
 from app.services.assortment import known_inventory
 from app.forecasting.selection import select_forecast
 
-router = APIRouter(prefix="/api/analysis", tags=["SAQTA FORECAST"])
+router = APIRouter(prefix="/api/analysis", tags=["SaqtaFood Forecast"])
 DB = Annotated[Session, Depends(scoped_db)]
 
 
@@ -69,7 +69,7 @@ def export_profile(db: DB):
     return Response(
         workbook_bytes(db),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": 'attachment; filename="saqta-business.xlsx"'},
+        headers={"Content-Disposition": 'attachment; filename="SaqtaFood-business.xlsx"'},
     )
 
 

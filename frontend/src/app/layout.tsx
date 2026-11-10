@@ -6,7 +6,7 @@ import './globals.css';
 import '@/components/product-theme.css';
 
 export const metadata: Metadata = {
-  applicationName: 'SAQTA',
+  applicationName: 'SaqtaFood',
   icons: { icon: '/brand/favicon.svg', apple: '/brand/app-icon.svg' },
   manifest: '/manifest.webmanifest',
 };

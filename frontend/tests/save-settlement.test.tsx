@@ -35,6 +35,6 @@ describe("Save commission display", () => {
   it("does not fabricate a settlement on an old API response", () => {
     render(<SaveSettlement order={{...order, settlement: undefined}}/>);
     expect(screen.getByText(/Расчёт комиссии пока недоступен/)).toBeInTheDocument();
-    expect(screen.queryByText("Комиссия SAQTA · 5%")).not.toBeInTheDocument();
+    expect(screen.queryByText("Комиссия SaqtaFood · 5%")).not.toBeInTheDocument();
   });
 });

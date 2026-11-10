@@ -25,7 +25,7 @@ const paths = {
   forecast: {
     eyebrow: "ДЛЯ ТЕХ, КТО СОЗДАЁТ ХОРОШУЮ ЕДУ",
     title: "Завтра понятнее уже сегодня.",
-    description: "Планируйте производство по спросу. SAQTA превратит вашу историю продаж в понятные рекомендации.",
+    description: "Планируйте производство по спросу. SaqtaFood превратит вашу историю продаж в понятные рекомендации.",
     action: "Планировать спрос",
     steps: [
       ["Добавьте данные", "Загрузите Excel или CSV. Нет истории? Начните с анкеты."],
@@ -35,7 +35,7 @@ const paths = {
   },
 };
 const questions = [
-  ["Что такое SAQTA?", "Два способа бережнее относиться к еде: SAVE помогает найти покупателей для пригодных продуктов, а FORECAST — планировать спрос."],
+  ["Что такое SaqtaFood?", "Два способа бережнее относиться к еде: SAVE помогает найти покупателей для пригодных продуктов, а FORECAST — планировать спрос."],
   ["Можно начать без истории продаж?", "Да. Заполните короткую анкету в FORECAST. Вы получите предварительную оценку и сможете уточнять её реальными данными."],
   ["Как получить продукты?", "Выберите предложение в SAVE, оставьте заявку и заберите продукты у продавца в указанное время. Условия оплаты указаны в предложении."],
 ];
@@ -94,7 +94,7 @@ export default function Home() {
               <Link href="/save" className={styles.primary}>{t("Найти продукты")}<ArrowUpRight size={19} aria-hidden="true" /></Link>
               <Link href="/forecast" className={styles.secondary}>{t("Планировать спрос")}<ArrowUpRight size={18} aria-hidden="true" /></Link>
             </div>
-            <a href="#product" className={styles.explore}><span><ArrowDown size={15} aria-hidden="true" /></span>{t("Знакомьтесь, SAQTA")}</a>
+            <a href="#product" className={styles.explore}><span><ArrowDown size={15} aria-hidden="true" /></span>{t("Знакомьтесь, SaqtaFood")}</a>
           </div>
 
           <div className={styles.heroArt}>
@@ -102,13 +102,13 @@ export default function Home() {
             <div className={styles.photoFrame}>
               <Image src="/images/artisan-bread.jpg" alt={t("Ремесленный хлеб с хрустящей корочкой на деревянной доске")} fill priority sizes="(max-width: 760px) 90vw, 44vw" className={styles.photo} />
               <div className={styles.photoShade} />
-              <span className={styles.photoLabel}>SAQTA · {t("Сохраняем то, что ценно.")}</span>
+              <span className={styles.photoLabel}>SaqtaFood · {t("Сохраняем то, что ценно.")}</span>
               <p className={styles.photoCaption}>{t("Асты сақта.")}</p>
             </div>
             <div className={styles.seal} aria-hidden="true"><Leaf size={30} strokeWidth={1.5} /><span>{t("С заботой о еде")}</span></div>
             <div className={styles.floatingNote}>
               <span className={styles.noteIcon}><ShoppingBag size={23} aria-hidden="true" /></span>
-              <span><small>SAQTA SAVE</small><strong>{t("Хорошей еде — новый шанс.")}</strong></span>
+              <span><small>SaqtaFood Save</small><strong>{t("Хорошей еде — новый шанс.")}</strong></span>
               <span className={styles.noteCheck}><Check size={15} aria-hidden="true" /></span>
             </div>
             <button type="button" className={styles.motionControl} onClick={() => setPaused(value => !value)} disabled={reducedMotion} aria-pressed={stopMotion} aria-label={t(reducedMotion ? "Анимация отключена в настройках устройства" : paused ? "Включить анимацию" : "Остановить анимацию")}>
@@ -127,7 +127,7 @@ export default function Home() {
         <section id="product" className={styles.product} aria-labelledby="product-title" data-reveal>
           <div className={styles.sectionHeading}>
             <div><p className={styles.eyebrow}>{t("ВЫБЕРИТЕ СВОЙ ПУТЬ")}</p><h2 id="product-title">{t("Одна идея.")} <span className={styles.serif}>{t("Два простых пути.")}</span></h2></div>
-            <div className={styles.tabs} role="tablist" aria-label={t("Как вы хотите использовать SAQTA?")}>
+            <div className={styles.tabs} role="tablist" aria-label={t("Как вы хотите использовать SaqtaFood?")}>
               {(["save", "forecast"] as const).map((value, index) => (
                 <button key={value} ref={element => { tabs.current[index] = element; }} type="button" role="tab" id={`path-tab-${value}`} aria-selected={path === value} aria-controls="path-panel" tabIndex={path === value ? 0 : -1} onClick={() => setPath(value)} onKeyDown={event => changeTab(event, index)}>
                   {value === "save" ? <ShoppingBag size={16} aria-hidden="true" /> : <TrendingUp size={16} aria-hidden="true" />}{t(value === "save" ? "Хочу купить" : "У меня бизнес")}
@@ -137,7 +137,7 @@ export default function Home() {
           </div>
           <div id="path-panel" className={`${styles.pathPanel} ${path === "forecast" ? styles.forecast : ""}`} role="tabpanel" aria-labelledby={`path-tab-${path}`} tabIndex={0}>
             <div className={styles.pathCopy} key={path}>
-              <p className={styles.pathLabel}>SAQTA {path.toUpperCase()}</p>
+              <p className={styles.pathLabel}>SaqtaFood {path === "save" ? "Save" : "Forecast"}</p>
               <h3>{t(current.title)}</h3>
               <p className={styles.pathDescription}>{t(current.description)}</p>
               <Link href={`/${path}`} className={styles.pathAction}>{t(current.action)}<ArrowRight size={18} aria-hidden="true" /></Link>
@@ -162,13 +162,13 @@ export default function Home() {
         </section>
 
         <section className={styles.closing} data-reveal>
-          <Leaf size={27} strokeWidth={1.5} aria-hidden="true" /><h2>{t("Маленький шаг.")} <span>{t("Большая разница.")}</span></h2><a href="#product" aria-label={t("Выбрать свой путь в SAQTA")}><ArrowUpRight size={27} aria-hidden="true" /></a>
+          <Leaf size={27} strokeWidth={1.5} aria-hidden="true" /><h2>{t("Маленький шаг.")} <span>{t("Большая разница.")}</span></h2><a href="#product" aria-label={t("Выбрать свой путь в SaqtaFood")}><ArrowUpRight size={27} aria-hidden="true" /></a>
         </section>
       </main>
       <footer className={styles.footer}>
-        <Link href="/" aria-label={t("SAQTA — главная")}><Image src="/brand/saqta-logo.svg" width={112} height={25} alt="SAQTA" /></Link>
-        <p>© {new Date().getFullYear()} SAQTA · {t("Сохраняем то, что ценно.")}</p>
-        <nav aria-label={t("Навигация в подвале")}><a href="#pricing">{t("Тарифы")}<ArrowUpRight size={13} aria-hidden="true" /></a><Link href="/save">SAVE<ArrowUpRight size={13} aria-hidden="true" /></Link><Link href="/forecast">FORECAST<ArrowUpRight size={13} aria-hidden="true" /></Link></nav>
+        <Link href="/" aria-label={t("SaqtaFood — главная")}><Image src="/brand/saqta-logo.svg" width={112} height={25} alt="SaqtaFood" /></Link>
+        <p>© {new Date().getFullYear()} SaqtaFood · {t("Сохраняем то, что ценно.")}</p>
+        <nav aria-label={t("Навигация в подвале")}><a href="#pricing">{t("Тарифы")}<ArrowUpRight size={13} aria-hidden="true" /></a><Link href="/save">SAVE<ArrowUpRight size={13} aria-hidden="true" /></Link><Link href="/forecast">FORECAST<ArrowUpRight size={13} aria-hidden="true" /></Link><Link href="/privacy">{t("Политика конфиденциальности")}</Link><Link href="/terms">{t("Пользовательское соглашение")}</Link></nav>
       </footer>
     </div>
   );

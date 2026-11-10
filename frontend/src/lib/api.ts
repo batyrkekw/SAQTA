@@ -31,7 +31,7 @@ export class ApiError extends Error {
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   let response: Response;
   try { response = await fetch(`${API_URL}${path}`, { ...init, headers: authenticatedHeaders(init), cache: "no-store" }); }
-  catch { throw new ApiError("Нет связи с сервером SAQTA. Проверьте подключение и повторите запрос.", 0); }
+  catch { throw new ApiError("Нет связи с сервером SaqtaFood. Проверьте подключение и повторите запрос.", 0); }
   if (!response.ok) {
     let detail = `Ошибка запроса (${response.status})`; let rows: { row: number; message: string }[] = [];
     try { const body = await response.json(); detail = typeof body.detail === "string" ? body.detail : Array.isArray(body.detail) ? body.detail.map((item: { msg: string; loc?: string[] }) => `${item.loc?.slice(1).join(".") || "Данные"}: ${item.msg}`).join("; ") : body.detail?.message || detail; rows = body.errors || body.detail?.errors || []; } catch { /* Non-JSON server errors retain their safe status message. */ }
@@ -58,7 +58,7 @@ export function useReference() {
   return { products: products.data || [], locations: locations.data || [], loading: products.loading || locations.loading, error: products.error || locations.error, reload: () => { products.reload(); locations.reload(); } };
 }
 export function defaultPeriod(days = 30) { const end = new Date(); const start = new Date(); start.setDate(start.getDate() - days + 1); const fmt = (date: Date) => date.toLocaleDateString("en-CA", { timeZone: "Asia/Qyzylorda" }); return { start: fmt(start), end: fmt(end) }; }
-export async function downloadCsv(params: Record<string, string | number | undefined> = {}) { const token = sessionToken(); const response = await fetch(`${API_URL}/export${query(params)}`, ...(token ? [{ headers: { Authorization: `Bearer ${token}` } }] as const : [])); if (!response.ok) throw new Error("Не удалось выгрузить CSV. Проверьте вход и права доступа."); const blob = await response.blob(); const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url; anchor.download = "saqta-records.csv"; anchor.click(); URL.revokeObjectURL(url); }
+export async function downloadCsv(params: Record<string, string | number | undefined> = {}) { const token = sessionToken(); const response = await fetch(`${API_URL}/export${query(params)}`, ...(token ? [{ headers: { Authorization: `Bearer ${token}` } }] as const : [])); if (!response.ok) throw new Error("Не удалось выгрузить CSV. Проверьте вход и права доступа."); const blob = await response.blob(); const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url; anchor.download = "SaqtaFood-records.csv"; anchor.click(); URL.revokeObjectURL(url); }
 
 export async function downloadFile(path: string, filename: string) {
   const response = await fetch(`${API_URL}${path}`, { headers: authenticatedHeaders({}), cache: 'no-store' });

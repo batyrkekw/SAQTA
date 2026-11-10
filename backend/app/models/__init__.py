@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from sqlalchemy import BigInteger, Boolean, CheckConstraint, Date, DateTime, ForeignKey, Index, Integer, LargeBinary, String, Text, UniqueConstraint
+from sqlalchemy import BigInteger, Boolean, CheckConstraint, Date, DateTime, ForeignKey, Index, Integer, LargeBinary, String, Text, UniqueConstraint, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.config import now_utc
@@ -125,6 +125,9 @@ class Order(TimestampMixin, Base):
     beneficiaries: Mapped[int | None] = mapped_column(Integer, nullable=True)
     logistics: Mapped[str] = mapped_column(String(1000), default="", server_default="")
     customer_name: Mapped[str] = mapped_column(String(100))
+    customer_phone: Mapped[str | None] = mapped_column(String(12), nullable=True)
+    consent_given_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    pickup_code: Mapped[str | None] = mapped_column(String(6), nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="reserved", index=True)
     total_kzt: Mapped[int] = mapped_column(BigInteger)
     collected_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -140,6 +143,9 @@ class Order(TimestampMixin, Base):
         CheckConstraint("commission_rate_bps = 500 AND commission_tiyn >= 0 AND seller_proceeds_tiyn >= 0", name="order_commission_nonnegative"),
         CheckConstraint("(status = 'collected' AND commission_tiyn = total_kzt * 5 AND seller_proceeds_tiyn = total_kzt * 95) OR (status != 'collected' AND commission_tiyn = 0 AND seller_proceeds_tiyn = 0)", name="order_settlement_balanced"),
         UniqueConstraint("bakery_id", "idempotency_key", name="uq_order_bakery_idempotency"),
+        Index("uq_order_active_pickup_code", "bakery_id", "pickup_code", unique=True,
+              sqlite_where=text("status IN ('reserved','pending') AND pickup_code IS NOT NULL"),
+              postgresql_where=text("status IN ('reserved','pending') AND pickup_code IS NOT NULL")),
     )
 
 

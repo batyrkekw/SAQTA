@@ -1,81 +1,121 @@
-# SAQTA
+# SaqtaFood
 
-SAQTA combines **SAVE**, a marketplace for available food, and **FORECAST**, private demand analysis based on a business’s own data. The interface supports **Қазақша · Русский · English**, including forms, validation, notifications and charts.
+Продукт для пекарен Казахстана с интерфейсом на русском, казахском и английском. Казахские формулировки требуют проверки носителем языка перед публичным запуском.
 
-The home page at `/` offers direct access to SAVE and FORECAST, an interactive buyer/business overview and a short FAQ. Decorative motion can be paused and respects reduced-motion preferences. The SAQTA logo returns to this overview from either module.
+- **SaqtaFood Save**: публикация доступных остатков, поиск предложений, бронирование, отмена и выдача заказов; заявки благотворительных организаций подтверждает продавец. Новая учётная запись получает роль покупателя, роли бизнеса и благотворительной организации подтверждает оператор.
+- **SaqtaFood Forecast**: импорт CSV/XLSX с проверкой перед сохранением, анкета при отсутствии истории, прогноз по собственным данным и проверка на прошлых наблюдениях. Оценки анкеты обозначены как предварительные; прогноз не создаёт остатки или предложения Save.
 
-SAVE and FORECAST share the home page’s forest-green, paper and warm-clay visual style. Home testimonials are explicitly labeled fictional examples, pending real interviews. Start / Growth / Scale pricing is a preliminary concept: no payments are accepted and no proposed plan limits are enforced. Current product access remains free.
+Текущее использование бесплатно. Оплата не подключена; сохранённые расчёты комиссии и старые записи подписок не являются начислением платежей. Реальные метрики эффективности, число клиентов и коммерческие результаты: **пока нет данных**.
 
-The existing stack is preserved: **Next.js / React / TypeScript → FastAPI / SQLAlchemy → PostgreSQL**, with SQLite for local development. Production targets remain Vercel and Render. There is no Go server in this repository.
+Стек: FastAPI, SQLAlchemy, Alembic; Next.js 16, React 19, TypeScript, Tailwind. Локально используется SQLite. Рабочее пространство по умолчанию реальное и пустое, данные организаций изолированы; демонстрационное наполнение отключено.
 
-## Run locally
+## Локальный запуск
 
-Requirements: Node.js 20.9+, Python 3.12+, and optionally Docker for PostgreSQL.
+Нужны **Python 3.12** и **Node.js 24 LTS**. Выполняйте команды из корня репозитория. Файлы `.env` не добавляйте в Git; повторное копирование заменит ваши локальные настройки.
+
+Linux/macOS — установка:
 
 ```sh
-python3 -m venv backend/.venv
-backend/.venv/bin/pip install -r backend/requirements.lock.txt
+python3.12 -m venv backend/.venv
+backend/.venv/bin/python -m pip install -r backend/requirements.lock.txt
 npm ci --prefix frontend
 cp backend/.env.example backend/.env
-./scripts/dev-local.sh
 ```
 
-Open **http://127.0.0.1:3000**. The script applies migrations and starts the API on port 8001 and the frontend on 3000, with the matching API URL. It refuses to take over occupied ports. To use PostgreSQL, configure `DATABASE_URL` in `backend/.env` before starting.
-
-The default workspace is **real and empty**. `AUTO_SEED_DEMO=false`. Existing synthetic records remain archived with their provenance; changing the server mode does not relabel or publish them. New users receive isolated organizations with no example products or made-up sales. Do not put secrets or operational files in Git.
-
-## SAVE
-
-- Public real offers, search, category/city/price/discount and charity filters, product details, pickup windows, expiry and optional photos.
-- Consumer reservations and cancellations; seller collection; status history. Stock changes and idempotency are enforced in transactions.
-- Verified businesses publish and edit their own offers after confirming physical availability. A forecast never creates an offer or stock.
-- Verified charities request bulk quantities, beneficiary counts and logistics; sellers approve or reject requests. Offers support discounted, free or negotiated terms.
-- Signup records the requested role but grants only consumer access. An operator verifies the business outside the application, then runs:
+Первый терминал — API:
 
 ```sh
 cd backend
-.venv/bin/python -m app.roles_admin --email owner@example.com --role business
-# Use --role charity after verifying a charity, or consumer to revoke the role.
+.venv/bin/python -m alembic upgrade head
+.venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8001
 ```
 
-Photos are validated and re-encoded, then stored in the database. No ephemeral local upload directory is needed. Monetary transfers, payment processing and legal verification services are not integrated. Existing 5% commission accounting is retained as an internal ledger calculation, not a charge.
-
-## FORECAST
-
-1. **Upload CSV/XLSX:** inspect sheets and columns → map fields → preview rows, duplicates and errors → explicitly confirm. New products require an explicit unit. Import does not create physical stock.
-2. **Start without history:** five steps for business, products, demand, external factors and review. Blank means unknown; zero remains zero. Estimates belong to one selected location and are stored separately from actual observations.
-3. Download a genuine XLSX with `Business`, `Products`, `HistoricalData` and `Assumptions`. Without recorded daily history, `HistoricalData` contains headers only. Reimport the questionnaire for review, or import its historical sheet through the same verified pipeline.
-4. Add daily actuals or repeat imports, run analysis explicitly and revisit persisted results. Opening a page does not train models. Identical calculations reuse the stored result.
-
-At least 3 observed dates are needed for a numerical historical baseline. With 28+ observations, SAQTA compares last-value, recent-mean and weekday baselines on a chronological validation period, then evaluates the selected method on a separate final 7-observation rolling holdout. At 98+ observations it also compares a regularized regression implemented with NumPy. MAE, RMSE and WAPE are computed from predictions made using earlier observations only. Unknown stock, missing dates, stale history and insufficient evaluation data are disclosed. No confidence interval or guaranteed accuracy is invented.
-
-Questionnaire estimates are explicitly provisional and have no accuracy metrics. Weather, holidays and promotions are retained as context; a causal effect is not claimed. Production recommendations use a disclosed 10% buffer and known available inventory; calculated surplus is conditional and is never automatically listed in SAVE.
-
-## Optional language model
-
-Core forecasting and factual explanations work without an LLM. An optional server-side adapter can call a **self-hosted Qwen3** endpoint using `LLM_BASE_URL`, `LLM_MODEL` and optional `LLM_API_KEY`. Only aggregated metrics and an allowlist of explanation fact IDs are sent. The model may prioritize these facts; it cannot supply forecasts, change numbers or invent explanation claims. Invalid responses, timeouts and unavailable inference fall back to deterministic explanations.
-
-No weights or inference server are deployed by this repository. There is no mandatory paid API, browser model or dependency on a developer’s laptop. See [model licensing and deployment constraints](docs/MODELS.md).
-
-## Verification and deployment
+Второй терминал — интерфейс:
 
 ```sh
+cd frontend
+NEXT_PUBLIC_API_URL=http://127.0.0.1:8001/api npm run dev -- --port 3000
+```
+
+Windows PowerShell — установка:
+
+```powershell
+py -3.12 -m venv backend/.venv
+backend/.venv/Scripts/python.exe -m pip install -r backend/requirements.lock.txt
+npm ci --prefix frontend
+Copy-Item backend/.env.example backend/.env
+```
+
+Первый терминал — API:
+
+```powershell
 cd backend
-.venv/bin/alembic upgrade head
-.venv/bin/alembic check
-.venv/bin/pytest -q
-.venv/bin/ruff check app tests
-cd ../frontend
-npm test -- --maxWorkers=2
+.venv/Scripts/python.exe -m alembic upgrade head
+.venv/Scripts/python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8001
+```
+
+Второй терминал — интерфейс:
+
+```powershell
+cd frontend
+$env:NEXT_PUBLIC_API_URL = 'http://127.0.0.1:8001/api'
+npm run dev -- --port 3000
+```
+
+Откройте [интерфейс](http://127.0.0.1:3000) и зарегистрируйтесь. [Документация API](http://127.0.0.1:8001/docs) доступна локально. Миграции применяются без автоматического наполнения данными. Остановка каждого процесса — `Ctrl+C`.
+
+## Переменные окружения
+
+Backend читает `backend/.env`, когда запускается из `backend/`. Все параметры ниже уже предусмотрены кодом; секреты остаются на сервере.
+
+| Переменная | По умолчанию / назначение |
+| --- | --- |
+| `DATABASE_URL` | `sqlite:///./saqta.db`; локальная БД |
+| `WORKSPACE_MODE` | `real`; обычная работа с отдельными организациями |
+| `AUTO_SEED_DEMO` | `false`; синтетическое наполнение только при явном включении в режиме `demo` |
+| `CORS_ORIGINS` | `http://localhost:3000,http://127.0.0.1:3000`; разрешённые адреса интерфейса, список CSV или JSON |
+| `SAQTA_TIMEZONE` | `Asia/Qyzylorda`; календарные даты продукта |
+| `AUTH_SESSION_HOURS` | `168`; срок действия сессии |
+| `AUTH_REGISTRATION_ENABLED` | `true`; разрешить регистрацию |
+| `ADMIN_TOKEN` | Пусто — `/api/admin/*` отключён; задайте отдельный случайный секрет для оператора |
+| `RATE_LIMIT_ENABLED` | `true`; включить ограничение попыток |
+| `RATE_LIMIT_MAX_KEYS` | `10000`; максимальное число ключей лимитера в памяти |
+| `RATE_LIMIT_PICKUP_MAX_ATTEMPTS` | `5`; попыток ввода кода для одного заказа бизнеса |
+| `RATE_LIMIT_PICKUP_WINDOW_SECONDS` | `300`; окно ограничения кода в секундах |
+| `LOGIN_MAX_ATTEMPTS` | `10`; попыток входа отдельно для IP и нормализованного email |
+| `LOGIN_WINDOW_SECONDS` | `300`; окно ограничения входа в секундах |
+| `REGISTER_MAX_ATTEMPTS` | `5`; попыток регистрации с одного IP |
+| `REGISTER_WINDOW_SECONDS` | `3600`; окно ограничения регистрации в секундах |
+| `FORECAST_REQUIRES_SUBSCRIPTION` | `false`; оставьте выключенным для текущего бесплатного Forecast; параметр совместимости со старой логикой |
+| `DEMO_ANCHOR_DATE` | Не задана; необязательная дата `YYYY-MM-DD` для воспроизводимых синтетических примеров |
+| `LLM_BASE_URL` | Пусто; необязательный сервер объяснений с совместимым API, численный прогноз работает без него |
+| `LLM_MODEL` | `Qwen/Qwen3-0.6B`; модель необязательного сервера объяснений |
+| `LLM_API_KEY` | Пусто; секрет необязательного сервера объяснений |
+| `NEXT_PUBLIC_API_URL` | Переменная frontend: для команд выше `http://127.0.0.1:8001/api`; значение по умолчанию в коде использует порт `8000` |
+
+Лимитер хранится в памяти одного процесса и сбрасывается при его перезапуске; запуски с несколькими процессами не разделяют счётчики. Ответ ограничения — `429` с `Retry-After`. Операторские запросы ограничены 60 попытками в минуту на IP.
+
+Админ-API использует `Authorization: Bearer <ADMIN_TOKEN>`: `GET /api/admin/pending`, `POST /api/admin/approve`, `POST /api/admin/reset-password`. Сброс пароля завершает все сессии пользователя. Токен администратора не передаётся в frontend.
+
+Для ручных операций используйте [инструкцию оператора](docs/OPERATOR.md) и `scripts/operator.py`. Скрипт читает `API_URL` и `ADMIN_TOKEN` из окружения; новый пароль вводится скрыто.
+
+## Проверки
+
+Из `backend/` (на Windows замените `.venv/bin/python` на `.venv/Scripts/python.exe`):
+
+```sh
+.venv/bin/python -m ruff check app tests
+.venv/bin/python -m pytest -q
+.venv/bin/python -m alembic check
+```
+
+Из `frontend/`, с заданным выше `NEXT_PUBLIC_API_URL`:
+
+```sh
 npm run lint
 npm run typecheck
+npm test
 npm run build
 ```
 
-To exercise the new workflows against PostgreSQL as well as SQLite, set `SAQTA_TEST_DATABASE_URL` to a **disposable test database**. Tests create and remove their own schemas. Never supply production credentials to tests.
-
-- **Render:** preserve the existing database and service; apply the additive Alembic migration through the existing Docker startup. Set `WORKSPACE_MODE=real`, `AUTO_SEED_DEMO=false`, `FORECAST_REQUIRES_SUBSCRIPTION=false`, and the exact frontend HTTPS origin in `CORS_ORIGINS`. Keep `DATABASE_URL` server-only. `render.yaml` preserves the existing resource names.
-- **Vercel:** root directory `frontend`; `NEXT_PUBLIC_API_URL=https://YOUR-API/api`; rebuild after changing this public variable. Hosted builds reject a localhost backend URL.
-- Back up the existing production database before migration. Verify health, registration, tenant isolation, a real import and a reservation after rollout. GitHub push is not evidence that either host successfully deployed.
-
-The 29 October 2026 refactor has been checked locally. **A production rollout is not claimed.** Detailed changes, test results, migration behavior and remaining limits are recorded in [the refactor report](docs/REFACTOR_2026_10_29.md). Older architecture, subscription and verification documents describe previous releases and are not current product instructions.
+Обычный набор backend-тестов использует SQLite. Не задавайте `SAQTA_TEST_DATABASE_URL` для этого набора: эта переменная отдельно включает существующие тесты PostgreSQL. Исторические документы в [docs/](docs/) сохранены как архив и не заменяют этот README.

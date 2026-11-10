@@ -20,7 +20,7 @@ export function ProductIntro({ kind, title, description, action }: {
   return (
     <header className={`workspace-hero workspace-hero--${kind}`}>
       <div className="workspace-hero-copy">
-        <p className="workspace-kicker"><Leaf size={14} aria-hidden="true" />SAQTA {kind.toUpperCase()}</p>
+        <p className="workspace-kicker"><Leaf size={14} aria-hidden="true" />SaqtaFood {kind === "save" ? "Save" : "Forecast"}</p>
         <h1>{t(title)}</h1>
         <p className="workspace-hero-description">{t(description)}</p>
         <div className="workspace-hero-bottom">

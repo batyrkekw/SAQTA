@@ -39,7 +39,7 @@ function mockImportApi(options: { mode?: SourceOrigin; inspected?: Partial<Impor
       if (path === "/api/imports/commit") return new Response(JSON.stringify({ batch_id: 8, imported_count: 1, duplicate_count: 0, rejected_count: 0, message: "Импорт сохранён; дубликаты пропущены", source_origin: mode }));
       throw new Error(`Unexpected write endpoint ${path}`);
     }
-    if (path === "/api/settings") return new Response(JSON.stringify({ bakery_name: "SAQTA", city: "Астана", currency: "KZT", safety_buffer_percent: 10, workspace_mode: mode, demo_data: mode === "demo", data_source: mode, auth_enabled: false }));
+    if (path === "/api/settings") return new Response(JSON.stringify({ bakery_name: "SaqtaFood", city: "Астана", currency: "KZT", safety_buffer_percent: 10, workspace_mode: mode, demo_data: mode === "demo", data_source: mode, auth_enabled: false }));
     if (path === "/api/products") return new Response(JSON.stringify([{ id: 1, name: "Круассан", category: "Выпечка", unit: "шт.", price_kzt: 750, cost_kzt: 290, weight_grams: 80, is_active: true }]));
     if (path === "/api/locations") return new Response(JSON.stringify([{ id: 1, bakery_id: 1, name: "Есиль", address: "Демо-адрес", city: "Астана" }]));
     if (path === "/api/export") return new Response("kind,product_id,location_id,date,quantity\n");

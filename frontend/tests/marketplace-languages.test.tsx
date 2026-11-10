@@ -8,6 +8,7 @@ import {
 import { translateText } from "../src/lib/i18n/translate";
 import Marketplace from "../src/features/save/marketplace";
 const session = vi.hoisted(() => ({ role: "consumer" }));
+const consentLabel = "Я согласен на обработку персональных данных и принимаю Пользовательское соглашение.";
 vi.mock("next/navigation", () => ({ usePathname: () => "/save" }));
 vi.mock("../src/features/account/account", () => ({
   useAccount: () => ({
@@ -53,6 +54,101 @@ afterEach(() => {
   );
 });
 describe.each(["ru", "kk", "en"] as const)("SAVE in %s", (language) => {
+  it.each(["consumer", "business"])("shows the customer contact in private orders for %s", async (role) => {
+    session.role = role;
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
+    const t = (text: string) => translateText(text, language), user = userEvent.setup();
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => new Response(JSON.stringify(
+      url.includes("/market/orders") ? [{
+        id: 1, status: "reserved", seller: role === "business", kind: "individual",
+        customer_name: "Test recipient", customer_phone: "+77011234567", consent_given_at: new Date().toISOString(),
+        total_kzt: 500, beneficiaries: null, logistics: "", items: [], events: [], pickup_code: "001234",
+      }] : [offer],
+    ))));
+    render(<LanguageProvider><Marketplace /></LanguageProvider>);
+    await screen.findByRole("button", { name: t("Открыть предложение") });
+    expect(screen.queryByText(/\+77011234567/)).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: t("Мои заявки") }));
+    expect(await screen.findByText(`${t("Телефон покупателя")}: +77011234567`)).toBeInTheDocument();
+    if (role === "consumer") {
+      expect(screen.getByText("001234")).toBeInTheDocument();
+      expect(screen.queryByRole("textbox", { name: new RegExp(t("Код получения покупателя")) })).not.toBeInTheDocument();
+    } else {
+      expect(screen.queryByText("001234")).not.toBeInTheDocument();
+      expect(screen.getByRole("textbox", { name: new RegExp(t("Код получения покупателя")) })).toHaveValue("");
+    }
+  });
+  it("requires six digits, keeps leading zeros, and allows retry after an incorrect pickup code", async () => {
+    session.role = "business";
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
+    const t = (text: string) => translateText(text, language), user = userEvent.setup();
+    const writes: unknown[] = [];
+    let status = "reserved";
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+      if (init?.method === "POST") {
+        expect(url).toContain("/market/orders/1/collect");
+        writes.push(JSON.parse(String(init.body)));
+        if (writes.length === 1) return new Response(JSON.stringify({ detail: "Неверный код получения" }), { status: 422 });
+        status = "collected";
+        return new Response("{}");
+      }
+      return new Response(JSON.stringify(url.includes("/market/orders") ? [{
+        id: 1, status, seller: true, kind: "individual", customer_name: "Test recipient",
+        total_kzt: 500, beneficiaries: null, logistics: "", items: [], events: [],
+      }] : [offer]));
+    }));
+    render(<LanguageProvider><Marketplace /></LanguageProvider>);
+    await user.click(screen.getByRole("button", { name: t("Мои заявки") }));
+    const input = await screen.findByRole("textbox", { name: new RegExp(t("Код получения покупателя")) });
+    const collect = screen.getByRole("button", { name: t("Подтвердить выдачу") });
+    await user.click(collect);
+    expect(screen.getByText(t("Укажите шестизначный код получения"))).toBeInTheDocument();
+    for (const invalid of ["12345", "12a456"]) {
+      await user.clear(input);
+      await user.type(input, invalid);
+      await user.click(collect);
+      expect(writes).toHaveLength(0);
+    }
+    await user.clear(input);
+    await user.type(input, "000001");
+    await user.click(collect);
+    expect(await screen.findByText(t("Неверный код получения"))).toBeInTheDocument();
+    expect(input).toHaveValue("000001");
+    expect(input).toBeEnabled();
+    expect(screen.getByText(t("Зарезервирован"))).toBeInTheDocument();
+    await user.clear(input);
+    await user.type(input, "001234");
+    await user.click(collect);
+    expect(await screen.findByText(t("Выдан"))).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: t("Подтвердить выдачу") })).not.toBeInTheDocument();
+    expect(writes).toEqual([{ pickup_code: "000001" }, { pickup_code: "001234" }]);
+  });
+  it("cancels without submitting or validating a pickup code", async () => {
+    session.role = "business";
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
+    const t = (text: string) => translateText(text, language), user = userEvent.setup();
+    const writes: unknown[] = [];
+    let status = "reserved";
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+      if (init?.method === "POST") {
+        expect(url).toContain("/market/orders/1/cancel");
+        writes.push(JSON.parse(String(init.body)));
+        status = "cancelled";
+        return new Response("{}");
+      }
+      return new Response(JSON.stringify(url.includes("/market/orders") ? [{
+        id: 1, status, seller: true, kind: "individual", customer_name: "Test recipient",
+        total_kzt: 500, beneficiaries: null, logistics: "", items: [], events: [],
+      }] : [offer]));
+    }));
+    render(<LanguageProvider><Marketplace /></LanguageProvider>);
+    await user.click(screen.getByRole("button", { name: t("Мои заявки") }));
+    const input = await screen.findByRole("textbox", { name: new RegExp(t("Код получения покупателя")) });
+    await user.type(input, "bad");
+    await user.click(screen.getByRole("button", { name: t("Отменить") }));
+    expect(await screen.findByText(t("Отменён"))).toBeInTheDocument();
+    expect(writes).toEqual([{}]);
+  });
   it("retries a reservation with the same key and translates backend errors and confirmation", async () => {
     localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
     const t = (s: string) => translateText(s, language),
@@ -87,6 +183,18 @@ describe.each(["ru", "kk", "en"] as const)("SAVE in %s", (language) => {
     const submit = screen.getByRole("button", {
       name: new RegExp(t("Забронировать")),
     });
+    const consent = screen.getByRole("checkbox", { name: t(consentLabel) });
+    expect(consent).not.toBeChecked();
+    expect(screen.getByRole("link", { name: t("Политика конфиденциальности") })).toHaveAttribute("href", "/privacy");
+    expect(screen.getByRole("link", { name: t("Пользовательское соглашение") })).toHaveAttribute("href", "/terms");
+    await user.click(submit);
+    expect(screen.getByText(t("Укажите телефон Казахстана в формате +7XXXXXXXXXX"))).toBeInTheDocument();
+    expect(writes).toHaveLength(0);
+    await user.type(screen.getByRole("textbox", { name: new RegExp(t("Телефон покупателя")) }), "8 (701) 123-45-67");
+    await user.click(submit);
+    expect(screen.getByText(t("Подтвердите согласие на обработку персональных данных"))).toBeInTheDocument();
+    expect(writes).toHaveLength(0);
+    await user.click(consent);
     await user.click(submit);
     expect(
       await screen.findByText(t("Нельзя бронировать собственное предложение")),
@@ -101,6 +209,8 @@ describe.each(["ru", "kk", "en"] as const)("SAVE in %s", (language) => {
       listing_id: 4,
       kind: "individual",
       quantity: 1,
+      customer_phone: "8 (701) 123-45-67",
+      consent: true,
     });
   });
   it("requires beneficiary information for charity requests", async () => {
@@ -137,6 +247,15 @@ describe.each(["ru", "kk", "en"] as const)("SAVE in %s", (language) => {
       await screen.findByRole("button", { name: t("Открыть предложение") }),
     );
     expect(screen.queryByText("−100%")).not.toBeInTheDocument();
+    const submit = screen.getByRole("button", { name: new RegExp(t("Отправить заявку")) });
+    await user.click(submit);
+    expect(screen.getByText(t("Укажите телефон Казахстана в формате +7XXXXXXXXXX"))).toBeInTheDocument();
+    expect(writes).toHaveLength(0);
+    await user.type(screen.getByRole("textbox", { name: new RegExp(t("Телефон покупателя")) }), "+77011234567");
+    await user.click(submit);
+    expect(screen.getByText(t("Подтвердите согласие на обработку персональных данных"))).toBeInTheDocument();
+    expect(writes).toHaveLength(0);
+    await user.click(screen.getByRole("checkbox", { name: t(consentLabel) }));
     await user.click(
       screen.getByRole("button", { name: new RegExp(t("Отправить заявку")) }),
     );
@@ -160,6 +279,8 @@ describe.each(["ru", "kk", "en"] as const)("SAVE in %s", (language) => {
       kind: "bulk",
       beneficiaries: 20,
       logistics: "Pickup required",
+      customer_phone: "+77011234567",
+      consent: true,
     });
   });
 });
