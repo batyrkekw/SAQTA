@@ -27,7 +27,7 @@ describe('API failure handling and changing filters', () => {
   });
   it('shows safe network errors rather than fabricated metrics', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('private internal error')));
-    await expect(api('/dashboard')).rejects.toThrow('Нет связи с сервером SAQTA');
+    await expect(api('/dashboard')).rejects.toThrow('Нет связи с сервером SaqtaFood');
   });
   it('ignores an old response when a location filter changes', async () => {
     let resolveOld!: (value: Response) => void;

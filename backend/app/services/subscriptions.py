@@ -45,7 +45,7 @@ def require_forecast_access(db):
     if result["access_mode"] == "demo":
         return result
     if not result["active"]:
-        raise HTTPException(402, "Для загрузки данных, анализа и прогнозирования нужен действующий тариф SAQTA Forecast. Тариф отсутствует или истёк; доступна ручная активация.")
+        raise HTTPException(402, "Для загрузки данных, анализа и прогнозирования нужен действующий тариф SaqtaFood Forecast. Тариф отсутствует или истёк; доступна ручная активация.")
     count = db.scalar(select(func.count()).select_from(Product).where(Product.is_active.is_(True))) or 0
     locations = db.scalar(select(func.count()).select_from(BakeryLocation)) or 0
     if count > result["limits"]["products"] or locations > result["limits"]["locations"]:

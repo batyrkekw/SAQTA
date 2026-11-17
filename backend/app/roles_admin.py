@@ -7,7 +7,7 @@ from app.models import AuthUser
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Approve a verified SAQTA account role")
+    parser = argparse.ArgumentParser(description="Approve a verified SaqtaFood account role")
     parser.add_argument("--email", required=True)
     parser.add_argument("--role", choices=["consumer", "business", "charity"], required=True)
     args = parser.parse_args()

@@ -1,6 +1,6 @@
-> Historical release documentation. For the current SAVE/FORECAST workflows, free analysis, roles and rollout settings, use [the 29 October 2026 refactor report](REFACTOR_2026_10_29.md) and [README](../README.md).
+> **Исторический документ.** Сведения ниже относятся к прежнему состоянию проекта и могут быть устаревшими. Текущая функциональность, настройки и локальный запуск описаны в [актуальном README](../README.md). Старые цифры и записи о размещении не подтверждают текущие результаты или публичный запуск.
 
-# SAQTA public API contract
+# SaqtaFood public API contract
 
 Local base: `http://127.0.0.1:8000/api`. The frontend API base is configured through `NEXT_PUBLIC_API_URL`, including `/api`. FastAPI publishes `/docs` and `/openapi.json` at the backend origin.
 
@@ -180,7 +180,7 @@ Current unsold stock, surplus products and active listings are live. Production/
 
 Only collected orders count. Weight is recorded quantity × snapshotted catalog grams, not physical weighing. Value uses the reserved discounted price. The baseline is the preceding equal-length period; percentage is suppressed unless both periods have recorded production coverage for every date and baseline waste is nonzero. Coverage is a proxy, not proof of full reporting. No causal or CO₂ claim is made. The 42-day seed cannot provide a complete preceding 30-day baseline.
 
-## Free SAQTA Save and demo orders
+## Free SaqtaFood Save and demo orders
 
 `GET /listings?location_id&search&status=active|inactive|all`:
 

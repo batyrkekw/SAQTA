@@ -1,6 +1,8 @@
-# SAQTA brand guide
+> **Исторический документ.** Сведения ниже относятся к прежнему состоянию проекта и могут быть устаревшими. Текущая функциональность, настройки и локальный запуск описаны в [актуальном README](../README.md). Старые цифры и записи о размещении не подтверждают текущие результаты или публичный запуск.
 
-SAQTA is a Kazakhstan-origin technology product for bakery demand planning and eligible surplus recovery. The name is inspired by Kazakh **сақта**, “keep”, “preserve”, or “protect”, depending on context.
+# SaqtaFood brand guide
+
+SaqtaFood is a Kazakhstan-origin technology product for bakery demand planning and eligible surplus recovery. The name is inspired by Kazakh **сақта**, “keep”, “preserve”, or “protect”, depending on context.
 
 **Positioning:** Predict demand. Save food. Protect tomorrow.
 
@@ -67,10 +69,10 @@ The favicon is the self-contained forest tile and grain signal. The app icon mai
 
 ## Correct and incorrect use
 
-**Correct:** maintain aspect ratio; leave clear space; select the correct light/dark asset; show module names as text outside the lockup; use the symbol alone beside a readable SAQTA label; keep ecological claims tied to recorded data.
+**Correct:** maintain aspect ratio; leave clear space; select the correct light/dark asset; show module names as text outside the lockup; use the symbol alone beside a readable SaqtaFood label; keep ecological claims tied to recorded data.
 
 **Incorrect:** stretch or rotate the mark; replace the custom wordmark with arbitrary typed text; add a gradient or drop shadow; recolor the grains individually; remove the protective bowl; place white lettering on lime; use the mark as a decorative chart watermark; invent customer logos, endorsements, or environmental outcomes.
 
 ## Voice and product claims
 
-Be practical, clear, and transparent. Forecasts are estimates, not guarantees. Distinguish measured records, estimates, illustrative assumptions, and synthetic demo data. “SAQTA Forecast” prevents avoidable overproduction through planning; “SAQTA Save” provides a way to sell eligible surplus. A marketplace sale does not prove that the product would otherwise have been discarded. Do not claim measured CO₂ reductions or causal impact without appropriate evidence.
+Be practical, clear, and transparent. Forecasts are estimates, not guarantees. Distinguish measured records, estimates, illustrative assumptions, and synthetic demo data. “SaqtaFood Forecast” prevents avoidable overproduction through planning; “SaqtaFood Save” provides a way to sell eligible surplus. A marketplace sale does not prove that the product would otherwise have been discarded. Do not claim measured CO₂ reductions or causal impact without appropriate evidence.

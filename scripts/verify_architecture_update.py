@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify SAQTA architecture using HTTP and generated synthetic fixtures only.
+"""Verify SaqtaFood architecture using HTTP and generated synthetic fixtures only.
 
 Default is read-only. --write-demo enables explicit test-marked records in a
 confirmed DEMO workspace. No private files, credentials, reset or deletion.

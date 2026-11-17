@@ -30,7 +30,7 @@ def main():
     with SessionLocal() as db:
         result = initialize_demo(db)
         db.commit()
-    print("SAQTA startup: " + json.dumps(result, ensure_ascii=False))
+    print("SaqtaFood startup: " + json.dumps(result, ensure_ascii=False))
 
 
 if __name__ == "__main__":

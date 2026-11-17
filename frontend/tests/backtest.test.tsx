@@ -30,9 +30,9 @@ describe("historical backtest UI", () => {
     render(<BacktestPanel />);
     const run = screen.getByRole("button", { name: /Запустить проверку/ });
     await waitFor(() => expect(run).toBeEnabled());
-    expect(screen.queryByText("MAE · SAQTA")).not.toBeInTheDocument();
+    expect(screen.queryByText("MAE · SaqtaFood")).not.toBeInTheDocument();
     await user.click(run);
-    expect(await screen.findByText("MAE · SAQTA")).toBeInTheDocument();
+    expect(await screen.findByText("MAE · SaqtaFood")).toBeInTheDocument();
     expect(screen.getByText("SYNTHETIC / DEMO")).toBeInTheDocument();
     expect(screen.getByText(/не подтверждает качество прогноза на реальной пекарне/)).toBeInTheDocument();
     const url = new URL(fetchMock.mock.calls.find(([input]) => String(input).includes("/backtest"))![0]);
@@ -43,7 +43,7 @@ describe("historical backtest UI", () => {
   it("renders requirements instead of invented accuracy when history is insufficient", () => {
     render(<BacktestResults result={{ ...report, status: "insufficient_history", history_days: 5, evaluation_points: 0, metrics: { mae: null, wape_percent: null }, naive_metrics: { mae: null, wape_percent: null }, points: [] }} />);
     expect(screen.getByText("Недостаточно данных для исторической проверки")).toBeInTheDocument();
-    expect(screen.queryByText("MAE · SAQTA")).not.toBeInTheDocument();
+    expect(screen.queryByText("MAE · SaqtaFood")).not.toBeInTheDocument();
     expect(screen.getByText(/Нужны date, product_id/)).toBeInTheDocument();
   });
   it("does not invent WAPE when actual sales sum to zero", () => {

@@ -4,7 +4,7 @@ import json
 from typing import Annotated, Literal
 from zoneinfo import ZoneInfo
 
-from pydantic import field_validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
@@ -21,6 +21,15 @@ class Settings(BaseSettings):
     demo_anchor_date: date | None = None
     auth_session_hours: int = 168
     auth_registration_enabled: bool = True
+    admin_token: str = Field(default="", repr=False)
+    rate_limit_enabled: bool = True
+    rate_limit_max_keys: int = Field(default=10_000, ge=1, le=1_000_000)
+    rate_limit_pickup_max_attempts: int = Field(default=5, ge=1, le=100)
+    rate_limit_pickup_window_seconds: int = Field(default=300, ge=1, le=86_400)
+    login_max_attempts: int = Field(default=10, ge=1, le=10_000)
+    login_window_seconds: int = Field(default=300, ge=1, le=86_400)
+    register_max_attempts: int = Field(default=5, ge=1, le=10_000)
+    register_window_seconds: int = Field(default=3600, ge=1, le=86_400)
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     @field_validator("cors_origins", mode="before")

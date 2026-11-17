@@ -127,7 +127,7 @@ def test_export_and_pagination(client):
 
 
 def test_settings_and_reset_confirmation(client):
-    assert client.patch("/api/settings", json={"safety_buffer_percent": 15, "bakery_name": "SAQTA тест"}).json()["safety_buffer_percent"] == 15
+    assert client.patch("/api/settings", json={"safety_buffer_percent": 15, "bakery_name": "SaqtaFood тест"}).json()["safety_buffer_percent"] == 15
     assert client.patch("/api/settings", json={"safety_buffer_percent": 101}).status_code == 422
     assert client.post("/api/demo/reset", json={"confirm": "yes"}).status_code == 422
     response = client.post("/api/demo/reset", json={"confirm": "RESET SAQTA DEMO"})
@@ -174,12 +174,12 @@ def test_unit_economics_defaults_and_zero_divisors(client):
     assert client.post("/api/economics", json={"cac_kzt": -1}).status_code == 422
 
 
-def test_impact_only_counts_collected_orders_and_no_causality_claims(client):
+def test_impact_only_counts_collected_orders_and_no_causality_claims(client, pickup_code):
     before = client.get("/api/impact").json()
     listing = client.get("/api/listings").json()[0]
-    order = client.post("/api/orders", json={"customer_name": "Тест", "items": [{"listing_id": listing["id"], "quantity": 1}]}).json()
+    order = client.post("/api/orders", json={"customer_phone": "+77000000000", "consent": True, "customer_name": "Тест", "items": [{"listing_id": listing["id"], "quantity": 1}]}).json()
     assert client.get("/api/impact").json()["recovered_units"] == before["recovered_units"]
-    assert client.post(f"/api/orders/{order['id']}/collect").status_code == 200
+    assert client.post(f"/api/orders/{order['id']}/collect", json={"pickup_code": pickup_code(order["id"])}).status_code == 200
     after = client.get("/api/impact").json()
     assert after["recovered_units"] == before["recovered_units"] + 1
     assert round(after["recovered_weight_kg"] - before["recovered_weight_kg"], 3) == listing["weight_grams"] / 1000

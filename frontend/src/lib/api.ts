@@ -50,7 +50,7 @@ async function isSleepingHost(response: Response) {
   return !(response.headers.get("content-type") || "").includes("application/json");
 }
 
-export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
+async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const retryable = (init.method || "GET").toUpperCase() === "GET";
   const deadline = Date.now() + (retryable ? wakeWindowMs : 0);
   let response: Response | null = null;
@@ -59,7 +59,9 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
       response = await fetch(`${API_URL}${path}`, { ...init, headers: authenticatedHeaders(init), cache: "no-store" });
       if (!(await isSleepingHost(response)) || Date.now() >= deadline) break;
     } catch {
-      if (Date.now() >= deadline) { setWaking(false); throw new ApiError("Нет связи с сервером SAQTA. Проверьте подключение и повторите запрос.", 0); }
+      // A caller's abort (for example the sign-in timeout) ends the request immediately.
+      if (init.signal?.aborted) { setWaking(false); throw new ApiError("Запрос отменён.", 0); }
+      if (Date.now() >= deadline) { setWaking(false); throw new ApiError("Нет связи с сервером SaqtaFood. Проверьте подключение и повторите запрос.", 0); }
     }
     setWaking(true);
     await pause(Math.min(2000 * 1.5 ** attempt, 8000));
@@ -71,6 +73,27 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     throw new ApiError(detail, response.status, rows);
   }
   return response.json() as Promise<T>;
+}
+// Authentication must always release the form, including a stalled response body.
+// A timed-out registration may have committed: offer sign-in rather than retrying it automatically.
+export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
+  // Session checks (GET /auth/me) may wait for a sleeping host; sign-in forms keep the 20 s limit.
+  if (!path.startsWith('/auth/') || (init.method || 'GET').toUpperCase() === 'GET') return request<T>(path, init);
+  const controller = new AbortController();
+  const onAbort = () => controller.abort();
+  init.signal?.addEventListener('abort', onAbort, { once: true });
+  if (init.signal?.aborted) controller.abort();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      reject(new ApiError(path === '/auth/register'
+        ? 'Сервер не ответил вовремя. Если аккаунт уже создан, попробуйте войти с теми же данными.'
+        : 'Сервер не ответил вовремя. Повторите попытку через несколько секунд.', 0));
+    }, 20_000);
+  });
+  try { return await Promise.race([request<T>(path, { ...init, signal: controller.signal }), deadline]); }
+  finally { clearTimeout(timer); init.signal?.removeEventListener('abort', onAbort); }
 }
 export function post<T>(path: string, body: unknown) { return api<T>(path, { method: "POST", body: JSON.stringify(body) }); }
 export function patch<T>(path: string, body: unknown) { return api<T>(path, { method: "PATCH", body: JSON.stringify(body) }); }
@@ -91,7 +114,7 @@ export function useReference() {
   return { products: products.data || [], locations: locations.data || [], loading: products.loading || locations.loading, error: products.error || locations.error, reload: () => { products.reload(); locations.reload(); } };
 }
 export function defaultPeriod(days = 30) { const end = new Date(); const start = new Date(); start.setDate(start.getDate() - days + 1); const fmt = (date: Date) => date.toLocaleDateString("en-CA", { timeZone: "Asia/Qyzylorda" }); return { start: fmt(start), end: fmt(end) }; }
-export async function downloadCsv(params: Record<string, string | number | undefined> = {}) { const token = sessionToken(); const response = await fetch(`${API_URL}/export${query(params)}`, ...(token ? [{ headers: { Authorization: `Bearer ${token}` } }] as const : [])); if (!response.ok) throw new Error("Не удалось выгрузить CSV. Проверьте вход и права доступа."); const blob = await response.blob(); const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url; anchor.download = "saqta-records.csv"; anchor.click(); URL.revokeObjectURL(url); }
+export async function downloadCsv(params: Record<string, string | number | undefined> = {}) { const token = sessionToken(); const response = await fetch(`${API_URL}/export${query(params)}`, ...(token ? [{ headers: { Authorization: `Bearer ${token}` } }] as const : [])); if (!response.ok) throw new Error("Не удалось выгрузить CSV. Проверьте вход и права доступа."); const blob = await response.blob(); const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url; anchor.download = "SaqtaFood-records.csv"; anchor.click(); URL.revokeObjectURL(url); }
 
 export async function downloadFile(path: string, filename: string) {
   const response = await fetch(`${API_URL}${path}`, { headers: authenticatedHeaders({}), cache: 'no-store' });

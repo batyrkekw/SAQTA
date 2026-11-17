@@ -1,6 +1,8 @@
+> **Исторический документ.** Сведения ниже относятся к прежнему состоянию проекта и могут быть устаревшими. Текущая функциональность, настройки и локальный запуск описаны в [актуальном README](../README.md). Старые цифры и записи о размещении не подтверждают текущие результаты или публичный запуск.
+
 # Forecast methods and optional model licensing
 
-Checked 29 October 2026. No model-generated forecast, fabricated confidence interval, or assumed accuracy enters SAQTA’s results.
+Checked 29 October 2026. No model-generated forecast, fabricated confidence interval, or assumed accuracy enters SaqtaFood’s results.
 
 ## Numerical forecasting
 

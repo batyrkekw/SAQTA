@@ -1,4 +1,6 @@
-# Internal SAQTA planning model
+> **Исторический документ.** Сведения ниже относятся к прежнему состоянию проекта и могут быть устаревшими. Текущая функциональность, настройки и локальный запуск описаны в [актуальном README](../../README.md). Старые цифры и записи о размещении не подтверждают текущие результаты или публичный запуск.
+
+# Internal SaqtaFood planning model
 
 Repository-only team reference. This historical illustrative model is not a customer feature, a price commitment or verified operating performance. It is excluded from the public documentation copy script. The retained frontend module is frontend/internal/economics-page.tsx; its calculation library and backend internal endpoint remain tested. The endpoint is excluded from public OpenAPI. Do not add this document to public builds.
 

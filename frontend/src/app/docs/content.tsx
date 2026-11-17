@@ -11,8 +11,8 @@ export default function Documentation() {
 
   const apiUrl = (process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:8000/api').replace(/\/api\/?$/, '');
   return <><ProductHeader /><main className="mx-auto max-w-4xl px-6 py-12 md:py-20">
-    <Link href="/" className="inline-flex items-center gap-2 text-sm text-forest"><ArrowLeft size={16}/> {t(" На главную SAQTA")}</Link>
-    <div className="mt-12 flex items-center gap-4"><BookOpen className="text-primary" size={34}/><div><p className="eyebrow">{t("Центр знаний")}</p><h1 className="page-title mt-2">{t("Как устроена SAQTA")}</h1></div></div>
+    <Link href="/" className="inline-flex items-center gap-2 text-sm text-forest"><ArrowLeft size={16}/> {t(" На главную SaqtaFood")}</Link>
+    <div className="mt-12 flex items-center gap-4"><BookOpen className="text-primary" size={34}/><div><p className="eyebrow">{t("Центр знаний")}</p><h1 className="page-title mt-2">{t("Как устроена SaqtaFood")}</h1></div></div>
     <p className="mt-6 max-w-2xl leading-7 text-[#637369]">{t("Forecast помогает планировать производство по истории продаж. Save позволяет предложить подходящие остатки со скидкой. Все операции сохраняются в общей базе данных.")}</p>
     <div className="mt-8 grid gap-4 sm:grid-cols-2">{[
       ['README · English', '/docs/README.md', 'Установка, архитектура, тесты и развёртывание'],

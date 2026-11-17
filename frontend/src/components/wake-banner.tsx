@@ -17,7 +17,7 @@ export function WakeBanner() {
   return (
     <div role="status" className="wake-banner">
       <SanaSpark size={14} className="wake-spark" />
-      <span>{t("Сервер SAQTA просыпается после паузы. Это займёт до минуты — данные загрузятся сами.")}</span>
+      <span>{t("Сервер SaqtaFood просыпается после паузы. Это займёт до минуты — данные загрузятся сами.")}</span>
     </div>
   );
 }

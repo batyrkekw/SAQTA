@@ -190,7 +190,7 @@ def workbook_bytes(db):
 def read_profile_workbook(content, filename):
     tables = {table["name"]: table for table in read_tables(content, filename)}
     if not {"Business", "Products", "HistoricalData", "Assumptions"} <= tables.keys():
-        raise HTTPException(422, "Нужна книга SAQTA с листами Business, Products, HistoricalData и Assumptions")
+        raise HTTPException(422, "Нужна книга SaqtaFood с листами Business, Products, HistoricalData и Assumptions")
     try:
         data = {}
         for _, row in tables["Business"]["rows"]:

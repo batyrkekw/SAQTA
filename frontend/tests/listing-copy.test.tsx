@@ -9,7 +9,7 @@ describe("deterministic Save listing copy", () => {
   it("uses entered quantities, actual prices and Astana time without fabricated product claims", () => {
     const text = generateListingCopy(input);
     expect(text).toBe(generateListingCopy(input));
-    expect(text).toContain("Круассан · SAQTA Save");
+    expect(text).toContain("Круассан · SaqtaFood Save");
     expect(text).toContain("Количество: 2 шт.");
     expect(text).toContain("750 ₸"); expect(text).toContain("375 ₸"); expect(text).toContain("−50%");
     expect(text).toContain("13:00"); expect(text).toContain("15:00");

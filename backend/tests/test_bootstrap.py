@@ -46,7 +46,7 @@ def test_automatic_seed_initializes_empty_demo(blank_database, auto_seed_enabled
 def test_automatic_seed_preserves_existing_demo_mutations(database, auto_seed_enabled):
     with database() as db:
         bakery = db.scalar(select(Bakery))
-        bakery.name = "SAQTA · changed during the demo"
+        bakery.name = "SaqtaFood · changed during the demo"
         record = db.scalar(select(ProductionRecord).order_by(ProductionRecord.id))
         record.quantity += 1
         record_id, expected_quantity = record.id, record.quantity
@@ -57,7 +57,7 @@ def test_automatic_seed_preserves_existing_demo_mutations(database, auto_seed_en
         db.commit()
         assert result["products"] == 5
         assert db.scalar(select(func.count()).select_from(ProductionRecord)) == before
-        assert db.scalar(select(Bakery.name)) == "SAQTA · changed during the demo"
+        assert db.scalar(select(Bakery.name)) == "SaqtaFood · changed during the demo"
         assert db.get(ProductionRecord, record_id).quantity == expected_quantity
 
 

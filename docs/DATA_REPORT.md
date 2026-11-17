@@ -1,3 +1,5 @@
+> **Исторический документ.** Сведения ниже относятся к прежнему состоянию проекта и могут быть устаревшими. Текущая функциональность, настройки и локальный запуск описаны в [актуальном README](../README.md). Старые цифры и записи о размещении не подтверждают текущие результаты или публичный запуск.
+
 # Bakery data inspection
 
 This sanitized report contains structure and quality counts only. Source answers and identifying details remain in ignored `data/private/`; they must not be committed, uploaded to the public demo or published.
@@ -35,7 +37,7 @@ The workbook contains Google Forms questionnaire responses, including a submissi
 
 Use the responses privately for discovery, available-data-source planning and import mapping. Do not treat approximate volumes or stated willingness as verified operating results, prices or customer commitments. The real workbook yields **zero verified daily sales observations** for forecasting/backtesting. Existing 42-day synthetic seed data stays separate and labeled DEMO.
 
-## Mapping to SAQTA
+## Mapping to SaqtaFood
 
 Operational imports require actual `date`, `quantity`, `kind` (production/sales/waste), and an existing product and location, by ID/name or explicit defaults. `unit` must match the product catalog; prices are integer KZT; write-offs require a reason. Questionnaire timestamps/approximate volume/range answers are not silently mapped to these fields. Do not invent product identities, dates, unit costs, weights or daily distributions.
 

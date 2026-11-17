@@ -72,7 +72,8 @@ def ensure_account(client, creds, key, role, payload):
             return {"Authorization": "Bearer " + login.json()["token"]}
     email = f"{key}-{secrets.token_hex(3)}@demo.saqta.test"
     password = secrets.token_urlsafe(16)
-    response = client.post("/api/auth/register", json={"email": email, "password": password, "requested_role": role, **payload})
+    # Demo accounts belong to the operator running this command, who gives the consent.
+    response = client.post("/api/auth/register", json={"email": email, "password": password, "requested_role": role, "consent": True, **payload})
     response.raise_for_status()
     if role != "consumer":
         with SessionLocal() as db:

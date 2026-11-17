@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify SAQTA's Forecast / Save / About release using synthetic fixtures only.
+"""Verify SaqtaFood's Forecast / Save / About release using synthetic fixtures only.
 
 Read-only by default. --write-demo creates one isolated QA product and imported
 ledger, checks transactional import deduplication, then deactivates that product
@@ -175,7 +175,7 @@ class Verifier:
         results = []
         for path in paths:
             _, html, final = self.request("GET", self.frontend + path)
-            require("SAQTA" in html and 'lang="ru"' in html, f"Missing Russian SAQTA page: {path}")
+            require("SaqtaFood" in html and 'lang="ru"' in html, f"Missing Russian SaqtaFood page: {path}")
             parsed = VisibleHTML()
             parsed.feed(html)
             visible = " ".join(parsed.parts)

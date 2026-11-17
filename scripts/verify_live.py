@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify deployed SAQTA using only Python's standard library.
+"""Verify deployed SaqtaFood using only Python's standard library.
 
 Default: HTTP/API read checks. --write-demo explicitly enables synthetic QA
 records in a confirmed demo workspace. No reset, deletion, credentials or real
@@ -132,7 +132,7 @@ class Verifier:
 
     def page(self, path: str) -> dict:
         html, _ = self.client.fetch(self.frontend + path)
-        require(isinstance(html, str) and "SAQTA" in html, "Page is missing the SAQTA brand")
+        require(isinstance(html, str) and "SaqtaFood" in html, "Page is missing the SaqtaFood brand")
         require('lang="ru"' in html, "Page must declare Russian as its interface language")
         return {"path": path, "http_status": 200}
 
@@ -185,7 +185,7 @@ class Verifier:
 
     def docs(self) -> dict:
         schema, _ = self.client.fetch(self.backend + "/openapi.json")
-        require(schema["info"]["title"] == "SAQTA API", "OpenAPI title mismatch")
+        require(schema["info"]["title"] == "SaqtaFood API", "OpenAPI title mismatch")
         for path in ("/api/health", "/api/products", "/api/inventory", "/api/forecasts", "/api/orders", "/api/impact"):
             require(path in schema["paths"], f"Missing OpenAPI endpoint {path}")
         html, _ = self.client.fetch(self.backend + "/docs")
@@ -198,8 +198,8 @@ class Verifier:
             require("<svg" in svg, f"{path} is not SVG")
         manifest, _ = self.client.fetch(self.frontend + "/manifest.webmanifest")
         manifest = json.loads(manifest) if isinstance(manifest, str) else manifest
-        require("SAQTA" in manifest.get("name", ""), "App manifest brand mismatch")
-        return {"svg_assets": 4, "manifest": "SAQTA"}
+        require("SaqtaFood" in manifest.get("name", ""), "App manifest brand mismatch")
+        return {"svg_assets": 4, "manifest": "SaqtaFood"}
 
     def forecast(self) -> dict:
         tomorrow = (datetime.now(timezone(timedelta(hours=5))).date() + timedelta(days=1)).isoformat()

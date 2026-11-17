@@ -2,13 +2,14 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import Field, field_validator
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
-from app.core.config import get_settings
+from app.core.config import get_settings, now_utc
+from app.core.rate_limit import limit_login, limit_register
 from app.db.session import get_db, scoped_db
 from app.models import ApplicationSettings, AuthSession, AuthUser, Bakery, BakeryLocation, Subscription
-from app.schemas import Input
+from app.schemas import ConsentInput, Input
 from app.services.auth import DUMMY_PASSWORD_HASH, check_password, hash_password, issue_session, organization_json
 from app.services.subscriptions import PLANS, subscription_json
 
@@ -30,7 +31,7 @@ class Credentials(Input):
         return value
 
 
-class RegisterRequest(Credentials):
+class RegisterRequest(Credentials, ConsentInput):
     bakery_name: str = Field(min_length=2, max_length=120)
     requested_role: Literal["consumer", "business", "charity"] = "consumer"
     location_name: str = Field(default="Основная точка", min_length=2, max_length=120)
@@ -56,7 +57,7 @@ def session_response(db, user):
     return {"token": token, "expires_at": expires.isoformat(), **organization_json(db), "subscription": subscription_json(db)}
 
 
-@router.post("/auth/register", status_code=201)
+@router.post("/auth/register", status_code=201, dependencies=[Depends(limit_register)])
 def register(payload: RegisterRequest, db: DB):
     real_only()
     if not get_settings().auth_registration_enabled:
@@ -69,13 +70,14 @@ def register(payload: RegisterRequest, db: DB):
     db.add(BakeryLocation(bakery_id=owner.id, name=payload.location_name, address=payload.address, city=payload.city))
     db.add(ApplicationSettings(bakery_id=owner.id, workspace_mode="real", currency="KZT", safety_buffer_percent=10))
     db.add(Subscription(bakery_id=owner.id, plan="free", status="inactive"))
-    user = AuthUser(bakery_id=owner.id, email=payload.email, password_hash=hash_password(payload.password), role="consumer", requested_role=payload.requested_role)
+    user = AuthUser(bakery_id=owner.id, email=payload.email, password_hash=hash_password(payload.password),
+                    consent_given_at=now_utc(), role="consumer", requested_role=payload.requested_role)
     db.add(user)
     db.flush()
     return session_response(db, user)
 
 
-@router.post("/auth/login")
+@router.post("/auth/login", dependencies=[Depends(limit_login)])
 def login(payload: Credentials, db: DB):
     real_only()
     user = db.scalar(select(AuthUser).where(AuthUser.email == payload.email))
@@ -87,6 +89,13 @@ def login(payload: Credentials, db: DB):
     source = db.scalar(select(ApplicationSettings.workspace_mode).where(ApplicationSettings.bakery_id == user.bakery_id))
     if source != "real":
         raise HTTPException(403, "Демонстрационная организация не может войти как реальный клиент")
+    # Serialize session issuance with password resets. A reset that already won
+    # invalidates this verified hash; a later reset waits and revokes this session.
+    matched = db.execute(update(AuthUser).where(
+        AuthUser.id == user.id, AuthUser.password_hash == encoded,
+    ).values(password_hash=AuthUser.password_hash), execution_options={"synchronize_session": False}).rowcount
+    if matched != 1:
+        raise HTTPException(401, "Неверный email или пароль")
     return session_response(db, user)
 
 

@@ -19,12 +19,12 @@ export function ProductHeader() {
   return (
     <header className="public-header">
       <div className="public-header-inner">
-        <Link href="/" aria-label={t("SAQTA — главная")}>
+        <Link href="/" aria-label={t("SaqtaFood — главная")}>
           <Image
             src="/brand/saqta-logo.svg"
             width={136}
             height={30}
-            alt="SAQTA"
+            alt="SaqtaFood"
             priority
             className="w-[112px] sm:w-[136px]"
           />

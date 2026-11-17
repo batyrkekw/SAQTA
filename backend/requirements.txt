@@ -1,4 +1,6 @@
 fastapi==0.119.0
+# Starlette 0.48 TestClient uses aliases deprecated by AnyIO 4.15.
+anyio==4.14.2
 uvicorn[standard]==0.37.0
 SQLAlchemy==2.0.43
 alembic==1.16.5

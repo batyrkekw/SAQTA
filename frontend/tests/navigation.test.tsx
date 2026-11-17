@@ -19,10 +19,10 @@ describe("unified product navigation", () => {
     const { rerender } = render(<WorkspaceLayout><AppShell><p>Forecast content</p></AppShell></WorkspaceLayout>);
     const nav = screen.getByRole("navigation", { name: "Основная навигация" });
     nav.addEventListener("click", event => event.preventDefault());
-    expect(within(nav).getByRole("link", { name: "SAQTA FORECAST" })).toHaveAttribute("aria-current", "page");
+    expect(within(nav).getByRole("link", { name: "SaqtaFood Forecast" })).toHaveAttribute("aria-current", "page");
     fireEvent.click(screen.getByRole("button", { name: "Открыть меню" }));
     expect(screen.getByRole("button", { name: "Закрыть меню" })).toHaveAttribute("aria-expanded", "true");
-    for (const [path, text] of [["/save", "SAQTA SAVE"], ["/forecast", "SAQTA FORECAST"]]) {
+    for (const [path, text] of [["/save", "SaqtaFood Save"], ["/forecast", "SaqtaFood Forecast"]]) {
       pathnameStore.value = path;
       rerender(<WorkspaceLayout><AppShell><p>{text} content</p></AppShell></WorkspaceLayout>);
       expect(screen.getByRole("navigation", { name: "Основная навигация" })).toBe(nav);
@@ -36,7 +36,7 @@ describe("unified product navigation", () => {
   it("exposes only Forecast and Save in the main navigation and toggles mobile controls", () => {
     render(<ProductHeader/>);
     const nav = screen.getByRole("navigation", { name: "Основная навигация" });
-    expect(within(nav).getAllByRole("link").map(link => link.textContent)).toEqual(["SAQTA SAVE", "SAQTA FORECAST"]);
+    expect(within(nav).getAllByRole("link").map(link => link.textContent)).toEqual(["SaqtaFood Save", "SaqtaFood Forecast"]);
     expect(within(nav).queryByText(/Экономика|Инвентарь|Настройки|Impact|CAC|LTV/i)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Открыть меню" }));
     expect(screen.getByRole("button", { name: "Закрыть меню" })).toHaveAttribute("aria-expanded", "true");
