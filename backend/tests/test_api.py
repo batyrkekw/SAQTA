@@ -191,3 +191,28 @@ def test_no_baseline_gives_no_change_percentage(client):
     day = today_local() - timedelta(days=100)
     result = client.get(f"/api/impact?start_date={day}&end_date={day}").json()
     assert result["change_percent"] is None and result["recovered_units"] == 0
+
+
+def test_liveness_does_not_touch_the_database(monkeypatch):
+    from fastapi.testclient import TestClient
+    from app.db.session import get_db
+    from app.main import app
+
+    def no_database():
+        raise AssertionError("liveness must not open a database session")
+        yield  # pragma: no cover
+
+    app.dependency_overrides[get_db] = no_database
+    try:
+        response = TestClient(app).get("/api/health/live")
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+    assert response.status_code == 200 and response.json()["status"] == "ok"
+
+
+def test_neon_pooler_disables_prepared_statements():
+    from app.db.session import connect_args_for
+
+    assert connect_args_for("postgresql+psycopg://u:p@ep-x-pooler.eu-central-1.aws.neon.tech/db?sslmode=require") == {"prepare_threshold": None}
+    assert connect_args_for("postgresql+psycopg://u:p@ep-x.eu-central-1.aws.neon.tech/db?sslmode=require") == {}
+    assert "check_same_thread" in connect_args_for("sqlite:///x.db")

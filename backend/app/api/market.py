@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 from app.core.config import now_utc, today_local
 from app.db.session import get_db, scoped_db, require_row
 from app.models import ApplicationSettings, BakeryLocation, Order, OrderEvent, OrderItem, Product, SurplusListing
-from app.schemas import Input, ListingCreate, ListingPatch, OrderCreate, OrderLine, RecordCreate
+from app.schemas import Allergen, Input, ListingCreate, ListingPatch, OrderCreate, OrderLine, RecordCreate
 from app.services.auth import authenticated_user, require_business
 from app.services.inventory import create_record
 from app.services.marketplace import (
@@ -119,6 +119,8 @@ class Publish(Input):
     price: int = Field(ge=0, le=10_000_000)
     terms: Literal["discounted", "free", "negotiated"] = "discounted"
     description: str = Field(default="", max_length=1000)
+    ingredients: str = Field(default="", max_length=500)
+    allergens: list[Allergen] | None = Field(default=None, max_length=14)
     location_id: int = Field(gt=0)
     pickup_start: datetime
     pickup_deadline: datetime
@@ -163,6 +165,8 @@ def publish(payload: Publish, db: Scoped):
             pickup_deadline=payload.pickup_deadline,
             expires_at=payload.expires_at,
             description=payload.description,
+            ingredients=payload.ingredients,
+            allergens=payload.allergens,
             terms=payload.terms,
             bulk_available=payload.bulk_available,
         ),

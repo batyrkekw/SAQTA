@@ -58,6 +58,13 @@ def check_location(db, location_id):
         require_row(db, BakeryLocation, location_id, "Точка")
 
 
+@router.get("/health/live", tags=["System"])
+def liveness():
+    # Keep-warm pings use this: it must not touch the database, so a serverless
+    # Postgres (Neon) can still scale to zero and save its monthly compute quota.
+    return {"status": "ok", "service": "SAQTA"}
+
+
 @router.get("/health", tags=["System"])
 def health(db: DB):
     db.execute(text("SELECT 1"))

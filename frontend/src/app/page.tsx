@@ -6,6 +6,8 @@ import Link from "next/link";
 import { ArrowDown, ArrowRight, ArrowUpRight, Check, Leaf, Pause, Play, ShoppingBag, Sparkles, TrendingUp } from "lucide-react";
 import { HomeCommunity, HomePricing } from "@/components/home-community";
 import { ProductHeader } from "@/components/product-header";
+import { ForecastPlayground } from "@/components/forecast-playground";
+import { SanaSpark, SanaThread } from "@/components/sana-thread";
 import { useI18n } from "@/components/language-provider";
 import styles from "./home.module.css";
 
@@ -86,6 +88,7 @@ export default function Home() {
       <ProductHeader />
       <main id="main">
         <section className={styles.hero} aria-labelledby="home-title">
+          <SanaThread variant="hero" className={styles.heroThread} />
           <div className={styles.heroCopy}>
             <p className={styles.eyebrow}><span className={styles.dot} />{t("МЕНЬШЕ ПОТЕРЬ. БОЛЬШЕ ПОЛЬЗЫ.")}</p>
             <h1 id="home-title">{t("Хорошая еда.")}<br />{t("Заслуживает")}<br /><span className={styles.serif}>{t("продолжения.")}</span></h1>
@@ -153,6 +156,8 @@ export default function Home() {
         </section>
 
         </div>
+        <ForecastPlayground />
+        <SanaThread variant="divider" className={styles.divider} />
         <HomeCommunity />
         <HomePricing />
 
@@ -167,7 +172,7 @@ export default function Home() {
       </main>
       <footer className={styles.footer}>
         <Link href="/" aria-label={t("SAQTA — главная")}><Image src="/brand/saqta-logo.svg" width={112} height={25} alt="SAQTA" /></Link>
-        <p>© {new Date().getFullYear()} SAQTA · {t("Сохраняем то, что ценно.")}</p>
+        <p>© {new Date().getFullYear()} SAQTA · {t("Сохраняем то, что ценно.")} <span className={styles.ecosystem}><SanaSpark size={10} />{t("Часть экосистемы SANA")}</span></p>
         <nav aria-label={t("Навигация в подвале")}><a href="#pricing">{t("Тарифы")}<ArrowUpRight size={13} aria-hidden="true" /></a><Link href="/save">SAVE<ArrowUpRight size={13} aria-hidden="true" /></Link><Link href="/forecast">FORECAST<ArrowUpRight size={13} aria-hidden="true" /></Link></nav>
       </footer>
     </div>

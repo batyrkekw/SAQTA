@@ -34,6 +34,34 @@ import {
 import { formValidationMessage } from "@/lib/validation";
 import { useAccount } from "@/features/account/account";
 import type { Location } from "@/types/api";
+import { ALLERGENS, AllergenPicker, AllergenSummary } from "@/features/save/allergens";
+const ALLERGEN_LABELS = Object.fromEntries(ALLERGENS) as Record<string, string>;
+
+const CATEGORIES = ["Хлеб", "Выпечка", "Торты и десерты", "Готовая еда", "Молочные продукты", "Овощи и фрукты", "Другое"];
+const UNITS = ["шт.", "кг", "г", "порция", "упаковка"];
+/** Value for <input type="datetime-local"> in the visitor's local time. */
+function localInput(date: Date) {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+function at(base: Date, days: number, hours: number, minutes = 0) {
+  const d = new Date(base);
+  d.setDate(d.getDate() + days);
+  d.setHours(hours, minutes, 0, 0);
+  return d;
+}
+/** Quick pickup windows. Expiry defaults to the end of the pickup day. */
+export function pickupPreset(kind: "tonight" | "soon" | "morning", now = new Date()) {
+  const roundUp = new Date(now);
+  roundUp.setMinutes(Math.ceil((now.getMinutes() + 1) / 15) * 15, 0, 0);
+  if (kind === "morning") return { start: at(now, 1, 8), end: at(now, 1, 11), expiry: at(now, 1, 23, 59) };
+  const closing = at(now, 0, 21);
+  const end = kind === "tonight" && closing.getTime() - roundUp.getTime() >= 3600_000
+    ? closing
+    : new Date(roundUp.getTime() + 2 * 3600_000);
+  const sameDay = end.toDateString() === now.toDateString();
+  return { start: roundUp, end, expiry: sameDay ? at(now, 0, 23, 59) : at(end, 0, 23, 59) };
+}
 
 type Offer = {
   id: number;
@@ -46,6 +74,8 @@ type Offer = {
   original_price_kzt: number | null;
   discounted_price_kzt: number;
   description: string;
+  ingredients?: string;
+  allergens?: string[] | null;
   pickup_start: string;
   pickup_deadline: string;
   expires_at: string | null;
@@ -391,6 +421,13 @@ function MarketplaceContent() {
                     <Clock3 size={14} />
                     {t("Забрать до")} {pickupTime(offer.pickup_deadline)}
                   </p>
+                  {offer.allergens && offer.allergens.length > 0 && (
+                    <p className="flex flex-wrap gap-1">
+                      {offer.allergens.slice(0, 4).map((code) => (
+                        <span key={code} className="allergen-tag">{t(ALLERGEN_LABELS[code] ?? code)}</span>
+                      ))}
+                    </p>
+                  )}
                   <div className="flex items-end justify-between gap-3 pt-2">
                     <div>
                       {offer.terms !== "negotiated" &&
@@ -672,6 +709,7 @@ function Reservation({
         {offer.description && (
           <p className="text-sm leading-7">{offer.description}</p>
         )}
+        <AllergenSummary allergens={offer.allergens} ingredients={offer.ingredients} />
         <div className="rounded-xl bg-[#f0f4e9] p-4 text-sm">
           <p>
             {t("Самовывоз")}: {pickupTime(offer.pickup_start)} —{" "}
@@ -788,13 +826,23 @@ function Publish({ close }: { close: () => void }) {
   const [terms, setTerms] = useState("discounted"),
     [pending, setPending] = useState(false),
     [error, setError] = useState(""),
-    [published, setPublished] = useState(false);
+    [published, setPublished] = useState(false),
+    [allergens, setAllergens] = useState<string[] | null>(null),
+    [times, setTimes] = useState({ start: "", end: "", expiry: "" });
+  function applyPreset(kind: "tonight" | "soon" | "morning") {
+    const preset = pickupPreset(kind);
+    setTimes({ start: localInput(preset.start), end: localInput(preset.end), expiry: localInput(preset.expiry) });
+  }
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (published) return;
     const problem = formValidationMessage(e.currentTarget);
     if (problem) {
       setError(problem);
+      return;
+    }
+    if (allergens === null) {
+      setError("Отметьте аллергены или подтвердите, что их нет.");
       return;
     }
     const data = new FormData(e.currentTarget);
@@ -811,6 +859,8 @@ function Publish({ close }: { close: () => void }) {
         price: terms === "discounted" ? Number(data.get("price")) : 0,
         terms,
         description: str("description"),
+        ingredients: str("ingredients"),
+        allergens,
         location_id: Number(data.get("location")),
         pickup_start: new Date(str("start")).toISOString(),
         pickup_deadline: new Date(str("end")).toISOString(),
@@ -856,12 +906,16 @@ function Publish({ close }: { close: () => void }) {
               required
               maxLength={key === "unit" ? 20 : key === "category" ? 60 : 120}
               className="field"
+              list={key === "name" ? undefined : `publish-${key}-options`}
+              defaultValue={key === "unit" ? t("шт.") : undefined}
               placeholder={
-                key === "unit" ? t("Например: шт., кг, г") : undefined
+                key === "unit" ? t("Например: шт., кг, г") : key === "category" ? t("Хлеб") : undefined
               }
             />
           </Field>
         ))}
+        <datalist id="publish-category-options">{CATEGORIES.map((c) => <option key={c} value={t(c)} />)}</datalist>
+        <datalist id="publish-unit-options">{UNITS.map((u) => <option key={u} value={t(u)} />)}</datalist>
         <Field label={t("Фактически доступное количество")}>
           <input
             name="quantity"
@@ -876,6 +930,10 @@ function Publish({ close }: { close: () => void }) {
       <Field label={t("Описание")}>
         <textarea name="description" maxLength={1000} className="field" />
       </Field>
+      <Field label={t("Состав · необязательно")}>
+        <textarea name="ingredients" maxLength={500} rows={2} className="field" placeholder={t("Например: мука пшеничная, молоко, яйца, сахар")} />
+      </Field>
+      <AllergenPicker value={allergens} onChange={setAllergens} />
       <Field label={t("Условия передачи")}>
         <select
           className="field"
@@ -921,17 +979,33 @@ function Publish({ close }: { close: () => void }) {
         </select>
       </Field>
       <div className="grid gap-4 sm:grid-cols-2">
-        {[
+        <div className="space-y-2 sm:col-span-2">
+          <p className="label">{t("Быстро заполнить время выдачи")}</p>
+          <div className="flex flex-wrap gap-2">
+            {([
+              ["tonight", "Сегодня до закрытия"],
+              ["soon", "Через 15 минут, на 2 часа"],
+              ["morning", "Завтра 08:00–11:00"],
+            ] as const).map(([kind, label]) => (
+              <button key={kind} type="button" className="preset-chip" onClick={() => applyPreset(kind)}>
+                {t(label)}
+              </button>
+            ))}
+          </div>
+        </div>
+        {([
           ["start", "Начало выдачи"],
           ["end", "Конец выдачи"],
           ["expiry", "Срок годности"],
-        ].map(([key, label]) => (
+        ] as const).map(([key, label]) => (
           <Field key={key} label={t(label)}>
             <input
               type="datetime-local"
               name={key}
               required
               className="field"
+              value={times[key]}
+              onChange={(e) => setTimes((current) => ({ ...current, [key]: e.target.value }))}
             />
           </Field>
         ))}

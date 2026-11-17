@@ -1,6 +1,7 @@
 import { AccountProvider } from '@/features/account/account';
 import { LanguageProvider } from '@/components/language-provider';
 import { WorkspaceLayout } from '@/components/workspace-layout';
+import { WakeBanner } from '@/components/wake-banner';
 import type { Metadata,Viewport } from 'next';
 import './globals.css';
 import '@/components/product-theme.css';
@@ -12,5 +13,5 @@ export const metadata: Metadata = {
 };
 export const viewport: Viewport = { themeColor: '#123C2F' };
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="ru" data-scroll-behavior="smooth"><body><LanguageProvider><AccountProvider><WorkspaceLayout>{children}</WorkspaceLayout></AccountProvider></LanguageProvider></body></html>;
+  return <html lang="ru" data-scroll-behavior="smooth"><body><LanguageProvider><AccountProvider><WorkspaceLayout>{children}</WorkspaceLayout><WakeBanner /></AccountProvider></LanguageProvider></body></html>;
 }

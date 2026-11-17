@@ -5,6 +5,14 @@
 .skip:focus { top: 12px; }
 .hero { max-width: 1440px; margin: auto; padding: 72px 5% 85px; display: grid; grid-template-columns: 1.12fr 1fr; align-items: center; gap: 5%; }
 .heroCopy { position: relative; z-index: 2; animation: arrive 850ms both; }
+.hero { position: relative; }
+.heroThread { position: absolute; left: 34%; width: 58%; top: -1%; z-index: 4; opacity: .9; }
+@media (max-width: 760px) { .heroThread { display: none; } }
+.divider { max-width: 1296px; margin: 0 auto; padding-inline: 5%; opacity: .7; }
+.ecosystem { display: inline-flex; align-items: center; gap: 5px; margin-left: 10px; color: #8a6a22; }
+.ecosystem svg { color: #d9a83a; }
+.paused svg path { stroke-dashoffset: 0 !important; }
+.paused svg path, .paused svg g { opacity: 1 !important; }
 .eyebrow { display: flex; align-items: center; gap: 10px; font-size: 10px; font-weight: 650; letter-spacing: .13em; color: var(--soft); }
 .dot { height: 7px; width: 7px; flex: 0 0 7px; background: #7b9962; border-radius: 50%; box-shadow: 0 0 0 5px #e7eddc; }
 .hero h1 { margin: 28px 0 25px; font-size: clamp(48px, 5.7vw, 82px); font-weight: 550; line-height: 1.03; letter-spacing: -.065em; }

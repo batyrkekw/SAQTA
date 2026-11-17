@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from sqlalchemy import BigInteger, Boolean, CheckConstraint, Date, DateTime, ForeignKey, Index, Integer, LargeBinary, String, Text, UniqueConstraint
+from sqlalchemy import JSON, BigInteger, Boolean, CheckConstraint, Date, DateTime, ForeignKey, Index, Integer, LargeBinary, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.config import now_utc
@@ -107,6 +107,9 @@ class SurplusListing(TimestampMixin, Base):
     pickup_deadline: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     status: Mapped[str] = mapped_column(String(20), default="active", index=True)
     description: Mapped[str] = mapped_column(String(1000), default="")
+    # Seller-declared. NULL allergens = not declared; [] = declared free of the listed allergens.
+    ingredients: Mapped[str] = mapped_column(String(500), default="", server_default="")
+    allergens: Mapped[list | None] = mapped_column(JSON, nullable=True)
     terms: Mapped[str] = mapped_column(String(20), default="discounted", server_default="discounted")
     bulk_available: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

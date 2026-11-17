@@ -73,7 +73,8 @@ def patch_listing(db: Session, listing_id: int, payload: ListingPatch):
         SurplusListing.available_quantity == old_available,
         SurplusListing.reserved_quantity == listing.reserved_quantity,
     ).values(quantity=total, available_quantity=new_available, status=status, discounted_price_kzt=price,
-             pickup_start=start, pickup_deadline=deadline, description=fields.get("description", listing.description)),
+             pickup_start=start, pickup_deadline=deadline, description=fields.get("description", listing.description),
+             ingredients=fields.get("ingredients", listing.ingredients), allergens=fields["allergens"] if "allergens" in fields else listing.allergens),
         execution_options={"synchronize_session": False}).rowcount
     if changed != 1:
         raise HTTPException(409, "Предложение изменилось. Обновите данные и повторите действие.")
@@ -209,7 +210,8 @@ def expire_reservations(db: Session):
 def listing_json(db: Session, row):
     product, location = db.get(Product, row.product_id), db.get(BakeryLocation, row.location_id)
     return {
-        **{key: getattr(row, key) for key in ("id", "product_id", "location_id", "quantity", "available_quantity", "reserved_quantity", "original_price_kzt", "discounted_price_kzt", "status", "description")},
+        **{key: getattr(row, key) for key in ("id", "product_id", "location_id", "quantity", "available_quantity", "reserved_quantity", "original_price_kzt", "discounted_price_kzt", "status", "description", "ingredients")},
+        "allergens": row.allergens,
         "pickup_start": aware(row.pickup_start), "pickup_deadline": aware(row.pickup_deadline),
         "product_name": product.name, "category": product.category, "weight_grams": product.weight_grams,
         "location_name": location.name, "address": location.address, "city": location.city,

@@ -546,3 +546,21 @@ def test_negotiated_terms_require_an_actual_agreed_price(workspace):
     assert confirmed.json()["total_kzt"] == 800 and confirmed.json()["items"][0]["price_agreed"]
     collected = client.post(f"/api/market/orders/{order['id']}/collect", headers=seller)
     assert collected.status_code == 200 and collected.json()["total_kzt"] == 800
+
+
+def test_offer_declares_ingredients_and_allergens(workspace):
+    client, _ = workspace
+    _, seller = account(workspace, "seller", "business", True)
+    created = listing(workspace, seller, ingredients="Мука пшеничная, молоко, яйца", allergens=["milk", "gluten", "eggs", "milk"])
+    assert created.status_code == 201, created.text
+    offer = client.get(f"/api/market/listings/{created.json()['id']}").json()
+    assert offer["ingredients"] == "Мука пшеничная, молоко, яйца"
+    assert offer["allergens"] == ["eggs", "gluten", "milk"]
+    undeclared = listing(workspace, seller, name="Rye bread").json()
+    assert undeclared["allergens"] is None and undeclared["ingredients"] == ""
+    declared_none = listing(workspace, seller, name="Rice cake", allergens=[]).json()
+    assert declared_none["allergens"] == []
+    edited = client.patch(f"/api/market/listings/{undeclared['id']}", headers=seller, json={"allergens": ["gluten"], "ingredients": "Ржаная мука"})
+    assert edited.status_code == 200, edited.text
+    assert edited.json()["allergens"] == ["gluten"] and edited.json()["ingredients"] == "Ржаная мука"
+    assert listing(workspace, seller, allergens=["chocolate"]).status_code == 422

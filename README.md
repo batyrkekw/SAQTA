@@ -74,6 +74,7 @@ npm run build
 
 To exercise the new workflows against PostgreSQL as well as SQLite, set `SAQTA_TEST_DATABASE_URL` to a **disposable test database**. Tests create and remove their own schemas. Never supply production credentials to tests.
 
+- **Free hosting (current):** Neon + Render + Vercel, see [DEPLOY_NEON_RENDER.md](docs/DEPLOY_NEON_RENDER.md).
 - **Render:** preserve the existing database and service; apply the additive Alembic migration through the existing Docker startup. Set `WORKSPACE_MODE=real`, `AUTO_SEED_DEMO=false`, `FORECAST_REQUIRES_SUBSCRIPTION=false`, and the exact frontend HTTPS origin in `CORS_ORIGINS`. Keep `DATABASE_URL` server-only. `render.yaml` preserves the existing resource names.
 - **Vercel:** root directory `frontend`; `NEXT_PUBLIC_API_URL=https://YOUR-API/api`; rebuild after changing this public variable. Hosted builds reject a localhost backend URL.
 - Back up the existing production database before migration. Verify health, registration, tenant isolation, a real import and a reservation after rollout. GitHub push is not evidence that either host successfully deployed.

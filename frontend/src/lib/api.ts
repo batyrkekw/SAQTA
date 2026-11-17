@@ -28,10 +28,43 @@ export class ApiError extends Error {
   constructor(message: string, status: number, rows: { row: number; message: string }[] = []) { super(message); this.name = "ApiError"; this.status = status; this.rows = rows; }
 }
 
+/*
+ * The free API host sleeps when idle and answers 502/503/504 (an HTML "loading" page,
+ * without CORS headers, so browsers often see a network error) for up to about a minute.
+ * Safe GET requests are retried during that window and the UI is told the server is waking.
+ * Non-GET requests are never retried automatically, so nothing is submitted twice.
+ */
+export const WAKE_EVENT = "saqta:server-waking";
+let wakeWindowMs = 90_000;
+export function configureWakeRetry(ms: number) { wakeWindowMs = ms; }
+let waking = false;
+function setWaking(value: boolean) {
+  if (waking === value || typeof window === "undefined") return;
+  waking = value;
+  window.dispatchEvent(new CustomEvent(WAKE_EVENT, { detail: value }));
+}
+const pause = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+async function isSleepingHost(response: Response) {
+  if (![502, 503, 504].includes(response.status)) return false;
+  // Our API always answers JSON; a non-JSON gateway page means the host is still starting.
+  return !(response.headers.get("content-type") || "").includes("application/json");
+}
+
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
-  let response: Response;
-  try { response = await fetch(`${API_URL}${path}`, { ...init, headers: authenticatedHeaders(init), cache: "no-store" }); }
-  catch { throw new ApiError("Нет связи с сервером SAQTA. Проверьте подключение и повторите запрос.", 0); }
+  const retryable = (init.method || "GET").toUpperCase() === "GET";
+  const deadline = Date.now() + (retryable ? wakeWindowMs : 0);
+  let response: Response | null = null;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      response = await fetch(`${API_URL}${path}`, { ...init, headers: authenticatedHeaders(init), cache: "no-store" });
+      if (!(await isSleepingHost(response)) || Date.now() >= deadline) break;
+    } catch {
+      if (Date.now() >= deadline) { setWaking(false); throw new ApiError("Нет связи с сервером SAQTA. Проверьте подключение и повторите запрос.", 0); }
+    }
+    setWaking(true);
+    await pause(Math.min(2000 * 1.5 ** attempt, 8000));
+  }
+  setWaking(false);
   if (!response.ok) {
     let detail = `Ошибка запроса (${response.status})`; let rows: { row: number; message: string }[] = [];
     try { const body = await response.json(); detail = typeof body.detail === "string" ? body.detail : Array.isArray(body.detail) ? body.detail.map((item: { msg: string; loc?: string[] }) => `${item.loc?.slice(1).join(".") || "Данные"}: ${item.msg}`).join("; ") : body.detail?.message || detail; rows = body.errors || body.detail?.errors || []; } catch { /* Non-JSON server errors retain their safe status message. */ }

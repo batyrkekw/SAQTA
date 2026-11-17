@@ -1,7 +1,7 @@
 from datetime import date as Date, datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class Input(BaseModel):
@@ -59,6 +59,16 @@ class ForecastRequest(Input):
     horizon_days: int = Field(default=1, ge=1, le=14)
 
 
+# Major food allergens (gluten cereals, crustaceans, eggs, fish, peanuts, soy, milk, tree nuts,
+# celery, mustard, sesame, sulphites, lupin, molluscs). Codes are stable API values.
+Allergen = Literal["gluten", "crustaceans", "eggs", "fish", "peanuts", "soy", "milk", "nuts",
+                   "celery", "mustard", "sesame", "sulphites", "lupin", "molluscs"]
+
+
+def unique_allergens(value):
+    return None if value is None else sorted(set(value))
+
+
 class ListingCreate(Input):
     product_id: int = Field(gt=0)
     location_id: int = Field(gt=0)
@@ -70,6 +80,13 @@ class ListingCreate(Input):
     pickup_start: datetime
     pickup_deadline: datetime
     description: str = Field(default="", max_length=1000)
+    ingredients: str = Field(default="", max_length=500)
+    allergens: list[Allergen] | None = Field(default=None, max_length=14)
+
+    @field_validator("allergens")
+    @classmethod
+    def dedupe_allergens(cls, value):
+        return unique_allergens(value)
 
 
 class ListingPatch(Input):
@@ -79,6 +96,13 @@ class ListingPatch(Input):
     pickup_deadline: datetime | None = None
     status: Literal["active", "inactive"] | None = None
     description: str | None = Field(default=None, max_length=1000)
+    ingredients: str | None = Field(default=None, max_length=500)
+    allergens: list[Allergen] | None = Field(default=None, max_length=14)
+
+    @field_validator("allergens")
+    @classmethod
+    def dedupe_allergens(cls, value):
+        return unique_allergens(value)
 
 
 class OrderLine(Input):

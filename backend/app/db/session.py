@@ -11,8 +11,19 @@ class Base(DeclarativeBase):
     pass
 
 
+def connect_args_for(url: str) -> dict:
+    if url.startswith("sqlite"):
+        return {"check_same_thread": False, "timeout": 30}
+    # Neon's "-pooler" endpoint runs PgBouncer in transaction mode: disable psycopg's
+    # automatic server-side prepared statements there. Direct endpoints keep the default.
+    if "-pooler." in url:
+        return {"prepare_threshold": None}
+    return {}
+
+
 def build_engine(url: str):
-    engine = create_engine(url, connect_args={"check_same_thread": False, "timeout": 30} if url.startswith("sqlite") else {}, pool_pre_ping=True)
+    # pool_recycle: serverless Postgres (Neon) closes idle connections when compute suspends.
+    engine = create_engine(url, connect_args=connect_args_for(url), pool_pre_ping=True, pool_recycle=240)
     if url.startswith("sqlite"):
         @event.listens_for(engine, "connect")
         def sqlite_config(connection, _):

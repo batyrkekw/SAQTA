@@ -1,0 +1,52 @@
+.section { max-width: 1440px; margin: auto; padding: 90px 5% 70px; display: grid; grid-template-columns: .85fr 1.15fr; gap: 6%; align-items: center; }
+.copy { min-width: 0; }
+.eyebrow { display: inline-flex; align-items: center; gap: 9px; font-size: 10px; font-weight: 650; letter-spacing: .13em; color: #64705e; }
+.eyebrow svg { color: #d9a83a; }
+.copy h2 { margin-top: 18px; font-size: clamp(32px, 3.4vw, 48px); font-weight: 500; letter-spacing: -.045em; line-height: 1.1; color: #173e31; }
+.copy h2 span { font-family: Georgia, 'Times New Roman', serif; font-style: italic; font-weight: 400; color: #6d844a; }
+.lead { max-width: 430px; margin-top: 20px; font-size: 14px; line-height: 1.8; color: #5d6b5a; }
+.note { max-width: 430px; margin-top: 12px; font-size: 11px; line-height: 1.7; color: #7a836f; }
+.cta { display: inline-flex; align-items: center; gap: 14px; margin-top: 26px; padding: 15px 22px; min-height: 50px; border-radius: 999px; background: #173e31; color: #fff; font-size: 12px; font-weight: 600; transition: background .25s, transform .25s; }
+.cta:hover { background: #286044; transform: translateY(-2px); }
+
+.card { min-width: 0; padding: 26px; border-radius: 26px; background: #fffef8; border: 1px solid #173e3114; box-shadow: 0 24px 60px #173e3112; }
+.days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; padding: 4px; border-radius: 14px; background: #eef1e4; }
+.days button { min-height: 40px; border-radius: 10px; font-size: 12px; font-weight: 600; color: #6b7562; transition: background .2s, color .2s; }
+.days button:hover { color: #173e31; }
+.days button[aria-checked=true] { background: #173e31; color: #d4ed8c; }
+
+.chart { position: relative; height: 210px; margin-top: 24px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; align-items: end; padding: 0 6px; border-bottom: 1px solid #173e3118; }
+.barWrap { position: relative; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding-bottom: 22px; }
+.bar { width: 100%; max-width: 64px; border-radius: 10px 10px 4px 4px; background: linear-gradient(180deg, #8fb36a, #2f6b4c); transition: height .45s cubic-bezier(.3,.7,.3,1), background .3s; }
+.bar.short { background: linear-gradient(180deg, #e7b25a, #b9792f); }
+.barValue { font-size: 12px; font-weight: 650; color: #173e31; margin-bottom: 6px; font-variant-numeric: tabular-nums; }
+.barLabel { position: absolute; bottom: 2px; font-size: 10px; color: #7a836f; }
+.planLine { position: absolute; left: 0; right: 0; height: 0; border-top: 2px dashed #173e31; transition: bottom .45s cubic-bezier(.3,.7,.3,1); }
+.planLine span { position: absolute; right: 0; top: -26px; padding: 3px 9px; border-radius: 99px; background: #173e31; color: #d4ed8c; font-size: 11px; font-weight: 650; font-variant-numeric: tabular-nums; }
+
+.slider { display: block; margin-top: 22px; }
+.slider > span { display: flex; justify-content: space-between; font-size: 12px; color: #5d6b5a; margin-bottom: 8px; }
+.slider b { color: #173e31; font-variant-numeric: tabular-nums; }
+.slider input { width: 100%; accent-color: #237a57; height: 28px; }
+
+.stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 16px; }
+.stats > div { min-width: 0; padding: 13px 14px; border-radius: 14px; background: #f3f5ec; }
+.stats dt { font-size: 10.5px; line-height: 1.35; color: #6b7562; }
+.stats dd { margin: 6px 0 0; font-size: 24px; font-weight: 650; color: #173e31; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.stats small { font-size: 12px; font-weight: 500; color: #6b7562; }
+.stats em { display: block; margin-top: 2px; font-style: normal; font-size: 11px; font-weight: 500; color: #8a5a12; letter-spacing: 0; }
+.primaryStat { background: #173e31 !important; }
+.primaryStat dt, .primaryStat small { color: #c6d4be !important; }
+.primaryStat dd { color: #d4ed8c !important; }
+.hint { margin-top: 14px; font-size: 12px; color: #4d5c4c; min-height: 18px; }
+
+@media (max-width: 900px) { .section { grid-template-columns: 1fr; gap: 34px; padding: 60px 6% 50px; } }
+@media (max-width: 480px) {
+  .card { padding: 18px; border-radius: 20px; }
+  .days button { font-size: 11px; min-height: 38px; }
+  .chart { height: 180px; gap: 10px; }
+  .stats { grid-template-columns: 1fr 1fr; }
+  .primaryStat { grid-column: 1 / -1; }
+  .stats dd { font-size: 21px; }
+}
+@media (prefers-reduced-motion: reduce) { .bar, .planLine { transition: none; } }
