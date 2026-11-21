@@ -1,6 +1,6 @@
 # Оператор SaqtaFood
 
-Скрипт `scripts/operator.py` использует только стандартную библиотеку Python и `/api/admin/*`. Запускайте его из корня репозитория при работающем API.
+Скрипт `scripts/saqta_operator.py` использует только стандартную библиотеку Python и `/api/admin/*`. Запускайте его из корня репозитория при работающем API.
 
 Задайте `API_URL=http://127.0.0.1:8001/api` и `ADMIN_TOKEN` в окружении терминала. Токен должен совпадать с `ADMIN_TOKEN` backend; пустой токен отключает админ-API. Скрипт не читает `.env` автоматически. Для удалённого API разрешён только HTTPS; HTTP допускается для loopback-адресов. Перенаправления запрещены, чтобы не передать токен другому адресу.
 
@@ -14,10 +14,10 @@ $env:ADMIN_TOKEN = Read-Host 'ADMIN_TOKEN' -MaskInput
 Команды (на Linux/macOS используйте `backend/.venv/bin/python`):
 
 ```powershell
-backend/.venv/Scripts/python.exe scripts/operator.py list-pending
-backend/.venv/Scripts/python.exe scripts/operator.py approve owner@example.com business
-backend/.venv/Scripts/python.exe scripts/operator.py approve charity@example.com charity
-backend/.venv/Scripts/python.exe scripts/operator.py reset-password owner@example.com
+backend/.venv/Scripts/python.exe scripts/saqta_operator.py list-pending
+backend/.venv/Scripts/python.exe scripts/saqta_operator.py approve owner@example.com business
+backend/.venv/Scripts/python.exe scripts/saqta_operator.py approve charity@example.com charity
+backend/.venv/Scripts/python.exe scripts/saqta_operator.py reset-password owner@example.com
 ```
 
 `list-pending` показывает email, название организации и запрошенную роль. Подтверждайте `business` или `charity` после проверки организации вне приложения. Роль `consumer` снимает доступ бизнеса или благотворительной организации.

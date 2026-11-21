@@ -7,10 +7,12 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
+import Link from "next/link";
 import { api, post, setSessionToken, useApi, errorMessage } from "@/lib/api";
 import { formValidationMessage } from "@/lib/validation";
 import { useI18n } from "@/components/language-provider";
 import { LegalConsent } from "@/components/legal-consent";
+import { ForgotPassword } from "@/features/account/reset-password";
 import { Field, Modal, Notice } from "@/components/ui";
 import { Eye, EyeOff, LoaderCircle, LogIn, LogOut, UserRound } from "lucide-react";
 export type Account = {
@@ -70,6 +72,7 @@ function AccountModal({ close }: { close: () => void }) {
     [error, setError] = useState(""),
     [pending, setPending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [forgot, setForgot] = useState(false);
   const submitting = useRef(false);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -158,6 +161,9 @@ function AccountModal({ close }: { close: () => void }) {
               </p>
             )}
           </Notice>
+          {(account.user.role === "business" || account.user.requested_role === "business") && (
+            <Link href="/billing" className="btn-primary" onClick={close}>{t("Тариф и оплата")}</Link>
+          )}
           <button
             className="btn-secondary"
             disabled={pending}
@@ -167,6 +173,8 @@ function AccountModal({ close }: { close: () => void }) {
             {t("Выйти")}
           </button>
         </div>
+      ) : forgot ? (
+        <ForgotPassword onBack={() => setForgot(false)} />
       ) : (
         <form
           noValidate
@@ -202,6 +210,7 @@ function AccountModal({ close }: { close: () => void }) {
           <button type="button" className="flex items-center gap-2 text-sm text-[#237A57]" aria-pressed={showPassword} onClick={() => setShowPassword(value => !value)}>
             {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}{t(showPassword ? "Скрыть пароль" : "Показать пароль")}
           </button>
+          {!register && <button type="button" className="text-sm text-[#237A57] underline underline-offset-4" onClick={() => { setForgot(true); setError(""); }}>{t("Забыли пароль?")}</button>}
           {register && (
             <>
               <Field label={t("Имя или название организации")}>

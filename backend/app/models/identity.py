@@ -1,7 +1,7 @@
 """Organization owners, revocable sessions and manually activated subscriptions."""
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.session import Base
@@ -38,6 +38,10 @@ class Subscription(TimestampMixin, Base):
     status: Mapped[str] = mapped_column(String(12), default="inactive")
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     activated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    is_trial: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    auto_renew: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    provider_subscription_id: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True)
+    reminded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     __table_args__ = (CheckConstraint("plan IN ('free','starter','pro')", name="subscription_plan_valid"),
                       CheckConstraint("status IN ('inactive','active','expired')", name="subscription_status_valid"))
 

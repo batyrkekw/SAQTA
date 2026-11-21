@@ -11,8 +11,9 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.core.rate_limit import limiter, peer_key
 from app.db.session import get_db
-from app.models import ApplicationSettings, AuthSession, AuthUser, Bakery
+from app.models import ApplicationSettings, AuthSession, AuthUser, Bakery, BillingInvoice
 from app.schemas import Input
+from app.services import billing
 from app.services.auth import hash_password
 
 
@@ -89,3 +90,36 @@ def reset_password(payload: ResetPasswordRequest, db: DB):
     db.execute(delete(AuthSession).where(AuthSession.user_id == user.id))
     db.commit()
     return {"id": user.id, "message": "Пароль обновлён, все сессии завершены"}
+
+
+class MarkPaidRequest(Input):
+    reference: str = Field(min_length=2, max_length=120)
+
+
+@router.get("/invoices")
+def invoices(db: DB, status: Literal["pending", "paid", "cancelled", "failed"] | None = None):
+    query = select(BillingInvoice).order_by(BillingInvoice.id.desc()).limit(200)
+    if status:
+        query = query.where(BillingInvoice.status == status)
+    return {"invoices": [{**billing.invoice_json(row), "bakery_name": db.get(Bakery, row.bakery_id).name}
+                         for row in db.scalars(query)]}
+
+
+@router.post("/invoices/{number}/mark-paid")
+def mark_invoice_paid(number: str, payload: MarkPaidRequest, db: DB):
+    """Operator confirms a bank transfer / Kaspi payment found on the account statement."""
+    row = billing.find_invoice(db, number)
+    if row is None:
+        raise HTTPException(404, "Счёт не найден")
+    if row.method != "transfer":
+        raise HTTPException(409, "Карточные платежи подтверждает платёжный сервис")
+    changed = billing.mark_paid(db, row, reference=payload.reference)
+    db.commit()
+    return {**billing.invoice_json(row), "changed": changed}
+
+
+@router.post("/send-reminders")
+def send_reminders(db: DB):
+    sent = billing.send_reminders(db)
+    db.commit()
+    return {"sent": sent}

@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from app.api.billing import router as billing_router
 from app.api.routes import router
 from app.api.forecast_tools import router as forecast_tools_router
 from app.api.imports import router as imports_router
@@ -23,6 +24,7 @@ app.include_router(imports_router)
 app.include_router(assortment_router)
 app.include_router(auth_router)
 app.include_router(admin_router)
+app.include_router(billing_router)
 
 
 @app.exception_handler(RequestValidationError)

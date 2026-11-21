@@ -22,7 +22,9 @@ describe('frontend security headers', () => {
     expect(result['Permissions-Policy']).toBe('camera=(), microphone=(), geolocation=()');
     expect(result['Strict-Transport-Security']).toBe('max-age=31536000');
     const policy = result['Content-Security-Policy'];
-    expect(policy).toContain("connect-src 'self' https://api.example.test");
+    expect(policy).toContain("connect-src 'self' https://api.example.test https://*.tiptoppay.kz");
+    expect(policy).toContain("script-src 'self' 'unsafe-inline' https://*.tiptoppay.kz");
+    expect(policy).toContain("frame-src https://*.tiptoppay.kz");
     expect(policy).toContain("img-src 'self' data: blob: https://api.example.test");
     expect(policy).toContain("frame-ancestors 'none'");
     expect(policy).toContain("object-src 'none'");

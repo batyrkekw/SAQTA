@@ -10,7 +10,7 @@ import warnings
 import pytest
 
 
-spec = importlib.util.spec_from_file_location("saqtafood_operator", Path(__file__).resolve().parents[2] / "scripts" / "operator.py")
+spec = importlib.util.spec_from_file_location("saqtafood_operator", Path(__file__).resolve().parents[2] / "scripts" / "saqta_operator.py")
 operator = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(operator)
 

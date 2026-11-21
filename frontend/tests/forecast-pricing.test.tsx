@@ -1,31 +1,142 @@
 import React from "react";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
-import PricingPanel from "../src/features/forecast/pricing-panel";
-import { PRICING, PRICING_CONNECTION_COPY } from "../src/features/forecast/pricing.config";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-describe("Forecast pricing keeps proposed plans separate from real subscriptions", () => {
-  it("uses the single proposed price configuration and keeps Save free", () => {
+const push = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push }), useParams: () => ({ number: "SF-2026-00007" }), useSearchParams: () => new URLSearchParams("token=reset-token-from-email-1234"), usePathname: () => "/forecast" }));
+
+import PricingPanel from "../src/features/forecast/pricing-panel";
+import { PRICING } from "../src/features/forecast/pricing.config";
+import { ForecastAccessProvider } from "../src/features/forecast/access-panel";
+import { AccountProvider } from "../src/features/account/account";
+import { InvoiceDocument } from "../src/features/billing/invoice-document";
+import { ResetPassword } from "../src/features/account/reset-password";
+
+const seller = { name: "ИП Тестовая", bin: "990101300123", address: "Астана", iban: "KZ00TEST", bank: "АО Банк", bik: "TESTKZKA", kbe: "19", email: "pay@saqta.test", phone: "", vat_payer: false };
+const plans = (methods = { card: true, transfer: true, test_mode: true, simulator: false }) => ({
+  currency: "KZT", trial_days: 14, methods, seller,
+  plans: [{ id: "starter", title: "SaqtaFood Forecast Starter", monthly_kzt: 15000, periods: [{ months: 1, amount_kzt: 15000, saving_kzt: 0 }, { months: 3, amount_kzt: 45000, saving_kzt: 0 }, { months: 12, amount_kzt: 150000, saving_kzt: 30000 }] },
+          { id: "pro", title: "SaqtaFood Forecast Pro", monthly_kzt: 30000, periods: [{ months: 1, amount_kzt: 30000, saving_kzt: 0 }, { months: 3, amount_kzt: 90000, saving_kzt: 0 }, { months: 12, amount_kzt: 300000, saving_kzt: 60000 }] }],
+});
+const trial = { plan: "starter", status: "active", active: true, is_trial: true, auto_renew: false, access_mode: "paid", expires_at: "2026-12-05T10:00:00Z", limits: { products: 20, forecast_runs_per_month: 300, locations: 1 }, usage: { period: "2026-11", forecast_runs: 0, remaining: 300 }, manual_activation: false, message: "Пробный период Starter до 05.12.2026." };
+const invoice = (over = {}) => ({ number: "SF-2026-00007", title: "SaqtaFood Forecast Pro, 12 мес.", plan: "pro", months: 12, amount_kzt: 300000, method: "transfer", status: "pending", auto_renew: false, payer_name: "ТОО Хлеб", payer_bin: "123456789012", payer_email: "owner@example.test", payment_reference: "", failure_reason: "", created_at: "2026-11-21T10:00:00Z", due_at: "2026-11-26T10:00:00Z", paid_at: null, period_start: null, period_end: null, seller, ...over });
+
+type Handler = (path: string, init?: RequestInit) => Response | undefined;
+function stub(signedIn: boolean, extra: Handler = () => undefined, methods?: Parameters<typeof plans>[0]) {
+  const calls: { path: string; body: unknown }[] = [];
+  vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+    const path = new URL(url).pathname;
+    calls.push({ path, body: init?.body ? JSON.parse(String(init.body)) : null });
+    const custom = extra(path, init); if (custom) return custom;
+    if (path === "/api/billing/plans") return new Response(JSON.stringify(plans(methods)));
+    if (path === "/api/health") return new Response(JSON.stringify({ status: "ok", workspace_mode: "real", demo_data: false }));
+    if (path === "/api/subscription") return signedIn ? new Response(JSON.stringify(trial)) : new Response(JSON.stringify({ detail: "Войдите" }), { status: 401 });
+    if (path === "/api/billing/invoices") return new Response(JSON.stringify({ invoices: [] }));
+    if (path === "/api/auth/me") return new Response(JSON.stringify({ user: { id: 1, email: "owner@example.test", role: "business", requested_role: "business" }, organization: { id: 1, name: "Пекарня Тест" } }));
+    throw new Error(`Unexpected endpoint ${path}`);
+  }));
+  return calls;
+}
+const panel = () => render(<AccountProvider><ForecastAccessProvider><PricingPanel /></ForecastAccessProvider></AccountProvider>);
+
+beforeEach(() => { window.sessionStorage.setItem(`saqta.session.v1:http://127.0.0.1:8000/api`, "session-token"); push.mockReset(); });
+afterEach(() => { vi.unstubAllGlobals(); window.sessionStorage.clear(); delete (window as { tiptop?: unknown }).tiptop; });
+
+describe("Forecast pricing and payment", () => {
+  it("keeps one price configuration, Save free and payments connected", async () => {
     expect(PRICING.plans.map(plan => [plan.name, plan.monthlyKzt, plan.productLimit, plan.forecastLimit, plan.locationLimit])).toEqual([["Free", 0, 3, 0, 1], ["Starter", 15000, 20, 300, 1], ["Pro", 30000, 100, 1000, 10]]);
-    expect(PRICING.saveFeeKzt).toBe(0);
-    expect(PRICING.saveCommissionPercent).toBe(0);
     expect(PRICING.saveSalesCommissionPercent).toBe(5);
-    expect(PRICING.quotasEnforced).toBe(true);
-    expect(PRICING.paymentsConnected).toBe(false);
-    render(<PricingPanel />);
-    expect(screen.getByRole("link", { name: /Открыть рабочее пространство/ })).toHaveAttribute("href", "/forecast?view=forecast");
-    expect(screen.getByText(/сервер проверяет организацию/)).toBeInTheDocument();
+    expect(PRICING.paymentsConnected).toBe(true);
+    stub(true);
+    panel();
+    expect(await screen.findByRole("heading", { name: "Тариф и оплата" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Открыть SaqtaFood Save/ })).toHaveAttribute("href", "/save");
+    expect(await screen.findByText(/^Пробный период Starter до \d/, { selector: "p.text-base" })).toBeInTheDocument();
+    expect(screen.getAllByText("ПРОБНЫЙ").length).toBeGreaterThan(0);
   });
-  it.each(["Starter", "Pro"])("choosing %s only opens the exact preparation notice", async plan => {
+
+  it("updates the total for plan and period and asks guests to sign in", async () => {
+    stub(false);
     const user = userEvent.setup();
-    render(<PricingPanel />);
-    await user.click(screen.getByRole("button", { name: new RegExp(`Выбрать ${plan}`) }));
-    const dialog = screen.getByRole("dialog", { name: "Подключение тарифов" });
-    expect(within(dialog).getByText(PRICING_CONNECTION_COPY)).toBeInTheDocument();
-    expect(within(dialog).queryByRole("form")).not.toBeInTheDocument();
-    await user.click(within(dialog).getByRole("button", { name: "Понятно" }));
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    panel();
+    await screen.findByRole("heading", { name: "Тариф и оплата" });
+    expect(screen.getByText(/Войдите в организацию или создайте её выше/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Оплатить/ })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("radio", { name: /Pro/ }));
+    await user.click(screen.getByRole("radio", { name: /12 месяцев/ }));
+    expect(screen.getByText("Pro, 12 мес.")).toBeInTheDocument();
+    expect(screen.getByText(/выгода 60\s000/)).toBeInTheDocument();
+  });
+
+  it("issues a transfer invoice with payer details and opens it", async () => {
+    const calls = stub(true, path => path === "/api/billing/checkout" ? new Response(JSON.stringify({ invoice: invoice() }), { status: 201 }) : undefined);
+    const user = userEvent.setup();
+    panel();
+    await user.click(await screen.findByRole("radio", { name: /Счёт на оплату/ }));
+    await user.click(screen.getByRole("radio", { name: /Pro/ }));
+    await user.click(screen.getByRole("radio", { name: /12 месяцев/ }));
+    const name = screen.getByRole("textbox", { name: /Плательщик/ });
+    await waitFor(() => expect(name).toHaveValue("Пекарня Тест"));
+    await user.clear(name); await user.type(name, "ТОО Хлеб");
+    await user.type(screen.getByRole("textbox", { name: /БИН/ }), "123456789012");
+    await user.click(screen.getByRole("button", { name: "Выставить счёт" }));
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/billing/invoice/SF-2026-00007"));
+    expect(calls.find(call => call.path === "/api/billing/checkout")?.body).toEqual({ plan: "pro", months: 12, method: "transfer", auto_renew: false, payer_name: "ТОО Хлеб", payer_bin: "123456789012", payer_email: "owner@example.test" });
+  });
+
+  it("opens the TipTop widget with the server intent and reports a closed form", async () => {
+    const start = vi.fn(async () => ({ type: "cancel" as const }));
+    (window as { tiptop?: unknown }).tiptop = { Widget: class { start = start; } };
+    const intent = { publicTerminalId: "test_api_x", amount: 15000, currency: "KZT", externalId: "SF-2026-00008" };
+    const calls = stub(true, path => path === "/api/billing/checkout" ? new Response(JSON.stringify({ invoice: invoice({ number: "SF-2026-00008", method: "card", months: 1, plan: "starter", amount_kzt: 15000 }), widget: { intent, simulator: false, test_mode: true } }), { status: 201 }) : undefined);
+    const user = userEvent.setup();
+    panel();
+    await user.click(await screen.findByRole("button", { name: /Оплатить 15/ }));
+    await waitFor(() => expect(start).toHaveBeenCalledWith(intent));
+    expect(await screen.findByText(/форма закрыта/)).toBeInTheDocument();
+    expect(calls.find(call => call.path === "/api/billing/checkout")?.body).toMatchObject({ method: "card", months: 1, auto_renew: true });
+  });
+
+  it("pays through the local simulator when no acquiring is configured", async () => {
+    stub(true, path => {
+      if (path === "/api/billing/checkout") return new Response(JSON.stringify({ invoice: invoice({ method: "card", months: 1, plan: "starter", amount_kzt: 15000 }), widget: { intent: {}, simulator: true, test_mode: true } }), { status: 201 });
+      if (path === "/api/billing/simulate/SF-2026-00007") return new Response(JSON.stringify(invoice({ status: "paid", plan: "starter", period_end: "2026-12-21T10:00:00Z" })));
+      return undefined;
+    }, { card: true, transfer: false, test_mode: true, simulator: true });
+    const user = userEvent.setup();
+    panel();
+    await user.click(await screen.findByRole("button", { name: /Оплатить 15/ }));
+    const dialog = await screen.findByRole("dialog", { name: "Тестовая оплата" });
+    await user.click(within(dialog).getByRole("button", { name: "Оплатить (тест)" }));
+    expect(await screen.findByText(/Тестовая оплата проведена. Тариф Starter активен до 21.12.2026/)).toBeInTheDocument();
+  });
+
+  it("disables unavailable methods with an explanation", async () => {
+    stub(true, undefined, { card: false, transfer: false, test_mode: true, simulator: false });
+    panel();
+    expect(await screen.findByText(/Появится после подключения эквайринга/)).toBeInTheDocument();
+    expect(screen.getByText(/Приём оплаты ещё настраивается/)).toBeInTheDocument();
+  });
+
+  it("renders a printable invoice with seller requisites", async () => {
+    stub(true, path => path === "/api/billing/invoices/SF-2026-00007" ? new Response(JSON.stringify(invoice())) : undefined);
+    render(<InvoiceDocument />);
+    const doc = await screen.findByRole("article", { name: "Счёт SF-2026-00007" });
+    expect(within(doc).getByText(/Счёт на оплату № SF-2026-00007/)).toBeInTheDocument();
+    expect(within(doc).getByText("KZ00TEST")).toBeInTheDocument();
+    expect(within(doc).getByText(/Итого: 300\s000,00 ₸/)).toBeInTheDocument();
+    expect(within(doc).getByText("Без НДС")).toBeInTheDocument();
+  });
+
+  it("sets a new password from the emailed link", async () => {
+    const calls = stub(false, path => path === "/api/auth/reset" ? new Response(JSON.stringify({ message: "Пароль обновлён. Войдите с новым паролем." })) : undefined);
+    const user = userEvent.setup();
+    render(<ResetPassword />);
+    await user.type(screen.getByLabelText(/^Новый пароль/), "brand-new-password");
+    await user.type(screen.getByLabelText(/^Повторите пароль/), "brand-new-password");
+    await user.click(screen.getByRole("button", { name: "Сохранить пароль" }));
+    expect(await screen.findByText("Пароль обновлён. Войдите с новым паролем.")).toBeInTheDocument();
+    expect(calls.find(call => call.path === "/api/auth/reset")?.body).toEqual({ token: "reset-token-from-email-1234", password: "brand-new-password" });
   });
 });

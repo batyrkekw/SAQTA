@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Локальный оператор SaqtaFood: подтверждение ролей и ручной сброс пароля."""
+"""Локальный оператор SaqtaFood: роли, сброс пароля, счета на оплату и напоминания."""
 
 import argparse
 import getpass
@@ -105,6 +105,19 @@ def result_text(command, result):
                 raise OperatorError("API вернул некорректный список заявок.")
             visible.append({key: row[key] for key in ("email", "bakery_name", "requested_role")})
         return json.dumps(visible, ensure_ascii=False, indent=2) if visible else "Ожидающих заявок нет."
+    if command == "invoices":
+        rows = result.get("invoices")
+        if not isinstance(rows, list):
+            raise OperatorError("API вернул некорректный список счетов.")
+        keys = ("number", "bakery_name", "plan", "months", "amount_kzt", "method", "status", "payer_name", "payer_bin", "created_at")
+        visible = [{key: row.get(key) for key in keys} for row in rows if isinstance(row, dict)]
+        return json.dumps(visible, ensure_ascii=False, indent=2) if visible else "Счетов нет."
+    if command == "mark-paid":
+        if result.get("status") != "paid":
+            raise OperatorError("API не подтвердил оплату счёта.")
+        return ("Оплата подтверждена" if result.get("changed") else "Счёт уже был оплачен") + f": {result.get('number')}, подписка до {result.get('period_end')}."
+    if command == "send-reminders":
+        return f"Отправлено напоминаний: {int(result.get('sent', 0))}."
     if type(result.get("id")) is not int or result["id"] < 1:
         raise OperatorError("API вернул некорректный результат действия.")
     if command == "approve":
@@ -124,6 +137,12 @@ def main(argv=None):
     approve.add_argument("role", choices=("consumer", "business", "charity"))
     reset = commands.add_parser("reset-password", help="Задать новый пароль скрытым вводом")
     reset.add_argument("email")
+    invoices = commands.add_parser("invoices", help="Показать счета (по умолчанию неоплаченные)")
+    invoices.add_argument("--status", choices=("pending", "paid", "cancelled", "failed"), default="pending")
+    paid = commands.add_parser("mark-paid", help="Подтвердить оплату счёта по выписке банка или Kaspi")
+    paid.add_argument("number")
+    paid.add_argument("reference", help="Номер платёжного поручения или операции Kaspi")
+    commands.add_parser("send-reminders", help="Разослать напоминания об окончании доступа (запускать ежедневно)")
     try:
         args = parser.parse_args(argv)
         token = os.environ.get("ADMIN_TOKEN", "")
@@ -137,7 +156,12 @@ def main(argv=None):
         elif args.command == "reset-password":
             password = replacement_password()
             payload = {"email": args.email, "password": password}
-        path = "pending" if args.command == "list-pending" else args.command
+        if args.command == "mark-paid":
+            payload = {"reference": args.reference}
+        elif args.command == "send-reminders":
+            payload = {}
+        path = {"list-pending": "pending", "invoices": f"invoices?status={args.status}" if args.command == "invoices" else "",
+                "mark-paid": f"invoices/{args.number}/mark-paid" if args.command == "mark-paid" else ""}.get(args.command) or args.command
         output = result_text(args.command, request_api(base, token, path, payload))
         # Successful responses contain only whitelisted fields. Also suppress any
         # accidental credential reflection inside a displayed organization name.

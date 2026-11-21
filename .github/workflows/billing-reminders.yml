@@ -1,0 +1,25 @@
+# Daily: email organizations whose trial or paid Forecast period ends within 3 days.
+# Requires repository secrets API_URL (https://.../api) and ADMIN_TOKEN.
+name: Billing reminders
+
+on:
+  schedule:
+    - cron: "17 4 * * *"   # 09:17 Asia/Qyzylorda
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Send reminders
+        env:
+          API_URL: ${{ secrets.API_URL }}
+          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+        run: |
+          if [ -z "$API_URL" ] || [ -z "$ADMIN_TOKEN" ]; then echo "API_URL / ADMIN_TOKEN secrets are not set; skipping."; exit 0; fi
+          python3 scripts/saqta_operator.py send-reminders

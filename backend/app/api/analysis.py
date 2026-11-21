@@ -1,4 +1,8 @@
-"""Free, tenant-isolated analysis; calculation happens only on explicit requests."""
+"""Tenant-isolated analysis; calculation happens only on explicit requests.
+
+New forecast runs need an active Forecast plan (trial or paid) and count against its monthly quota;
+a repeated identical request returns the cached run without using quota.
+"""
 
 from datetime import date, timedelta
 import hashlib
@@ -19,6 +23,7 @@ from app.services.data_import import MAX_BYTES, validate_date
 from app.services.inventory import sales_history_rows, product_json
 from app.services.assortment import known_inventory
 from app.forecasting.selection import select_forecast
+from app.services.subscriptions import consume_forecast_quota, require_forecast_access
 
 router = APIRouter(prefix="/api/analysis", tags=["SaqtaFood Forecast"])
 DB = Annotated[Session, Depends(scoped_db)]
@@ -164,6 +169,7 @@ class Analyze(Input):
 
 @router.post("/runs", status_code=201)
 def analyze(payload: Analyze, db: DB):
+    require_forecast_access(db)
     products = list(db.scalars(select(Product).where(Product.is_active.is_(True)).order_by(Product.id)))
     locations = list(db.scalars(select(BakeryLocation).order_by(BakeryLocation.id)))
     sole_location_id = locations[0].id if len(locations) == 1 else None
@@ -203,6 +209,7 @@ def analyze(payload: Analyze, db: DB):
     saved = db.scalar(select(ForecastRun).where(ForecastRun.idempotency_key == key))
     if saved:
         return {**json.loads(saved.result_json), "cached": True}
+    consume_forecast_quota(db, key[:150])
     results = []
     for product, location, history, stock, stock_source in source:
         result = select_forecast(history, target, payload.horizon_days, stock)

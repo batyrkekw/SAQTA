@@ -12,15 +12,18 @@ if (process.env.VERCEL === '1') {
 }
 const isProduction = process.env.NODE_ENV === 'production';
 const apiOrigin = new URL(process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api').origin;
+// TipTop Pay card widget: its script, payment frame and API calls come from *.tiptoppay.kz.
+const payments = 'https://*.tiptoppay.kz';
 // Inline bootstrap scripts preserve Next's static pages; inline styles support charts.
 // Development alone needs eval and WebSockets for React debugging and hot reload.
 const contentSecurityPolicy = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isProduction ? '' : " 'unsafe-eval'"}`,
+  `script-src 'self' 'unsafe-inline' ${payments}${isProduction ? '' : " 'unsafe-eval'"}`,
   "style-src 'self' 'unsafe-inline'",
-  `img-src 'self' data: blob: ${apiOrigin}`,
+  `img-src 'self' data: blob: ${apiOrigin} ${payments}`,
   "font-src 'self' data:",
-  `connect-src 'self' ${apiOrigin}${isProduction ? '' : ' ws: wss:'}`,
+  `connect-src 'self' ${apiOrigin} ${payments}${isProduction ? '' : ' ws: wss:'}`,
+  `frame-src ${payments}`,
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

@@ -112,3 +112,11 @@ main { min-width: 0; }
 .allergen-tag { display: inline-flex; align-items: center; padding: .15rem .55rem; border-radius: 99px; background: #fff3dc; color: #6b4310; font-size: .75rem; font-weight: 600; }
 .preset-chip { min-height: 36px; padding: .4rem .85rem; border-radius: 10px; border: 1px dashed #9db59a; background: #f3f7ee; font-size: .8rem; font-weight: 600; color: #173e31; transition: background .15s; }
 .preset-chip:hover { background: #e6efdc; }
+
+/* Printable invoice: only the document is printed, without the app chrome. */
+@media print {
+  body * { visibility: hidden; }
+  .print-area, .print-area * { visibility: visible; }
+  .print-area { position: absolute; inset: 0 auto auto 0; width: 100%; border: 0 !important; }
+  .no-print { display: none !important; }
+}

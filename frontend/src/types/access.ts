@@ -2,11 +2,15 @@ export type Subscription = {
   plan: "free" | "starter" | "pro" | "demo";
   status: "inactive" | "active" | "expired" | "demo";
   active: boolean;
-  access_mode: "demo" | "paid" | "unavailable";
+  access_mode: "demo" | "paid" | "unavailable" | "free";
   expires_at: string | null;
   limits: { products: number | null; forecast_runs_per_month: number | null; locations: number | null };
   usage: { period: string; forecast_runs: number; remaining: number | null };
   manual_activation: boolean;
+  is_trial?: boolean;
+  auto_renew?: boolean;
+  payments_integrated?: boolean;
+  message?: string;
 };
 export type AuthSession = {
   token: string;

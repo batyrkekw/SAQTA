@@ -21,7 +21,8 @@ import {
   Notice,
   today,
 } from "@/components/ui";
-import { errorMessage, post, useApi } from "@/lib/api";
+import { ApiError, errorMessage, post, useApi } from "@/lib/api";
+import Link from "next/link";
 import { formValidationMessage } from "@/lib/validation";
 import { useAccount } from "@/features/account/account";
 import { Questionnaire } from "./questionnaire";
@@ -46,6 +47,7 @@ function AnalysisWorkspaceContent() {
     [revision, setRevision] = useState(0),
     [pending, setPending] = useState(false),
     [error, setError] = useState(""),
+    [needsPlan, setNeedsPlan] = useState(false),
     [notice, setNotice] = useState(""),
     [horizon, setHorizon] = useState("7"),
     [product, setProduct] = useState(""),
@@ -72,6 +74,7 @@ function AnalysisWorkspaceContent() {
   async function analyze() {
     setPending(true);
     setError("");
+    setNeedsPlan(false);
     try {
       const value = await post<AnalysisReport>("/analysis/runs", {
         horizon_days: Number(horizon),
@@ -94,6 +97,7 @@ function AnalysisWorkspaceContent() {
       state.reload();
     } catch (reason) {
       setError(errorMessage(reason));
+      setNeedsPlan(reason instanceof ApiError && (reason.status === 402 || reason.status === 429));
     } finally {
       setPending(false);
     }
@@ -151,7 +155,7 @@ function AnalysisWorkspaceContent() {
               </h2>
               <p className="mt-2 text-sm muted">
                 {t(
-                  "Войдите или зарегистрируйтесь, чтобы сохранить историю и возвращаться к расчётам. Анализ доступен бесплатно.",
+                  "Войдите или зарегистрируйтесь, чтобы сохранить историю и возвращаться к расчётам. Новые пекарни получают 14 дней бесплатно.",
                 )}
               </p>
             </div>
@@ -198,6 +202,7 @@ function AnalysisWorkspaceContent() {
               <>
                 {notice && <Notice kind="success">{t(notice)}</Notice>}
                 {error && <Notice kind="error">{t(error)}</Notice>}
+                {needsPlan && <Link href="/billing" className="btn-primary">{t("Перейти к тарифу и оплате")}</Link>}
                 {view === "import" && (
                   <ImportData
                     state={state.data}

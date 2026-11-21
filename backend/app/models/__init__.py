@@ -175,6 +175,7 @@ class ApplicationSettings(TimestampMixin, Base):
 
 from app.models.imports import ImportBatch, ImportFingerprint  # noqa: E402,F401
 from app.models.identity import AuthSession, AuthUser, QuotaEvent, Subscription, SubscriptionUsage  # noqa: E402,F401
+from app.models.billing import BillingInvoice, PasswordResetToken  # noqa: E402,F401
 from app.models.observations import ForecastObservation, ForecastRun  # noqa: E402,F401
 
 from app.models.workflows import BusinessProfile, OrderEvent  # noqa: E402,F401

@@ -18,6 +18,41 @@ services:
       - key: AUTO_SEED_DEMO
         value: "false"
       - key: FORECAST_REQUIRES_SUBSCRIPTION
-        value: "false"
+        value: "true"
+      - key: TRIAL_DAYS
+        value: "14"
+      # Billing and email secrets: set in the Render dashboard only (see backend/.env.example).
+      - key: PUBLIC_URL
+        sync: false
+      - key: TIPTOP_PUBLIC_ID
+        sync: false
+      - key: TIPTOP_API_SECRET
+        sync: false
+      - key: BILLING_TEST_MODE
+        value: "true"
+      - key: SELLER_NAME
+        sync: false
+      - key: SELLER_BIN
+        sync: false
+      - key: SELLER_ADDRESS
+        sync: false
+      - key: SELLER_IBAN
+        sync: false
+      - key: SELLER_BANK
+        sync: false
+      - key: SELLER_BIK
+        sync: false
+      - key: SELLER_EMAIL
+        sync: false
+      - key: SELLER_PHONE
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: MAIL_FROM
+        sync: false
       - key: CORS_ORIGINS
         sync: false

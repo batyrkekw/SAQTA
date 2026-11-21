@@ -1,4 +1,4 @@
-"""Server-enforced manually activated Forecast plans; Save publication is free."""
+"""Server-enforced paid Forecast plans (card or invoice, see services/billing.py); Save publication is free."""
 from fastapi import HTTPException
 from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
@@ -34,8 +34,23 @@ def subscription_json(db):
             "expires_at": aware(row.expires_at).isoformat() if row and row.expires_at else None,
             "limits": {"products": None, "forecast_runs_per_month": None, "locations": None} if demo else limits,
             "usage": {"period": month, "forecast_runs": 0 if demo else used, "remaining": None if demo else max(0, limits["forecast_runs_per_month"] - used)},
-            "manual_activation": True, "payments_integrated": False,
-            "message": "Демонстрационный доступ на синтетических данных; это не оплаченная подписка." if demo else "Подключение тарифа выполняет оператор вручную после согласования; автоматическая оплата не подключена."}
+            "is_trial": bool(row and row.is_trial and not demo), "auto_renew": bool(row and row.auto_renew and not demo),
+            "manual_activation": False, "payments_integrated": payments_available(),
+            "message": "Демонстрационный доступ на синтетических данных; это не оплаченная подписка." if demo else access_message(row, active)}
+
+
+def payments_available() -> bool:
+    from app.services.billing import card_enabled, simulator_enabled, transfer_enabled
+    return card_enabled() or simulator_enabled() or transfer_enabled()
+
+
+def access_message(row, active) -> str:
+    from app.services.billing import local_day
+    if active and row.is_trial:
+        return f"Пробный период Starter до {local_day(row.expires_at)}. Оплатите тариф, чтобы не потерять доступ к Forecast."
+    if active:
+        return f"Тариф {row.plan.title()} оплачен до {local_day(row.expires_at)}."
+    return "Forecast доступен с оплаченным тарифом. Оплатите картой или получите счёт на оплату в разделе «Тариф и оплата»."
 
 
 def require_forecast_access(db):
@@ -45,11 +60,11 @@ def require_forecast_access(db):
     if result["access_mode"] == "demo":
         return result
     if not result["active"]:
-        raise HTTPException(402, "Для загрузки данных, анализа и прогнозирования нужен действующий тариф SaqtaFood Forecast. Тариф отсутствует или истёк; доступна ручная активация.")
+        raise HTTPException(402, "Для загрузки данных, анализа и прогнозирования нужен действующий тариф SaqtaFood Forecast. Тариф отсутствует или истёк: оплатите его в разделе «Тариф и оплата».")
     count = db.scalar(select(func.count()).select_from(Product).where(Product.is_active.is_(True))) or 0
     locations = db.scalar(select(func.count()).select_from(BakeryLocation)) or 0
     if count > result["limits"]["products"] or locations > result["limits"]["locations"]:
-        raise HTTPException(403, "Количество активных товаров или филиалов превышает лимит тарифа. Обратитесь к оператору.")
+        raise HTTPException(403, "Количество активных товаров или филиалов превышает лимит тарифа. Перейдите на Pro в разделе «Тариф и оплата».")
     return result
 
 

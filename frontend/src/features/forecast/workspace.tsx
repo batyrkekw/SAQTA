@@ -25,7 +25,7 @@ const tabs = [
   { id: "data", label: "Данные", icon: Database },
   { id: "results", label: "Результаты", icon: BarChart3 },
   { id: "savings", label: "Экономия", icon: Calculator },
-  { id: "pricing", label: "Тарифы", icon: Layers3 },
+  { id: "pricing", label: "Тариф и оплата", icon: Layers3 },
 ] as const;
 
 function DataWorkspace({ initialSettingsOpen }: { initialSettingsOpen: boolean }) {
@@ -47,7 +47,8 @@ function WorkspaceContent() {
 
   const params = useSearchParams();
   const access = useForecastAccess();
-  const view = tabs.find(tab => tab.id === params.get("view"))?.id || "forecast";
+  const requested = params.get("view") === "billing" ? "pricing" : params.get("view");
+  const view = tabs.find(tab => tab.id === requested)?.id || "forecast";
   const needsLogin = access && !access.loading && !access.isDemo && !access.signedIn && (view === "data" || view === "forecast" || view === "results");
   const denied = view === "results" && !access?.canAnalyze;
   return <><nav aria-label={t("Инструменты SaqtaFood Forecast")} className="mb-7 flex max-w-full flex-wrap gap-1 rounded-xl border border-[#E0E7D9] bg-white p-1.5">{tabs.map(({ id, label, icon: Icon }) => <Link key={id} href={`/forecast?view=${id}`} scroll={false} aria-current={view === id ? "page" : undefined} className={`flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-xs font-medium transition-colors sm:flex-1 ${view === id ? "bg-[#123C2F] text-[#C7F36B]" : "text-[#5D6B62] hover:bg-[#F1F5E9]"}`}><Icon size={16} strokeWidth={1.6} />{t(label)}</Link>)}</nav>
