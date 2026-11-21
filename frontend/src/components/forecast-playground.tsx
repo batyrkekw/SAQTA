@@ -4,7 +4,6 @@ import { useId, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowUpRight } from 'lucide-react';
 import { useI18n } from '@/components/language-provider';
-import { SanaSpark } from '@/components/sana-thread';
 import styles from './forecast-playground.module.css';
 
 /*
@@ -39,10 +38,9 @@ export function ForecastPlayground() {
   const max = Math.max(...HISTORY.flat(), result.plan) * 1.08;
   const leftoverCost = result.leftovers * PRICE;
 
-  return <section className={styles.section} aria-labelledby={`${id}-title`} data-reveal>
+  return <section className={styles.section} aria-labelledby={`${id}-title`}>
     <div className={styles.copy}>
-      <p className={styles.eyebrow}><SanaSpark size={11} />{t('ПОПРОБУЙТЕ ПРЯМО ЗДЕСЬ')}</p>
-      <h2 id={`${id}-title`}>{t('Сколько печь')}<br /><span>{t('на завтра?')}</span></h2>
+      <h2 id={`${id}-title`}>{t('Сколько печь на завтра?')}</h2>
       <p className={styles.lead}>{t('Выберите день и запас. SaqtaFood проверит план на прошлых неделях: сколько бы осталось и когда хлеба не хватило бы.')}</p>
       <p className={styles.note}>{t('Условные данные одного батона за 4 недели. Ваш прогноз считается по вашей истории продаж.')}</p>
       <Link href="/forecast" className={styles.cta}>{t('Рассчитать по своим данным')}<ArrowUpRight size={17} aria-hidden="true" /></Link>

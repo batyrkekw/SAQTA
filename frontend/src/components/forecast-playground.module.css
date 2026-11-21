@@ -2,8 +2,7 @@
 .copy { min-width: 0; }
 .eyebrow { display: inline-flex; align-items: center; gap: 9px; font-size: 10px; font-weight: 650; letter-spacing: .13em; color: #64705e; }
 .eyebrow svg { color: #d9a83a; }
-.copy h2 { margin-top: 18px; font-size: clamp(32px, 3.4vw, 48px); font-weight: 500; letter-spacing: -.045em; line-height: 1.1; color: #173e31; }
-.copy h2 span { font-family: Georgia, 'Times New Roman', serif; font-style: italic; font-weight: 400; color: #6d844a; }
+.copy h2 { font-family: 'Unbounded Variable', 'Onest Variable', sans-serif; font-size: clamp(26px, 2.6vw, 36px); font-weight: 600; letter-spacing: -.025em; line-height: 1.15; color: #123c2f; text-wrap: balance; }
 .lead { max-width: 430px; margin-top: 20px; font-size: 14px; line-height: 1.8; color: #5d6b5a; }
 .note { max-width: 430px; margin-top: 12px; font-size: 11px; line-height: 1.7; color: #7a836f; }
 .cta { display: inline-flex; align-items: center; gap: 14px; margin-top: 26px; padding: 15px 22px; min-height: 50px; border-radius: 999px; background: #173e31; color: #fff; font-size: 12px; font-weight: 600; transition: background .25s, transform .25s; }

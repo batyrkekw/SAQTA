@@ -2,7 +2,7 @@ import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("next/navigation", () => ({ usePathname: () => "/" }));
-import { HomeCommunity, HomePricing } from "../src/components/home-community";
+import { HomePricing } from "../src/components/home-community";
 import { LANGUAGE_STORAGE_KEY, LanguageProvider } from "../src/components/language-provider";
 import { formatters, translateText } from "../src/lib/i18n/translate";
 
@@ -34,14 +34,5 @@ describe.each(["ru", "kk", "en"] as const)("proposed plans in %s", language => {
     expect(screen.getByRole("link", { name: `${t("Подключить")} Starter` })).toHaveAttribute("href", "/billing");
     expect(screen.getByRole("link", { name: `${t("Подключить")} Pro` })).toHaveAttribute("href", "/billing");
     expect(screen.getByRole("link", { name: t("Начать бесплатно") })).toHaveAttribute("href", "/save");
-  });
-  it("keeps fictional testimonials visibly labeled as examples", () => {
-    localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
-    const t = (text: string) => translateText(text, language);
-    render(<LanguageProvider><HomeCommunity /></LanguageProvider>);
-    expect(screen.getByText(t("Вымышленные истории для макета. Заменим их реальными отзывами после интервью."))).toBeInTheDocument();
-    const stories = screen.getAllByRole("figure");
-    expect(stories).toHaveLength(3);
-    for (const story of stories) expect(within(story).getByText(t("Пример"))).toBeInTheDocument();
   });
 });

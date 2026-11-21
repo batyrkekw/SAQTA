@@ -8,55 +8,43 @@ function resetLanguage() {
   localStorage.clear();
   window.dispatchEvent(new StorageEvent("storage", { key: LANGUAGE_STORAGE_KEY }));
 }
-function mockMotion(reduce = false) {
-  vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: reduce, addEventListener: vi.fn(), removeEventListener: vi.fn() })));
-}
-beforeEach(() => { resetLanguage(); mockMotion(); });
+beforeEach(resetLanguage);
 afterEach(() => { act(resetLanguage); vi.unstubAllGlobals(); });
 const showHome = () => render(<LanguageProvider><Home /></LanguageProvider>);
 
-describe("public home overview", () => {
-  it("lets visitors choose a workflow with a mouse or keyboard", () => {
+describe("public home", () => {
+  it("leads with the bakery promise, an example plan and both entry points", () => {
     showHome();
-    expect(within(screen.getByRole("tabpanel")).getByRole("link", { name: "Найти продукты" })).toHaveAttribute("href", "/save");
-    const business = screen.getByRole("tab", { name: "У меня бизнес" });
-    fireEvent.click(business);
-    expect(business).toHaveAttribute("aria-selected", "true");
-    const panel = screen.getByRole("tabpanel");
-    expect(within(panel).getByRole("heading", { name: "Завтра понятнее уже сегодня." })).toBeInTheDocument();
-    expect(within(panel).getByRole("link", { name: "Планировать спрос" })).toHaveAttribute("href", "/forecast");
-    fireEvent.keyDown(business, { key: "ArrowLeft" });
-    expect(screen.getByRole("tab", { name: "Хочу купить" })).toHaveFocus();
-    expect(screen.getByRole("tab", { name: "Хочу купить" })).toHaveAttribute("aria-selected", "true");
-    expect(within(panel).getByRole("link", { name: "Найти продукты" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Пеките столько, сколько купят." })).toBeInTheDocument();
+    const hero = screen.getByRole("heading", { level: 1 }).closest("section")!;
+    expect(within(hero).getByRole("link", { name: /Попробовать 14 дней бесплатно/ })).toHaveAttribute("href", "/forecast");
+    expect(within(hero).getByRole("link", { name: "Купить выпечку со скидкой" })).toHaveAttribute("href", "/save");
+    const ticket = screen.getByRole("article", { name: "Пример плана выпечки на завтра" });
+    expect(within(ticket).getByText("Пример расчёта")).toBeInTheDocument();
+    expect(within(ticket).getAllByRole("row")).toHaveLength(6);
   });
-  it("translates both paths and FAQ content without resetting the visitor's choice", () => {
+
+  it("explains the real sequence and answers pricing and data questions", () => {
     showHome();
-    fireEvent.click(screen.getByRole("tab", { name: "У меня бизнес" }));
-    fireEvent.click(screen.getByRole("button", { name: "English" }));
-    expect(screen.getByRole("tab", { name: "I run a business" })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByRole("main").textContent).not.toMatch(/[А-Яа-яЁё]/);
-    expect(screen.getByText("Can I start without sales history?")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("tab", { name: "I want to buy" }));
-    expect(screen.getByRole("main").textContent).not.toMatch(/[А-Яа-яЁё]/);
-    fireEvent.click(screen.getByRole("button", { name: "Қазақша" }));
-    expect(screen.getByRole("tab", { name: "Өнім алғым келеді" })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Жақсы тағам.");
-    fireEvent.click(screen.getByRole("tab", { name: "Менде бизнес бар" }));
-    expect(within(screen.getByRole("tabpanel")).getByRole("link", { name: "Сұранысты жоспарлау" })).toHaveAttribute("href", "/forecast");
-    fireEvent.click(screen.getByRole("button", { name: "Русский" }));
-    expect(screen.getByRole("tab", { name: "У меня бизнес" })).toHaveAttribute("aria-selected", "true");
+    const steps = within(screen.getByRole("region", { name: "Как это работает" })).getAllByRole("listitem");
+    expect(steps.map(step => within(step).getByRole("heading").textContent)).toEqual(["Загрузите продажи", "Получите план на завтра", "Продайте остаток"]);
+    fireEvent.click(screen.getByText("Сколько стоит SaqtaFood?"));
+    expect(screen.getByText(/Starter — 15 000 ₸ в месяц/)).toBeVisible();
+    expect(screen.getByText("Кто видит данные моей пекарни?")).toBeInTheDocument();
   });
-  it("allows visitors to pause and resume decorative motion", () => {
+
+  it("links the legal documents a payment provider checks", () => {
     showHome();
-    fireEvent.click(screen.getByRole("button", { name: "Остановить анимацию" }));
-    expect(screen.getByRole("button", { name: "Включить анимацию" })).toHaveAttribute("aria-pressed", "true");
-    fireEvent.click(screen.getByRole("button", { name: "Включить анимацию" }));
-    expect(screen.getByRole("button", { name: "Остановить анимацию" })).toHaveAttribute("aria-pressed", "false");
+    const footer = screen.getByRole("navigation", { name: "Навигация в подвале" });
+    for (const [name, href] of [["Публичная оферта", "/offer"], ["Политика конфиденциальности", "/privacy"], ["Пользовательское соглашение", "/terms"], ["Тарифы", "/billing"]]) {
+      expect(within(footer).getByRole("link", { name })).toHaveAttribute("href", href);
+    }
   });
-  it("honors the device's reduced-motion setting", () => {
-    mockMotion(true);
+
+  it.each([["English", "Bake just what sells."], ["Қазақша", "Сатылатынын ғана пісіріңіз."]])("is fully translated: %s", (language, heading) => {
     showHome();
-    expect(screen.getByRole("button", { name: "Анимация отключена в настройках устройства" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: language }));
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(heading);
+    if (language === "English") expect(screen.getByRole("main").textContent).not.toMatch(/[А-Яа-яЁё]/);
   });
 });

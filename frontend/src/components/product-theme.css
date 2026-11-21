@@ -26,7 +26,7 @@ textarea.field { border-radius: 15px; }
 .workspace-hero { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 30px; background: #173e31; color: #f5f7eb; border-radius: 28px; padding: 36px 40px; overflow: hidden; animation: workspace-arrive .65s both; }
 .workspace-hero-copy { position: relative; z-index: 1; max-width: 760px; }
 .workspace-kicker { display: flex; align-items: center; gap: 9px; color: #cce49c; font-size: 10px; letter-spacing: .17em; font-weight: 600; }
-.workspace-hero h1 { max-width: 740px; margin-top: 18px; font-family: Georgia, 'Times New Roman', serif; font-style: italic; font-size: clamp(32px, 3.2vw, 44px); font-weight: 400; line-height: 1.12; letter-spacing: -.045em; text-wrap: balance; }
+.workspace-hero h1 { max-width: 740px; margin-top: 18px; font-family: var(--font-display); font-size: clamp(28px, 2.8vw, 40px); font-weight: 600; line-height: 1.15; letter-spacing: -.025em; text-wrap: balance; }
 .workspace-hero-description { max-width: 580px; color: #c8d6be; margin-top: 17px; font-size: 13px; line-height: 1.8; }
 .workspace-hero-bottom { display: flex; align-items: center; flex-wrap: wrap; gap: 16px 24px; margin-top: 23px; }
 .workspace-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 0; }

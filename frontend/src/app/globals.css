@@ -7,7 +7,8 @@
   --color-paper: #f7f7f2;
   --color-graphite: #202622;
   --color-muted: #5d6b62;
-  --font-sans: 'Inter', 'Segoe UI', Arial, sans-serif;
+  --font-sans: 'Onest Variable', 'Segoe UI', Arial, sans-serif;
+  --font-display: 'Unbounded Variable', 'Onest Variable', 'Segoe UI', sans-serif;
 }
 :root { color-scheme: light; }
 * { box-sizing: border-box; }
@@ -42,7 +43,7 @@ tbody tr:last-child td { border-bottom: 0; }
 /* SaqtaFood: warm paper, forest green and a considered touch of lime. */
 :root { --saqta-border: #dfe6db; }
 html { scroll-behavior: smooth; scroll-padding-top: 100px; }
-body { font-family: 'Inter', 'Segoe UI', Arial, sans-serif; }
+body { font-family: var(--font-sans); }
 button, a, select { touch-action: manipulation; }
 button, input, select, textarea { max-width: 100%; }
 .card { box-shadow: 0 3px 16px #123c2f03; }
@@ -120,3 +121,6 @@ main { min-width: 0; }
   .print-area { position: absolute; inset: 0 auto auto 0; width: 100%; border: 0 !important; }
   .no-print { display: none !important; }
 }
+
+/* Phones: the account button keeps only its icon (it has an aria-label), so the header stays on one line. */
+@media (max-width: 440px) { .account-label { display: none; } }

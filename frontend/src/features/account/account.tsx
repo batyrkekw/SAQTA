@@ -58,7 +58,7 @@ export function AccountButton() {
       aria-label={t(account ? "Мой аккаунт" : "Войти")}
     >
       <UserRound size={16} />
-      <span>
+      <span className="account-label">
         {t(account ? "Мой аккаунт" : "Войти")}
       </span>
     </button>
