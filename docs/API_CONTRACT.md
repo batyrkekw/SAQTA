@@ -31,7 +31,7 @@ This contract describes the current architecture/assortment/subscription/5% comm
  manual_activation:true,payments_integrated:false,message:string}
 ```
 
-Real limits: Free 3 products / 0 forecast runs / 1 branch; Starter 20 / 300 / 1; Pro 100 / 1,000 / 10. Paid access requires a future expiry and active Starter/Pro status. Imports (including inspect/preview), backtests, fresh forecasting dashboard analysis and forecast generation are server-gated. Forecast generation consumes one atomic monthly allowance for a successful request, not per product; insufficient-only assortment diagnostics and failed transactions do not consume it. Stored past forecasts/raw owner data are not fresh generation. Demo reports `active:false`, `access_mode:demo` and null paid limits; it is not a paid subscription.
+Real limits: Free 3 products / 0 forecast runs / 1 branch; Business 100 products and 500 runs per paid location, locations = paid count (trial 3). Paid access requires a future expiry and an active subscription. Imports (including inspect/preview), backtests, fresh forecasting dashboard analysis and forecast generation are server-gated. Forecast generation consumes one atomic monthly allowance for a successful request, not per product; insufficient-only assortment diagnostics and failed transactions do not consume it. Stored past forecasts/raw owner data are not fresh generation. Demo reports `active:false`, `access_mode:demo` and null paid limits; it is not a paid subscription.
 
 There is no public activation or payment endpoint. An operator runs `python -m app.subscription_admin --email owner@example.com --plan starter --days 30` in a private real environment. This does not charge money. Details/remaining security work: `docs/ACCESS.md`.
 
@@ -41,7 +41,7 @@ There is no public activation or payment endpoint. An operator runs `python -m a
 |---|---|
 | `GET /health` | `{status:"ok",service:"SAQTA",database:"connected",workspace_mode,demo_data}` |
 | `GET /locations` | Current organization locations `[{id,bakery_id,name,address,city}]` |
-| `POST /locations` | `{name,address,city?}` → new own location; active Pro required in real mode, max 10 |
+| `POST /locations` | `{name,address,city?}` → new own location; active subscription required in real mode, up to the paid location count |
 | `GET /bakery` | `{id,name,city}` |
 | `PATCH /bakery` | `{name?,city?}` → updated bakery |
 | `GET /settings` | `{bakery_name,city,currency:"KZT",safety_buffer_percent,workspace_mode,demo_data,data_source,auth_enabled:boolean}` |

@@ -5,12 +5,12 @@ from urllib.parse import parse_qsl
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import Field, field_validator
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.rate_limit import limiter, peer_key
 from app.db.session import get_db, scoped_db
-from app.models import BillingInvoice, Subscription
+from app.models import BakeryLocation, BillingInvoice, Subscription
 from app.schemas import Input
 from app.services import billing
 
@@ -20,8 +20,8 @@ ScopedDB = Annotated[Session, Depends(scoped_db)]
 
 
 class CheckoutRequest(Input):
-    plan: Literal["starter", "pro"]
     months: Literal[1, 3, 12] = 1
+    locations: int = Field(default=1, ge=1, le=50)
     method: Literal["card", "transfer"]
     payer_name: str = Field(min_length=2, max_length=160)
     payer_bin: str = Field(default="", max_length=12)
@@ -64,7 +64,10 @@ def plans():
 def checkout(payload: CheckoutRequest, request: Request, db: ScopedDB):
     bakery_id = owner_only(db)
     limiter.check("checkout", f"{bakery_id}:{peer_key(request)}", limit=20, window=3600)
-    row = billing.create_invoice(db, bakery_id, payload.plan, payload.months, payload.method, payload.payer_name,
+    existing = db.scalar(select(func.count()).select_from(BakeryLocation)) or 1
+    if payload.locations < existing:
+        raise HTTPException(422, f"У организации {existing} точек: оплатите не меньше {existing}.")
+    row = billing.create_invoice(db, bakery_id, payload.months, payload.locations, payload.method, payload.payer_name,
                                  payload.payer_bin, payload.payer_email, payload.auto_renew)
     db.commit()
     billing.notify_invoice(db, row)

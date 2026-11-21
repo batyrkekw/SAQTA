@@ -8,6 +8,8 @@
 .billing button[aria-pressed=true] { background: #d4ed8c; color: #153d30; }
 .billing button span { font-size: 9px; opacity: .8; }
 .plans { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 20px; align-items: stretch; }
+.plansTwo { grid-template-columns: minmax(0,1fr) minmax(0,1.6fr); }
+@media (max-width: 860px) { .plansTwo { grid-template-columns: minmax(0,1fr); } }
 .plan { position: relative; display: flex; flex-direction: column; min-width: 0; padding: 31px 28px; border: 1px solid #e5e7d5; border-radius: 23px; transition: transform .3s, box-shadow .3s; }
 .plan:hover { transform: translateY(-6px); }
 .tier0 { background: #f5f5eb; color: #173e31; }

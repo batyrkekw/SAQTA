@@ -16,6 +16,7 @@ class BillingInvoice(TimestampMixin, Base):
     number: Mapped[str] = mapped_column(String(30), unique=True)
     plan: Mapped[str] = mapped_column(String(12))
     months: Mapped[int] = mapped_column(Integer)
+    locations: Mapped[int] = mapped_column(Integer, default=1)
     amount_kzt: Mapped[int] = mapped_column(Integer)
     method: Mapped[str] = mapped_column(String(10))
     status: Mapped[str] = mapped_column(String(12), default="pending")
@@ -31,7 +32,8 @@ class BillingInvoice(TimestampMixin, Base):
     period_start: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     period_end: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     __table_args__ = (
-        CheckConstraint("plan IN ('starter','pro')", name="invoice_plan_valid"),
+        CheckConstraint("plan IN ('starter','pro','business')", name="invoice_plan_valid"),
+        CheckConstraint("locations BETWEEN 1 AND 50", name="invoice_locations_valid"),
         CheckConstraint("months IN (1,3,12)", name="invoice_months_valid"),
         CheckConstraint("method IN ('card','transfer')", name="invoice_method_valid"),
         CheckConstraint("status IN ('pending','paid','cancelled','failed')", name="invoice_status_valid"),

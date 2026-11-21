@@ -14,7 +14,7 @@ from app.models import ApplicationSettings, AuthSession, AuthUser, Bakery, Baker
 from app.schemas import ConsentInput, Input
 from app.services.auth import DUMMY_PASSWORD_HASH, check_password, hash_password, issue_session, organization_json, token_digest
 from app.services.billing import start_trial
-from app.services.subscriptions import PLANS, subscription_json
+from app.services.subscriptions import subscription_json
 
 router = APIRouter(prefix="/api", tags=["Organization access"])
 DB = Annotated[Session, Depends(get_db)]
@@ -184,10 +184,10 @@ def subscription(db: ScopedDB):
 def create_location(payload: LocationRequest, db: ScopedDB):
     current = subscription_json(db)
     if get_settings().forecast_requires_subscription and current["access_mode"] != "demo":
-        if current["plan"] != "pro" or not current["active"]:
-            raise HTTPException(403, "Добавление филиалов доступно в активном тарифе Pro; у организации уже есть основная точка.")
-        if (db.scalar(select(func.count()).select_from(BakeryLocation)) or 0) >= PLANS["pro"]["locations"]:
-            raise HTTPException(403, "Достигнут лимит филиалов тарифа Pro")
+        if not current["active"]:
+            raise HTTPException(403, "Добавлять точки можно с активным тарифом или в пробный период.")
+        if (db.scalar(select(func.count()).select_from(BakeryLocation)) or 0) >= current["limits"]["locations"]:
+            raise HTTPException(403, "Все оплаченные точки заняты. Добавьте точку к тарифу в разделе «Тариф и оплата».")
     row = BakeryLocation(bakery_id=db.info["bakery_id"], **payload.model_dump())
     db.add(row)
     db.commit()

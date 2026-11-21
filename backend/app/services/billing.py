@@ -28,17 +28,35 @@ from app.models import AuthUser, Bakery, BillingInvoice, Subscription
 from app.services.mailer import send_email
 
 log = logging.getLogger("saqta.billing")
+TRIAL_LOCATIONS = 3
 
-MONTHLY_KZT = {"starter": 15000, "pro": 30000}
-PLAN_TITLES = {"starter": "SaqtaFood Forecast Starter", "pro": "SaqtaFood Forecast Pro"}
+# One plan for businesses, priced per location. Buyers never pay.
+PLAN = "business"
+PER_LOCATION_KZT = 15000
+MAX_LOCATIONS = 50
+PLAN_TITLES = {"business": "SaqtaFood Business", "starter": "SaqtaFood Forecast Starter", "pro": "SaqtaFood Forecast Pro"}
 # Price multiplier per period: a year costs ten months.
 PERIODS = {1: 1, 3: 3, 12: 10}
 
 
-def price_kzt(plan: str, months: int) -> int:
-    if plan not in MONTHLY_KZT or months not in PERIODS:
-        raise HTTPException(422, "Неизвестный тариф или период оплаты")
-    return MONTHLY_KZT[plan] * PERIODS[months]
+def price_kzt(months: int, locations: int = 1) -> int:
+    if months not in PERIODS or not 1 <= locations <= MAX_LOCATIONS:
+        raise HTTPException(422, "Неизвестный период оплаты или число точек")
+    return PER_LOCATION_KZT * locations * PERIODS[months]
+
+
+def plan_title(row) -> str:
+    title = PLAN_TITLES.get(row.plan, PLAN_TITLES[PLAN])
+    places = getattr(row, "locations", 1) or 1
+    return f"{title}, {places} {points_word(places)}"
+
+
+def points_word(n: int) -> str:
+    if n % 10 == 1 and n % 100 != 11:
+        return "точка"
+    if 2 <= n % 10 <= 4 and not 12 <= n % 100 <= 14:
+        return "точки"
+    return "точек"
 
 
 def add_months(value: datetime, months: int) -> datetime:
@@ -74,10 +92,8 @@ def plans_json() -> dict:
     s = get_settings()
     return {
         "currency": "KZT", "trial_days": s.trial_days,
-        "plans": [{"id": plan, "title": PLAN_TITLES[plan], "monthly_kzt": monthly,
-                   "periods": [{"months": m, "amount_kzt": monthly * k, "saving_kzt": monthly * (m - k)}
-                               for m, k in PERIODS.items()]}
-                  for plan, monthly in MONTHLY_KZT.items()],
+        "plan": {"id": PLAN, "title": PLAN_TITLES[PLAN], "per_location_kzt": PER_LOCATION_KZT,
+                 "max_locations": MAX_LOCATIONS, "periods": [{"months": m, "multiplier": k} for m, k in PERIODS.items()]},
         "methods": {"card": card_enabled() or simulator_enabled(), "transfer": transfer_enabled(),
                     "test_mode": s.billing_test_mode, "simulator": simulator_enabled()},
         "seller": seller(),
@@ -86,19 +102,19 @@ def plans_json() -> dict:
 
 # ------------------------------------------------------------------ invoices
 def invoice_json(row: BillingInvoice, with_seller=False) -> dict:
-    out = {key: getattr(row, key) for key in ("number", "plan", "months", "amount_kzt", "method", "status",
+    out = {key: getattr(row, key) for key in ("number", "plan", "months", "locations", "amount_kzt", "method", "status",
                                                "auto_renew", "payer_name", "payer_bin", "payer_email",
                                                "payment_reference", "failure_reason")}
     for key in ("created_at", "due_at", "paid_at", "period_start", "period_end"):
         value = getattr(row, key)
         out[key] = aware(value).isoformat() if value else None
-    out["title"] = f"{PLAN_TITLES[row.plan]}, {row.months} мес."
+    out["title"] = f"{plan_title(row)}, {row.months} мес."
     if with_seller:
         out["seller"] = seller()
     return out
 
 
-def create_invoice(db, bakery_id: int, plan: str, months: int, method: str, payer_name: str,
+def create_invoice(db, bakery_id: int, months: int, locations: int, method: str, payer_name: str,
                    payer_bin: str, payer_email: str, auto_renew: bool) -> BillingInvoice:
     if method == "card" and not (card_enabled() or simulator_enabled()):
         raise HTTPException(503, "Оплата картой ещё не подключена. Выберите счёт на оплату.")
@@ -108,8 +124,8 @@ def create_invoice(db, bakery_id: int, plan: str, months: int, method: str, paye
     for old in db.scalars(select(BillingInvoice).where(BillingInvoice.bakery_id == bakery_id, BillingInvoice.status == "pending")):
         old.status, old.failure_reason = "cancelled", "Заменён новым счётом"
     now = now_utc()
-    row = BillingInvoice(bakery_id=bakery_id, number=f"tmp-{now.timestamp()}-{bakery_id}", plan=plan, months=months,
-                         amount_kzt=price_kzt(plan, months), method=method, status="pending",
+    row = BillingInvoice(bakery_id=bakery_id, number=f"tmp-{now.timestamp()}-{bakery_id}", plan=PLAN, months=months,
+                         locations=locations, amount_kzt=price_kzt(months, locations), method=method, status="pending",
                          auto_renew=bool(auto_renew and method == "card" and months == 1),
                          payer_name=payer_name.strip(), payer_bin=payer_bin.strip(), payer_email=payer_email,
                          due_at=now + timedelta(days=get_settings().invoice_due_days))
@@ -127,7 +143,7 @@ def widget_params(row: BillingInvoice) -> dict:
     """
     s = get_settings()
     intent = {"publicTerminalId": s.tiptop_public_id, "paymentSchema": "Single",
-              "description": f"{PLAN_TITLES[row.plan]}, {row.months} мес. Счёт {row.number}",
+              "description": f"{plan_title(row)}, {row.months} мес. Счёт {row.number}",
               "amount": row.amount_kzt, "currency": "KZT", "externalId": row.number, "culture": "ru-RU",
               "receiptEmail": row.payer_email,
               "userInfo": {"accountId": f"bakery-{row.bakery_id}", "email": row.payer_email}}
@@ -137,15 +153,16 @@ def widget_params(row: BillingInvoice) -> dict:
     return {"intent": intent, "simulator": simulator_enabled(), "test_mode": s.billing_test_mode}
 
 
-def extend_subscription(db, bakery_id: int, plan: str, months: int, now=None):
+def extend_subscription(db, bakery_id: int, plan: str, months: int, now=None, locations: int = 1):
     now = now or now_utc()
     sub = db.scalar(select(Subscription).where(Subscription.bakery_id == bakery_id))
     if sub is None:
         sub = Subscription(bakery_id=bakery_id, plan="free", status="inactive")
         db.add(sub)
     running = (sub.status == "active" and sub.expires_at and aware(sub.expires_at) > now and not sub.is_trial)
-    start = aware(sub.expires_at) if running and sub.plan == plan else now
-    sub.plan, sub.status, sub.is_trial = plan, "active", False
+    # The same plan for the same number of locations extends from the end date; any change starts today.
+    start = aware(sub.expires_at) if running and sub.plan == plan and (sub.locations or 1) == locations else now
+    sub.plan, sub.status, sub.is_trial, sub.locations = plan, "active", False, locations
     sub.activated_at = sub.activated_at or now
     sub.expires_at = add_months(start, months)
     sub.reminded_at = None
@@ -159,7 +176,7 @@ def mark_paid(db, row: BillingInvoice, tx_id: str | None = None, reference: str 
     if row.status == "cancelled" and row.method == "transfer" and not reference:
         raise HTTPException(409, "Счёт отменён")
     now = now or now_utc()
-    start, end, _ = extend_subscription(db, row.bakery_id, row.plan, row.months, now)
+    start, end, _ = extend_subscription(db, row.bakery_id, row.plan, row.months, now, row.locations or 1)
     row.status, row.paid_at, row.period_start, row.period_end = "paid", now, start, end
     row.provider_tx_id = tx_id or row.provider_tx_id
     row.payment_reference = reference or row.payment_reference
@@ -177,7 +194,7 @@ def notify_paid(db, row):
     end = local_day(row.period_end)
     send_email(row.payer_email, f"SaqtaFood: оплата получена, счёт {row.number}",
                f"Спасибо! Оплата {row.amount_kzt:,} ₸ по счёту {row.number} получена.\n"
-               f"Тариф {PLAN_TITLES[row.plan]} активен до {end}.\n\n"
+               f"Тариф {plan_title(row)} активен до {end}.\n\n"
                f"Счета и статус подписки: {get_settings().public_url}/billing\n".replace(",", " "))
 
 
@@ -185,7 +202,7 @@ def notify_invoice(db, row):
     if row.method != "transfer":
         return
     send_email(row.payer_email, f"SaqtaFood: счёт на оплату {row.number}",
-               f"Счёт {row.number} на {row.amount_kzt:,} ₸ ({PLAN_TITLES[row.plan]}, {row.months} мес.).\n"
+               f"Счёт {row.number} на {row.amount_kzt:,} ₸ ({plan_title(row)}, {row.months} мес.).\n"
                f"Открыть и распечатать: {get_settings().public_url}/billing/invoice/{row.number}\n"
                "После поступления оплаты подписка включится автоматически, мы пришлём письмо.\n".replace(",", " "))
 
@@ -275,8 +292,9 @@ def pay_notification(db, data: dict):
     # Recurring monthly charge: record it as its own paid invoice.
     owner = db.scalar(select(AuthUser).where(AuthUser.bakery_id == sub.bakery_id))
     bakery = db.get(Bakery, sub.bakery_id)
-    row = BillingInvoice(bakery_id=sub.bakery_id, number=f"tmp-{tx}", plan=sub.plan if sub.plan in MONTHLY_KZT else "starter",
-                         months=1, amount_kzt=price_kzt(sub.plan if sub.plan in MONTHLY_KZT else "starter", 1),
+    places = sub.locations or 1
+    row = BillingInvoice(bakery_id=sub.bakery_id, number=f"tmp-{tx}", plan=PLAN, months=1, locations=places,
+                         amount_kzt=price_kzt(1, places),
                          method="card", status="pending", auto_renew=True, payer_name=bakery.name if bakery else "",
                          payer_email=owner.email if owner else "")
     db.add(row)
@@ -302,7 +320,7 @@ def start_trial(db, sub: Subscription):
     days = get_settings().trial_days
     if days <= 0:
         return
-    sub.plan, sub.status, sub.is_trial = "starter", "active", True
+    sub.plan, sub.status, sub.is_trial, sub.locations = PLAN, "active", True, TRIAL_LOCATIONS
     sub.activated_at, sub.expires_at = now_utc(), now_utc() + timedelta(days=days)
 
 

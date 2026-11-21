@@ -16,11 +16,11 @@ import { ResetPassword } from "../src/features/account/reset-password";
 const seller = { name: "ИП Тестовая", bin: "990101300123", address: "Астана", iban: "KZ00TEST", bank: "АО Банк", bik: "TESTKZKA", kbe: "19", email: "pay@saqta.test", phone: "", vat_payer: false };
 const plans = (methods = { card: true, transfer: true, test_mode: true, simulator: false }) => ({
   currency: "KZT", trial_days: 14, methods, seller,
-  plans: [{ id: "starter", title: "SaqtaFood Forecast Starter", monthly_kzt: 15000, periods: [{ months: 1, amount_kzt: 15000, saving_kzt: 0 }, { months: 3, amount_kzt: 45000, saving_kzt: 0 }, { months: 12, amount_kzt: 150000, saving_kzt: 30000 }] },
-          { id: "pro", title: "SaqtaFood Forecast Pro", monthly_kzt: 30000, periods: [{ months: 1, amount_kzt: 30000, saving_kzt: 0 }, { months: 3, amount_kzt: 90000, saving_kzt: 0 }, { months: 12, amount_kzt: 300000, saving_kzt: 60000 }] }],
+  plan: { id: "business", title: "SaqtaFood Business", per_location_kzt: 15000, max_locations: 50, periods: [{ months: 1, multiplier: 1 }, { months: 3, multiplier: 3 }, { months: 12, multiplier: 10 }] },
 });
-const trial = { plan: "starter", status: "active", active: true, is_trial: true, auto_renew: false, access_mode: "paid", expires_at: "2026-12-05T10:00:00Z", limits: { products: 20, forecast_runs_per_month: 300, locations: 1 }, usage: { period: "2026-11", forecast_runs: 0, remaining: 300 }, manual_activation: false, message: "Пробный период Starter до 05.12.2026." };
-const invoice = (over = {}) => ({ number: "SF-2026-00007", title: "SaqtaFood Forecast Pro, 12 мес.", plan: "pro", months: 12, amount_kzt: 300000, method: "transfer", status: "pending", auto_renew: false, payer_name: "ТОО Хлеб", payer_bin: "123456789012", payer_email: "owner@example.test", payment_reference: "", failure_reason: "", created_at: "2026-11-21T10:00:00Z", due_at: "2026-11-26T10:00:00Z", paid_at: null, period_start: null, period_end: null, seller, ...over });
+const trial = { plan: "business", status: "active", active: true, is_trial: true, auto_renew: false, access_mode: "paid", expires_at: "2026-12-05T10:00:00Z", limits: { products: 300, forecast_runs_per_month: 1500, locations: 3 }, usage: { period: "2026-11", forecast_runs: 0, remaining: 1500 }, manual_activation: false, message: "Пробный период до 05.12.2026." };
+let places = [{ id: 1, name: "Центр", address: "Абая 1", city: "Астана" }];
+const invoice = (over = {}) => ({ number: "SF-2026-00007", title: "SaqtaFood Business, 2 точки, 12 мес.", plan: "business", months: 12, locations: 2, amount_kzt: 300000, method: "transfer", status: "pending", auto_renew: false, payer_name: "ТОО Хлеб", payer_bin: "123456789012", payer_email: "owner@example.test", payment_reference: "", failure_reason: "", created_at: "2026-11-21T10:00:00Z", due_at: "2026-11-26T10:00:00Z", paid_at: null, period_start: null, period_end: null, seller, ...over });
 
 type Handler = (path: string, init?: RequestInit) => Response | undefined;
 function stub(signedIn: boolean, extra: Handler = () => undefined, methods?: Parameters<typeof plans>[0]) {
@@ -32,6 +32,7 @@ function stub(signedIn: boolean, extra: Handler = () => undefined, methods?: Par
     if (path === "/api/billing/plans") return new Response(JSON.stringify(plans(methods)));
     if (path === "/api/health") return new Response(JSON.stringify({ status: "ok", workspace_mode: "real", demo_data: false }));
     if (path === "/api/subscription") return signedIn ? new Response(JSON.stringify(trial)) : new Response(JSON.stringify({ detail: "Войдите" }), { status: 401 });
+    if (path === "/api/locations") return new Response(JSON.stringify(places));
     if (path === "/api/billing/invoices") return new Response(JSON.stringify({ invoices: [] }));
     if (path === "/api/auth/me") return new Response(JSON.stringify({ user: { id: 1, email: "owner@example.test", role: "business", requested_role: "business" }, organization: { id: 1, name: "Пекарня Тест" } }));
     throw new Error(`Unexpected endpoint ${path}`);
@@ -40,33 +41,45 @@ function stub(signedIn: boolean, extra: Handler = () => undefined, methods?: Par
 }
 const panel = () => render(<AccountProvider><ForecastAccessProvider><PricingPanel /></ForecastAccessProvider></AccountProvider>);
 
-beforeEach(() => { window.sessionStorage.setItem(`saqta.session.v1:http://127.0.0.1:8000/api`, "session-token"); push.mockReset(); });
+beforeEach(() => { places = [{ id: 1, name: "Центр", address: "Абая 1", city: "Астана" }]; window.sessionStorage.setItem(`saqta.session.v1:http://127.0.0.1:8000/api`, "session-token"); push.mockReset(); });
 afterEach(() => { vi.unstubAllGlobals(); window.sessionStorage.clear(); delete (window as { tiptop?: unknown }).tiptop; });
 
 describe("Forecast pricing and payment", () => {
   it("keeps one price configuration, Save free and payments connected", async () => {
-    expect(PRICING.plans.map(plan => [plan.name, plan.monthlyKzt, plan.productLimit, plan.forecastLimit, plan.locationLimit])).toEqual([["Free", 0, 3, 0, 1], ["Starter", 15000, 20, 300, 1], ["Pro", 30000, 100, 1000, 10]]);
+    expect([PRICING.planName, PRICING.perLocationKzt, PRICING.trialDays, PRICING.trialLocations, PRICING.perLocation]).toEqual(["Business", 15000, 14, 3, { products: 100, forecastRuns: 500 }]);
     expect(PRICING.saveSalesCommissionPercent).toBe(5);
     expect(PRICING.paymentsConnected).toBe(true);
     stub(true);
     panel();
     expect(await screen.findByRole("heading", { name: "Тариф и оплата" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Открыть SaqtaFood Save/ })).toHaveAttribute("href", "/save");
-    expect(await screen.findByText(/^Пробный период Starter до \d/, { selector: "p.text-base" })).toBeInTheDocument();
+    expect(await screen.findByText(/^Пробный период до \d/, { selector: "p.text-base" })).toBeInTheDocument();
     expect(screen.getAllByText("ПРОБНЫЙ").length).toBeGreaterThan(0);
   });
 
-  it("updates the total for plan and period and asks guests to sign in", async () => {
+  it("prices per location and period and asks guests to sign in", async () => {
     stub(false);
     const user = userEvent.setup();
     panel();
     await screen.findByRole("heading", { name: "Тариф и оплата" });
     expect(screen.getByText(/Войдите в организацию или создайте её выше/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Оплатить/ })).not.toBeInTheDocument();
-    await user.click(screen.getByRole("radio", { name: /Pro/ }));
+    expect(screen.getByRole("button", { name: "Убрать точку" })).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "Добавить точку" }));
+    await user.click(screen.getByRole("button", { name: "Добавить точку" }));
     await user.click(screen.getByRole("radio", { name: /12 месяцев/ }));
-    expect(screen.getByText("Pro, 12 мес.")).toBeInTheDocument();
-    expect(screen.getByText(/выгода 60\s000/)).toBeInTheDocument();
+    expect(screen.getByText("Business, 3 точки, 12 мес.")).toBeInTheDocument();
+    expect(screen.getByText(/выгода 90\s000/)).toBeInTheDocument();
+  });
+
+  it("never lets a business pay for fewer locations than it has", async () => {
+    places = [1, 2, 3, 4].map(id => ({ id, name: `Точка ${id}`, address: "Абая 1", city: "Астана" }));
+    stub(true);
+    panel();
+    expect(await screen.findByText(/Сейчас у вас 4 точки/)).toBeInTheDocument();
+    expect(screen.getByRole("spinbutton")).toHaveValue(4);
+    expect(screen.getByRole("button", { name: "Убрать точку" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Оплатить 60/ })).toBeInTheDocument();
   });
 
   it("issues a transfer invoice with payer details and opens it", async () => {
@@ -74,7 +87,7 @@ describe("Forecast pricing and payment", () => {
     const user = userEvent.setup();
     panel();
     await user.click(await screen.findByRole("radio", { name: /Счёт на оплату/ }));
-    await user.click(screen.getByRole("radio", { name: /Pro/ }));
+    await user.click(screen.getByRole("button", { name: "Добавить точку" }));
     await user.click(screen.getByRole("radio", { name: /12 месяцев/ }));
     const name = screen.getByRole("textbox", { name: /Плательщик/ });
     await waitFor(() => expect(name).toHaveValue("Пекарня Тест"));
@@ -82,26 +95,26 @@ describe("Forecast pricing and payment", () => {
     await user.type(screen.getByRole("textbox", { name: /БИН/ }), "123456789012");
     await user.click(screen.getByRole("button", { name: "Выставить счёт" }));
     await waitFor(() => expect(push).toHaveBeenCalledWith("/billing/invoice/SF-2026-00007"));
-    expect(calls.find(call => call.path === "/api/billing/checkout")?.body).toEqual({ plan: "pro", months: 12, method: "transfer", auto_renew: false, payer_name: "ТОО Хлеб", payer_bin: "123456789012", payer_email: "owner@example.test" });
+    expect(calls.find(call => call.path === "/api/billing/checkout")?.body).toEqual({ months: 12, locations: 2, method: "transfer", auto_renew: false, payer_name: "ТОО Хлеб", payer_bin: "123456789012", payer_email: "owner@example.test" });
   });
 
   it("opens the TipTop widget with the server intent and reports a closed form", async () => {
     const start = vi.fn(async () => ({ type: "cancel" as const }));
     (window as { tiptop?: unknown }).tiptop = { Widget: class { start = start; } };
     const intent = { publicTerminalId: "test_api_x", amount: 15000, currency: "KZT", externalId: "SF-2026-00008" };
-    const calls = stub(true, path => path === "/api/billing/checkout" ? new Response(JSON.stringify({ invoice: invoice({ number: "SF-2026-00008", method: "card", months: 1, plan: "starter", amount_kzt: 15000 }), widget: { intent, simulator: false, test_mode: true } }), { status: 201 }) : undefined);
+    const calls = stub(true, path => path === "/api/billing/checkout" ? new Response(JSON.stringify({ invoice: invoice({ number: "SF-2026-00008", method: "card", months: 1, plan: "business", locations: 1, amount_kzt: 15000 }), widget: { intent, simulator: false, test_mode: true } }), { status: 201 }) : undefined);
     const user = userEvent.setup();
     panel();
     await user.click(await screen.findByRole("button", { name: /Оплатить 15/ }));
     await waitFor(() => expect(start).toHaveBeenCalledWith(intent));
     expect(await screen.findByText(/форма закрыта/)).toBeInTheDocument();
-    expect(calls.find(call => call.path === "/api/billing/checkout")?.body).toMatchObject({ method: "card", months: 1, auto_renew: true });
+    expect(calls.find(call => call.path === "/api/billing/checkout")?.body).toMatchObject({ method: "card", months: 1, locations: 1, auto_renew: true });
   });
 
   it("pays through the local simulator when no acquiring is configured", async () => {
     stub(true, path => {
-      if (path === "/api/billing/checkout") return new Response(JSON.stringify({ invoice: invoice({ method: "card", months: 1, plan: "starter", amount_kzt: 15000 }), widget: { intent: {}, simulator: true, test_mode: true } }), { status: 201 });
-      if (path === "/api/billing/simulate/SF-2026-00007") return new Response(JSON.stringify(invoice({ status: "paid", plan: "starter", period_end: "2026-12-21T10:00:00Z" })));
+      if (path === "/api/billing/checkout") return new Response(JSON.stringify({ invoice: invoice({ method: "card", months: 1, plan: "business", locations: 1, amount_kzt: 15000 }), widget: { intent: {}, simulator: true, test_mode: true } }), { status: 201 });
+      if (path === "/api/billing/simulate/SF-2026-00007") return new Response(JSON.stringify(invoice({ status: "paid", plan: "business", locations: 1, period_end: "2026-12-21T10:00:00Z" })));
       return undefined;
     }, { card: true, transfer: false, test_mode: true, simulator: true });
     const user = userEvent.setup();
@@ -109,7 +122,7 @@ describe("Forecast pricing and payment", () => {
     await user.click(await screen.findByRole("button", { name: /Оплатить 15/ }));
     const dialog = await screen.findByRole("dialog", { name: "Тестовая оплата" });
     await user.click(within(dialog).getByRole("button", { name: "Оплатить (тест)" }));
-    expect(await screen.findByText(/Тестовая оплата проведена. Тариф Starter активен до 21.12.2026/)).toBeInTheDocument();
+    expect(await screen.findByText(/Тестовая оплата проведена. Тариф Business на 1 точка активен до 21.12.2026/)).toBeInTheDocument();
   });
 
   it("disables unavailable methods with an explanation", async () => {

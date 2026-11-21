@@ -1,5 +1,5 @@
 export type Subscription = {
-  plan: "free" | "starter" | "pro" | "demo";
+  plan: "free" | "starter" | "pro" | "business" | "demo";
   status: "inactive" | "active" | "expired" | "demo";
   active: boolean;
   access_mode: "demo" | "paid" | "unavailable" | "free";

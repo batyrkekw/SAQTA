@@ -29,7 +29,7 @@ describe("public home", () => {
     const steps = within(screen.getByRole("region", { name: "Как это работает" })).getAllByRole("listitem");
     expect(steps.map(step => within(step).getByRole("heading").textContent)).toEqual(["Загрузите продажи", "Получите план на завтра", "Продайте остаток"]);
     fireEvent.click(screen.getByText("Сколько стоит SaqtaFood?"));
-    expect(screen.getByText(/Starter — 15 000 ₸ в месяц/)).toBeVisible();
+    expect(screen.getByText(/15 000 ₸ в месяц за каждую точку/)).toBeVisible();
     expect(screen.getByText("Кто видит данные моей пекарни?")).toBeInTheDocument();
   });
 

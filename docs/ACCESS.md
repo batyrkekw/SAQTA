@@ -13,7 +13,7 @@ Use a separate database and backend configured with `WORKSPACE_MODE=real`, `AUTO
 - `GET /api/auth/me`: authenticated owner, organization and subscription.
 - `POST /api/auth/logout`: revokes that database session. Sessions expire after `AUTH_SESSION_HOURS` (default 168 hours).
 - `GET /api/subscription`: authoritative status, expiry, plan limits, current local calendar-month forecast usage, remaining runs, and explicit activation/payment limitations.
-- `POST /api/locations`: `{name,address,city?}`; an active Pro organization can add locations up to its limit. Registration always supplies the first location.
+- `POST /api/locations`: `{name,address,city?}`; an organization with an active subscription can add locations up to the number it paid for (trial: 3). Registration always supplies the first location.
 
 The frontend uses `Authorization: Bearer <token>`; no client-supplied organization ID chooses the tenant. The raw DB dependency is wrapped by a request-scoping dependency, so replacing a DB session for tests does not remove authentication. All ORM reads, aggregates, updates and deletes are constrained to the current organization; inventory/records/listings are constrained through their product/location, and order items through their order. Ownership is also checked before ORM flush. This is application-level isolation, not PostgreSQL row-level security. Maintenance scripts use intentionally unscoped sessions and must remain server/operator tools.
 
@@ -34,8 +34,10 @@ The command checks the real workspace and registered owner, records activation/e
 | Plan | Active products eligible for Forecast analysis | Successful forecast runs/month | Locations |
 | --- | ---: | ---: | ---: |
 | Free / inactive Forecast | 3 | 0 | 1 |
-| Starter | 20 | 300 | 1 |
-| Pro | 100 | 1,000 | 10 |
+| Business (per paid location) | 100 × N | 500 × N | N |
+| Trial (14 days) | 300 | 1,500 | 3 |
+
+Legacy Starter/Pro rows stay valid until they expire.
 
 Catalog creation/reactivation, organization-owned inventory and Save publication remain available independently of Forecast product quotas; a fourth or later Save product does not require a paid Forecast plan. Product-count limits are checked only when accessing paid Forecast analysis/import functions, against the active assortment; they do not cap the free Save catalog. Forecast generation, assortment forecast runs, historical backtests, fresh forecasting dashboard analysis, and all file-inspection/preview/commit endpoints require an active unexpired paid subscription in real mode. Inactive/expired plans return HTTP 402; Forecast-analysis product/location limit violations return 403. A successful assortment run spends one allowance regardless of the number of products. A stable forecast-run idempotency key replays the stored result without consuming another allowance; insufficient-history-only diagnostics and failed transactions do not consume allowance. The atomic monthly conditional update rejects exhausted forecast allowance with HTTP 429. Forecast quota is shared by legacy per-product forecasts and assortment runs; import/backtest access does not itself spend a forecast-run allowance. Usage is not reset by switching paid plans mid-month.
 

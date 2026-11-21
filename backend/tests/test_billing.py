@@ -88,9 +88,10 @@ def signed(client, kind, data, header="Content-HMAC"):
 def test_plans_and_prices(env):
     client, *_ = env
     body = client.get("/api/billing/plans").json()
-    starter = next(p for p in body["plans"] if p["id"] == "starter")
-    assert starter["monthly_kzt"] == 15000
-    assert {p["months"]: p["amount_kzt"] for p in starter["periods"]} == {1: 15000, 3: 45000, 12: 150000}
+    plan = body["plan"]
+    assert plan["id"] == "business" and plan["per_location_kzt"] == 15000 and plan["max_locations"] == 50
+    assert {p["months"]: p["multiplier"] for p in plan["periods"]} == {1: 1, 3: 3, 12: 10}
+    assert [billing.price_kzt(m, n) for m, n in ((1, 1), (3, 1), (12, 1), (1, 3), (12, 2))] == [15000, 45000, 150000, 45000, 300000]
     assert body["trial_days"] == 14 and body["methods"] == {"card": False, "transfer": False, "test_mode": True, "simulator": False}
 
 
@@ -98,7 +99,8 @@ def test_business_registration_starts_trial_consumer_does_not(env):
     client, factory, *_ = env
     owner, _ = register(client, "biz")
     sub = owner["subscription"]
-    assert sub["active"] and sub["is_trial"] and sub["plan"] == "starter" and "Пробный период" in sub["message"]
+    assert sub["active"] and sub["is_trial"] and sub["plan"] == "business" and "Пробный период" in sub["message"]
+    assert sub["limits"]["locations"] == 3
     days = (aware(sub_of(factory, owner["organization"]["id"]).expires_at) - now_utc()).days
     assert days in (13, 14)
     consumer, _ = register(client, "buyer", role="consumer")
@@ -108,13 +110,13 @@ def test_business_registration_starts_trial_consumer_does_not(env):
 def test_transfer_invoice_operator_confirms_and_subscription_extends(env):
     client, factory, s, mp = env
     owner, h = register(client)
-    payload = {"plan": "starter", "months": 3, "method": "transfer", "payer_name": "ТОО Хлеб", "payer_bin": "123456789012", "payer_email": "pay@example.test"}
+    payload = {"months": 3, "method": "transfer", "payer_name": "ТОО Хлеб", "payer_bin": "123456789012", "payer_email": "pay@example.test"}
     assert client.post("/api/billing/checkout", headers=h, json=payload).status_code == 503
     seller_on(s, mp)
     r = client.post("/api/billing/checkout", headers=h, json=payload)
     assert r.status_code == 201, r.text
     inv = r.json()["invoice"]
-    assert inv["number"].startswith("SF-") and inv["amount_kzt"] == 45000 and inv["status"] == "pending"
+    assert inv["number"].startswith("SF-") and inv["amount_kzt"] == 45000 and inv["status"] == "pending" and inv["locations"] == 1
     assert inv["seller"]["bin"] == "990101300123" and "widget" not in r.json()
     assert OUTBOX[-1]["to"] == "pay@example.test" and inv["number"] in OUTBOX[-1]["text"]
     # Another organization cannot read it.
@@ -126,7 +128,7 @@ def test_transfer_invoice_operator_confirms_and_subscription_extends(env):
     r = client.post(f"/api/admin/invoices/{inv['number']}/mark-paid", headers=ADMIN, json={"reference": "п/п 15 от 21.11"})
     assert r.status_code == 200 and r.json()["changed"] and r.json()["status"] == "paid"
     sub = sub_of(factory, owner["organization"]["id"])
-    assert sub.plan == "starter" and not sub.is_trial and sub.status == "active"
+    assert sub.plan == "business" and not sub.is_trial and sub.status == "active" and sub.locations == 1
     assert 88 <= (aware(sub.expires_at) - now_utc()).days <= 92  # trial does not stack: 3 months from today
     again = client.post(f"/api/admin/invoices/{inv['number']}/mark-paid", headers=ADMIN, json={"reference": "dup"})
     assert again.json()["changed"] is False
@@ -140,7 +142,7 @@ def test_new_checkout_replaces_open_invoice_and_cancel(env):
     client, factory, s, mp = env
     seller_on(s, mp)
     _, h = register(client)
-    body = {"plan": "pro", "months": 1, "method": "transfer", "payer_name": "Пекарня", "payer_email": "a@example.test"}
+    body = {"months": 1, "method": "transfer", "payer_name": "Пекарня", "payer_email": "a@example.test"}
     first = client.post("/api/billing/checkout", headers=h, json=body).json()["invoice"]["number"]
     second = client.post("/api/billing/checkout", headers=h, json=body).json()["invoice"]["number"]
     rows = {i["number"]: i["status"] for i in client.get("/api/billing/invoices", headers=h).json()["invoices"]}
@@ -152,7 +154,7 @@ def test_new_checkout_replaces_open_invoice_and_cancel(env):
 def test_card_checkout_notifications_and_recurring(env):
     client, factory, s, mp = env
     owner, h = register(client)
-    body = {"plan": "starter", "months": 1, "method": "card", "payer_name": "Пекарня", "payer_email": "card@example.test", "auto_renew": True}
+    body = {"months": 1, "method": "card", "payer_name": "Пекарня", "payer_email": "card@example.test", "auto_renew": True}
     assert client.post("/api/billing/checkout", headers=h, json=body).status_code == 503
     card_on(s, mp)
     r = client.post("/api/billing/checkout", headers=h, json=body).json()
@@ -204,7 +206,7 @@ def test_recurrent_cancel_and_fail_notifications(env):
         db.commit()
     signed(client, "recurrent", {"Id": "sc_9", "Status": "Cancelled"})
     assert not sub_of(factory, owner["organization"]["id"]).auto_renew
-    inv = client.post("/api/billing/checkout", headers=h, json={"plan": "pro", "method": "card", "payer_name": "Пекарня", "payer_email": "p@example.test"}).json()["invoice"]
+    inv = client.post("/api/billing/checkout", headers=h, json={"method": "card", "payer_name": "Пекарня", "payer_email": "p@example.test"}).json()["invoice"]
     signed(client, "fail", {"InvoiceId": inv["number"], "Reason": "InsufficientFunds"})
     row = client.get(f"/api/billing/invoices/{inv['number']}", headers=h).json()
     assert row["status"] == "pending" and row["failure_reason"] == "InsufficientFunds"
@@ -214,33 +216,56 @@ def test_extension_rules():
     from app.models import BillingInvoice  # noqa: F401
     start = now_utc().replace(month=1, day=31, hour=12)
     assert billing.add_months(start, 1).day in (28, 29) and billing.add_months(start, 12).year == start.year + 1
-    assert billing.price_kzt("pro", 12) == 300000
+    assert billing.price_kzt(12, 2) == 300000
     with pytest.raises(Exception):
-        billing.price_kzt("gold", 1)
+        billing.price_kzt(2, 1)
+    with pytest.raises(Exception):
+        billing.price_kzt(1, 0)
 
 
-def test_same_plan_extends_from_expiry_other_plan_from_now(env):
+def test_same_locations_extend_from_expiry_more_locations_start_today(env):
     client, factory, s, mp = env
     seller_on(s, mp)
     owner, h = register(client)
     bid = owner["organization"]["id"]
 
-    def buy(plan):
-        n = client.post("/api/billing/checkout", headers=h, json={"plan": plan, "method": "transfer", "payer_name": "Пекарня", "payer_email": "p@example.test"}).json()["invoice"]["number"]
-        client.post(f"/api/admin/invoices/{n}/mark-paid", headers=ADMIN, json={"reference": "ok"})
-        return aware(sub_of(factory, bid).expires_at)
-    one = buy("starter")
-    two = buy("starter")
+    def buy(locations):
+        r = client.post("/api/billing/checkout", headers=h, json={"locations": locations, "method": "transfer", "payer_name": "Пекарня", "payer_email": "p@example.test"})
+        assert r.status_code == 201, r.text
+        inv = r.json()["invoice"]
+        client.post(f"/api/admin/invoices/{inv['number']}/mark-paid", headers=ADMIN, json={"reference": "ok"})
+        return inv, aware(sub_of(factory, bid).expires_at)
+    _, one = buy(1)
+    _, two = buy(1)
     assert two == billing.add_months(one, 1)
-    three = buy("pro")
-    assert sub_of(factory, bid).plan == "pro" and three < two + timedelta(days=1)
+    inv, three = buy(3)
+    assert inv["amount_kzt"] == 45000 and inv["title"].startswith("SaqtaFood Business, 3 точки")
+    sub = sub_of(factory, bid)
+    assert sub.locations == 3 and three < two + timedelta(days=1)
+    me = client.get("/api/subscription", headers=h).json()
+    assert me["limits"] == {"products": 300, "forecast_runs_per_month": 1500, "locations": 3}
+
+
+def test_locations_follow_the_paid_count(env):
+    client, factory, s, mp = env
+    seller_on(s, mp)
+    owner, h = register(client)
+    # Trial covers 3 locations: the first one exists, two more can be added.
+    for n in range(2):
+        assert client.post("/api/locations", headers=h, json={"name": f"Точка {n}", "address": f"Адрес {n}"}).status_code == 201
+    blocked = client.post("/api/locations", headers=h, json={"name": "Лишняя", "address": "Адрес"})
+    assert blocked.status_code == 403 and "Тариф и оплата" in blocked.json()["detail"]
+    # Paying for fewer locations than exist is refused.
+    r = client.post("/api/billing/checkout", headers=h, json={"locations": 2, "method": "transfer", "payer_name": "Пекарня", "payer_email": "p@example.test"})
+    assert r.status_code == 422 and "3" in r.json()["detail"]
+    assert client.post("/api/billing/checkout", headers=h, json={"locations": 51, "method": "transfer", "payer_name": "Пекарня", "payer_email": "p@example.test"}).status_code == 422
 
 
 def test_simulator_only_without_keys(env):
     client, factory, s, mp = env
     owner, h = register(client)
     mp.setattr(s, "billing_simulator", True)
-    inv = client.post("/api/billing/checkout", headers=h, json={"plan": "starter", "method": "card", "payer_name": "Пекарня", "payer_email": "p@example.test"}).json()
+    inv = client.post("/api/billing/checkout", headers=h, json={"method": "card", "payer_name": "Пекарня", "payer_email": "p@example.test"}).json()
     assert inv["widget"]["simulator"] is True and "recurrent" not in inv["widget"]["intent"]
     assert client.post(f"/api/billing/simulate/{inv['invoice']['number']}", headers=h).json()["status"] == "paid"
     assert not sub_of(factory, owner["organization"]["id"]).is_trial
@@ -273,7 +298,7 @@ def test_reminders_once_before_expiry(env):
 
 
 def test_demo_workspace_cannot_pay(client):
-    r = client.post("/api/billing/checkout", json={"plan": "starter", "method": "transfer", "payer_name": "Пекарня", "payer_email": "p@example.test"})
+    r = client.post("/api/billing/checkout", json={"method": "transfer", "payer_name": "Пекарня", "payer_email": "p@example.test"})
     assert r.status_code == 403
 
 
@@ -320,7 +345,7 @@ def test_invoice_number_unique_and_amount_fixed(env):
     client, factory, s, mp = env
     seller_on(s, mp)
     _, h = register(client)
-    n = client.post("/api/billing/checkout", headers=h, json={"plan": "pro", "months": 12, "method": "transfer", "payer_name": "Пекарня", "payer_email": "p@example.test"}).json()["invoice"]
+    n = client.post("/api/billing/checkout", headers=h, json={"months": 12, "locations": 2, "method": "transfer", "payer_name": "Пекарня", "payer_email": "p@example.test"}).json()["invoice"]
     assert n["amount_kzt"] == 300000
     with factory() as db:
         assert db.scalar(select(BillingInvoice).where(BillingInvoice.number == n["number"])).amount_kzt == 300000

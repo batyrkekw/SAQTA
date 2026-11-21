@@ -12,7 +12,7 @@ from app.models import ApplicationSettings, AuthUser, Subscription
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--email", required=True, help="Registered owner email")
-    parser.add_argument("--plan", required=True, choices=["starter", "pro"])
+    parser.add_argument("--plan", required=True, choices=["business", "starter", "pro"])
     parser.add_argument("--days", type=int, default=30)
     args = parser.parse_args()
     if get_settings().workspace_mode != "real" or not 1 <= args.days <= 366:

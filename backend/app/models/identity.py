@@ -39,10 +39,12 @@ class Subscription(TimestampMixin, Base):
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     activated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     is_trial: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    # Paid locations on the Business plan (price is per location).
+    locations: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
     auto_renew: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
     provider_subscription_id: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True)
     reminded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    __table_args__ = (CheckConstraint("plan IN ('free','starter','pro')", name="subscription_plan_valid"),
+    __table_args__ = (CheckConstraint("plan IN ('free','starter','pro','business')", name="subscription_plan_valid"),
                       CheckConstraint("status IN ('inactive','active','expired')", name="subscription_status_valid"))
 
 

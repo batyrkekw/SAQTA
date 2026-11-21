@@ -9,9 +9,20 @@ from app.services.workspace import is_demo
 
 PLANS = {
     "free": {"products": 3, "forecast_runs_per_month": 0, "locations": 1},
+    # Legacy plans stay valid for existing records.
     "starter": {"products": 20, "forecast_runs_per_month": 300, "locations": 1},
     "pro": {"products": 100, "forecast_runs_per_month": 1000, "locations": 10},
 }
+# Business: limits grow with the number of paid locations.
+BUSINESS_PER_LOCATION = {"products": 100, "forecast_runs_per_month": 500}
+
+
+def plan_limits(plan, locations=1):
+    if plan == "business":
+        n = max(1, locations or 1)
+        return {"products": BUSINESS_PER_LOCATION["products"] * n,
+                "forecast_runs_per_month": BUSINESS_PER_LOCATION["forecast_runs_per_month"] * n, "locations": n}
+    return PLANS[plan]
 
 
 def current_bakery_id(db):
@@ -28,7 +39,7 @@ def subscription_json(db):
     status = "expired" if row and row.status == "active" and (not row.expires_at or aware(row.expires_at) <= now_utc()) else (row.status if row else "inactive")
     month = today_local().strftime("%Y-%m")
     used = db.scalar(select(SubscriptionUsage.forecast_runs).where(SubscriptionUsage.bakery_id == owner, SubscriptionUsage.period == month)) or 0
-    limits = PLANS[plan]
+    limits = plan_limits(plan, row.locations if row else 1)
     return {"plan": "demo" if demo else plan, "status": "demo" if demo else status,
             "active": False if demo else active, "access_mode": "demo" if demo else "paid" if active else "unavailable",
             "expires_at": aware(row.expires_at).isoformat() if row and row.expires_at else None,
@@ -47,9 +58,9 @@ def payments_available() -> bool:
 def access_message(row, active) -> str:
     from app.services.billing import local_day
     if active and row.is_trial:
-        return f"Пробный период Starter до {local_day(row.expires_at)}. Оплатите тариф, чтобы не потерять доступ к Forecast."
+        return f"Пробный период до {local_day(row.expires_at)}. Оплатите тариф, чтобы не потерять доступ к Forecast."
     if active:
-        return f"Тариф {row.plan.title()} оплачен до {local_day(row.expires_at)}."
+        return f"Тариф {row.plan.title()} оплачен до {local_day(row.expires_at)}, точек: {plan_limits(row.plan, row.locations)['locations']}."
     return "Forecast доступен с оплаченным тарифом. Оплатите картой или получите счёт на оплату в разделе «Тариф и оплата»."
 
 
@@ -64,7 +75,7 @@ def require_forecast_access(db):
     count = db.scalar(select(func.count()).select_from(Product).where(Product.is_active.is_(True))) or 0
     locations = db.scalar(select(func.count()).select_from(BakeryLocation)) or 0
     if count > result["limits"]["products"] or locations > result["limits"]["locations"]:
-        raise HTTPException(403, "Количество активных товаров или филиалов превышает лимит тарифа. Перейдите на Pro в разделе «Тариф и оплата».")
+        raise HTTPException(403, "Товаров или точек больше, чем покрывает тариф. Добавьте точки к оплате в разделе «Тариф и оплата».")
     return result
 
 
