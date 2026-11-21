@@ -105,7 +105,7 @@ export default function Home() {
         <p>© {new Date().getFullYear()} SaqtaFood. {t("Сделано в Казахстане.")} <span className={styles.ecosystem}><SanaSpark size={10} />{t("Часть экосистемы SANA")}</span></p>
         <nav aria-label={t("Навигация в подвале")}>
           <Link href="/forecast">Forecast</Link><Link href="/save">Save</Link><Link href="/billing">{t("Тарифы")}</Link>
-          <Link href="/offer">{t("Публичная оферта")}</Link><Link href="/privacy">{t("Политика конфиденциальности")}</Link><Link href="/terms">{t("Пользовательское соглашение")}</Link>
+          <Link href="/ai">{t("Как работает ИИ")}</Link><Link href="/offer">{t("Публичная оферта")}</Link><Link href="/privacy">{t("Политика конфиденциальности")}</Link><Link href="/terms">{t("Пользовательское соглашение")}</Link>
         </nav>
       </footer>
     </div>

@@ -44,6 +44,7 @@ export function AppShell({
           <nav aria-label={t("Правовые документы")} className="flex flex-wrap gap-4">
             <Link href="/privacy">{t("Политика конфиденциальности")}</Link>
             <Link href="/terms">{t("Пользовательское соглашение")}</Link>
+            <Link href="/ai">{t("Как работает ИИ")}</Link>
             <Link href="/offer">{t("Публичная оферта")}</Link>
           </nav>
         </div>

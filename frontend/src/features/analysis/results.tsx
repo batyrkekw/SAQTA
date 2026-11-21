@@ -13,6 +13,8 @@ import { useI18n } from "@/components/language-provider";
 import { Badge, Card, Notice } from "@/components/ui";
 import type { AnalysisItem, AnalysisReport } from "./types";
 import { DailyPlan } from "./daily-plan";
+import Link from "next/link";
+import { Sparkles } from "lucide-react";
 const methods: Record<string, string> = {
   last: "Последнее наблюдение",
   mean7: "Среднее последних 7 наблюдений",
@@ -43,8 +45,16 @@ const facts: Record<string, string> = {
   falling: "Средние продажи последних 7 наблюдений ниже предыдущих 7.",
   stable: "Средние продажи двух последних периодов совпадают.",
 };
+export function accuracySummary(item: AnalysisItem) {
+  if (!item.metrics || !item.model) return null;
+  const naive = item.comparison.find((row) => row.model === "last");
+  const chosen = item.comparison.find((row) => row.model === item.model);
+  const gain = naive && chosen && naive.mae > 0 && chosen.mae < naive.mae ? Math.round((1 - chosen.mae / naive.mae) * 100) : null;
+  return { wape: item.metrics.wape, gain, tried: item.comparison.length };
+}
 function ResultItem({ item }: { item: AnalysisItem }) {
   const { t, number, dateLabel } = useI18n();
+  const accuracy = accuracySummary(item);
   const chart = [
     ...item.actual_history
       .slice(-28)
@@ -108,6 +118,14 @@ function ResultItem({ item }: { item: AnalysisItem }) {
               </p>
             </div>
           </div>
+          {accuracy && (
+            <p className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-[#DCE7D5] bg-white px-4 py-3 text-sm text-[#123C2F]">
+              <Sparkles size={15} className="text-[#237A57]" aria-hidden="true" />
+              {t(`ИИ проверил методов: ${accuracy.tried}. Выбран: «${t(methods[item.model!] || item.model!)}».`)}
+              {accuracy.wape !== null && <span>{t(`Ошибка на проверке — ${number(accuracy.wape, 1)}%.`)}</span>}
+              {accuracy.gain !== null && accuracy.gain > 0 && <strong className="font-semibold text-[#237A57]">{t(`Точнее, чем «как вчера», на ${accuracy.gain}%.`)}</strong>}
+            </p>
+          )}
           <div
             className="mt-6 h-64 w-full"
             role="img"
@@ -282,6 +300,10 @@ export function Results({ report }: { report: AnalysisReport }) {
           {pickupTime(report.created_at)} · {report.horizon_days} {t("дней")}
         </p>
       </div>
+      <Notice>
+        {t("Прогноз рассчитан ИИ: модель машинного обучения изучает вашу историю продаж и выбирает самый точный метод. Это рекомендация — сколько печь, решаете вы.")}{" "}
+        <Link href="/ai" className="font-semibold text-[#237A57] underline underline-offset-2">{t("Как работает ИИ")}</Link>
+      </Notice>
       <DailyPlan key={report.run_id} report={report} />
       {report.items.length ? (
         report.items.map((item) => (
