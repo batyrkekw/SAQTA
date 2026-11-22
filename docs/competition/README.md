@@ -2,6 +2,7 @@
 
 | Файл | Что это |
 |---|---|
+| [HOW_TO_SUBMIT.md](HOW_TO_SUBMIT.md) | **Пошаговая инструкция подачи: начните отсюда** |
 | [SUBMISSION_CHECKLIST.md](SUBMISSION_CHECKLIST.md) | Чек-лист подачи заявки до 22.11, 23:59 по Астане |
 | [AI_CARD.md](AI_CARD.md) | AI-карта: 9 вопросов, ≤ 2 страниц |
 | [LEAN_CANVAS.md](LEAN_CANVAS.md) | Lean Canvas, пример экономии, рынок с источниками |
