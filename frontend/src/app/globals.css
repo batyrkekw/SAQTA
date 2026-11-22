@@ -103,6 +103,11 @@ main { min-width: 0; }
 /* Free API host waking up */
 .wake-banner { position: fixed; z-index: 70; left: 50%; bottom: max(18px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: min(560px, calc(100% - 32px)); display: flex; gap: 10px; align-items: center; padding: 12px 16px; border-radius: 14px; background: #173e31; color: #eef5e2; font-size: .85rem; line-height: 1.45; box-shadow: 0 14px 36px #173e3133; }
 .wake-spark { flex-shrink: 0; color: #e4b64c; }
+.wake-body { display: grid; gap: 7px; min-width: 0; flex: 1; }
+.wake-track { height: 4px; border-radius: 99px; background: #eef5e233; overflow: hidden; }
+.wake-fill { height: 100%; background: #e4b64c; transform-origin: left; transition: transform 1s linear; }
+.wake-meta { font-size: .75rem; color: #eef5e2b3; font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) { .wake-fill { transition: none; } }
 @media (prefers-reduced-motion: no-preference) { .wake-spark { animation: wake-spin 2.4s linear infinite; } }
 @keyframes wake-spin { to { transform: rotate(360deg); } }
 

@@ -1,4 +1,8 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { LanguageProvider } from '../src/components/language-provider';
+import { WakeBanner } from '../src/components/wake-banner';
+
+vi.mock('next/navigation', () => ({ usePathname: () => '/' }));
 import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, WAKE_EVENT, api, configureWakeRetry } from '../src/lib/api';
@@ -64,6 +68,34 @@ describe('sleeping API host', () => {
     await expect(result).resolves.toEqual({ ok: true });
     expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(events).toEqual([true, false]);
+  });
+  it('announces waking while a request hangs on a cold host, then clears it', async () => {
+    vi.useFakeTimers();
+    configureWakeRetry(60_000);
+    let finish: (value: Response) => void = () => {};
+    vi.stubGlobal('fetch', vi.fn().mockReturnValue(new Promise<Response>(resolve => { finish = resolve; })));
+    const events: boolean[] = [];
+    const listener = (event: Event) => events.push((event as CustomEvent<boolean>).detail);
+    window.addEventListener(WAKE_EVENT, listener);
+    const result = api<{ ok: boolean }>('/analysis/state');
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect(events).toEqual([]);
+    await vi.advanceTimersByTimeAsync(1_500);
+    expect(events).toEqual([true]);
+    finish(new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'content-type': 'application/json' } }));
+    await expect(result).resolves.toEqual({ ok: true });
+    expect(events).toEqual([true, false]);
+    window.removeEventListener(WAKE_EVENT, listener);
+  });
+  it('shows elapsed time and progress while the host wakes', async () => {
+    vi.useFakeTimers();
+    render(<LanguageProvider><WakeBanner /></LanguageProvider>);
+    act(() => { window.dispatchEvent(new CustomEvent(WAKE_EVENT, { detail: true })); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(5_000); });
+    expect(screen.getByRole('status')).toHaveTextContent('Прошло 5 с · пробуем снова автоматически');
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '5');
+    act(() => { window.dispatchEvent(new CustomEvent(WAKE_EVENT, { detail: false })); });
+    expect(screen.queryByRole('status')).toBeNull();
   });
   it('never retries a POST and passes JSON 503 errors through', async () => {
     configureWakeRetry(60_000);

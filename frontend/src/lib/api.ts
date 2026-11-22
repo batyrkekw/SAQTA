@@ -36,12 +36,26 @@ export class ApiError extends Error {
  */
 export const WAKE_EVENT = "saqta:server-waking";
 let wakeWindowMs = 90_000;
-export function configureWakeRetry(ms: number) { wakeWindowMs = ms; }
+// A free host often just holds the request while it starts: announce that after a short wait.
+let slowNoticeMs = 3_000;
+export function configureWakeRetry(ms: number, slowMs = ms ? 3_000 : 0) { wakeWindowMs = ms; slowNoticeMs = slowMs; }
 let waking = false;
 function setWaking(value: boolean) {
   if (waking === value || typeof window === "undefined") return;
   waking = value;
   window.dispatchEvent(new CustomEvent(WAKE_EVENT, { detail: value }));
+}
+const waitingRequests = new Set<symbol>();
+function markWaiting(id: symbol, on: boolean) {
+  if (on) waitingRequests.add(id); else waitingRequests.delete(id);
+  setWaking(waitingRequests.size > 0);
+}
+let warmedUp = false;
+/** Wake the free API host in the background as soon as any page opens. */
+export function warmUpApi() {
+  if (warmedUp || typeof window === "undefined") return;
+  warmedUp = true;
+  fetch(`${API_URL}/health/live`, { cache: "no-store" }).catch(() => { /* The next real request reports problems. */ });
 }
 const pause = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 async function isSleepingHost(response: Response) {
@@ -51,6 +65,13 @@ async function isSleepingHost(response: Response) {
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const id = Symbol(path);
+  const slowTimer = slowNoticeMs && typeof window !== "undefined" ? setTimeout(() => markWaiting(id, true), slowNoticeMs) : undefined;
+  try { return await send<T>(path, init, id); }
+  finally { clearTimeout(slowTimer); markWaiting(id, false); }
+}
+
+async function send<T>(path: string, init: RequestInit, id: symbol): Promise<T> {
   const retryable = (init.method || "GET").toUpperCase() === "GET";
   const deadline = Date.now() + (retryable ? wakeWindowMs : 0);
   let response: Response | null = null;
@@ -60,13 +81,13 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
       if (!(await isSleepingHost(response)) || Date.now() >= deadline) break;
     } catch {
       // A caller's abort (for example the sign-in timeout) ends the request immediately.
-      if (init.signal?.aborted) { setWaking(false); throw new ApiError("Запрос отменён.", 0); }
-      if (Date.now() >= deadline) { setWaking(false); throw new ApiError("Нет связи с сервером SaqtaFood. Проверьте подключение и повторите запрос.", 0); }
+      if (init.signal?.aborted) { markWaiting(id, false); throw new ApiError("Запрос отменён.", 0); }
+      if (Date.now() >= deadline) { markWaiting(id, false); throw new ApiError("Нет связи с сервером SaqtaFood. Проверьте подключение и повторите запрос.", 0); }
     }
-    setWaking(true);
+    markWaiting(id, true);
     await pause(Math.min(2000 * 1.5 ** attempt, 8000));
   }
-  setWaking(false);
+  markWaiting(id, false);
   if (!response.ok) {
     let detail = `Ошибка запроса (${response.status})`; let rows: { row: number; message: string }[] = [];
     try { const body = await response.json(); detail = typeof body.detail === "string" ? body.detail : Array.isArray(body.detail) ? body.detail.map((item: { msg: string; loc?: string[] }) => `${item.loc?.slice(1).join(".") || "Данные"}: ${item.msg}`).join("; ") : body.detail?.message || detail; rows = body.errors || body.detail?.errors || []; } catch { /* Non-JSON server errors retain their safe status message. */ }
