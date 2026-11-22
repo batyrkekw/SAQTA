@@ -9,9 +9,9 @@
 | Файл | Как сделать | Проверка |
 |---|---|---|
 | `SaqtaFood_pitch.pdf` | Google Slides или Canva → 12 слайдов по тексту из `PITCH_DECK.md` → **Файл → Скачать → PDF** | ≤ 12 слайдов, ≤ 20 МБ, все цифры совпадают с AI-картой |
-| `SaqtaFood_AI_card.pdf` | Скопировать `AI_CARD.md` в Google Docs → заполнить [скобки] → **Файл → Скачать → PDF** | ≤ 2 страниц, нет пустых [скобок] |
-| `SaqtaFood_Lean_Canvas.pdf` | Таблицу из `LEAN_CANVAS.md` в Google Docs или шаблон Lean Canvas в Canva → PDF | 9 блоков заполнены |
-| `SaqtaFood_competitors.pdf` | Таблицу из `COMPETITORS.md` в Google Docs → PDF | ≥ 3 конкурента, есть ссылки |
+| `SaqtaFood_AI_card.pdf` | **Готов:** `docs/competition/pdf/` | 2 страницы; пункт 9 правдив |
+| `SaqtaFood_Lean_Canvas.pdf` | **Готов:** `docs/competition/pdf/` | 9 блоков + экономика и рынок |
+| `SaqtaFood_competitors.pdf` | **Готов:** `docs/competition/pdf/` | 5 конкурентов, есть ссылки |
 | Ссылка на видеопитч | YouTube → **Создать → Загрузить видео** → доступ **«Доступ по ссылке»** | ≤ 3:00; ссылка открывается в режиме инкогнито |
 | Ссылка на демо-видео | Так же, YouTube «Доступ по ссылке» | ≤ 2:00, без монтажа |
 | Справки из школы | Скан или фото каждой справки → PDF | у каждого участника |
