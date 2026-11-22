@@ -1,7 +1,7 @@
 import { act, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LanguageProvider, LANGUAGE_STORAGE_KEY } from "../src/components/language-provider";
-import { LegalPage } from "../src/components/legal-page";
+import { DATA_LOCATION, LegalPage } from "../src/components/legal-page";
 import { translateText } from "../src/lib/i18n/translate";
 
 const route = vi.hoisted(() => ({ pathname: "/privacy" }));
@@ -20,6 +20,10 @@ describe.each(["ru", "kk", "en"] as const)("legal pages in %s", (language) => {
     expect(screen.getByRole("note")).toHaveTextContent(t("Черновик, требует проверки юристом перед публичным запуском"));
     expect(screen.getByRole("heading", { name: t("Данные и цели обработки") })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: t("Срок хранения") })).toBeInTheDocument();
+    if (kind === "privacy") {
+      expect(screen.getByRole("heading", { name: t("Где хранятся данные") })).toBeInTheDocument();
+      expect(container.textContent).toContain(t(DATA_LOCATION));
+    }
     expect(screen.getByRole("heading", { name: t("Удаление данных и обращения") })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "sanateam31@gmail.com" })).toHaveAttribute("href", "mailto:sanateam31@gmail.com");
     expect(screen.getByRole("link", { name: t(kind === "privacy" ? "Пользовательское соглашение" : "Политика конфиденциальности") })).toHaveAttribute("href", kind === "privacy" ? "/terms" : "/privacy");

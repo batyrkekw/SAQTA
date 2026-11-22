@@ -2237,5 +2237,10 @@
   "Как работает ИИ": "How the AI works",
   "ИИ проверил методов: {0}. Выбран: «{1}».": "The AI tested {0} methods. Chosen: \"{1}\".",
   "Ошибка на проверке — {0}%.": "Error on the check: {0}%.",
-  "Точнее, чем «как вчера», на {0}%.": "{0}% more accurate than \"same as yesterday\"."
+  "Точнее, чем «как вчера», на {0}%.": "{0}% more accurate than \"same as yesterday\".",
+  "Где хранятся данные": "Where data is stored",
+  "Сейчас SaqtaFood работает как демо-версия: сервер (Render) и база данных (Neon) находятся во Франкфурте (Германия). Закон РК «О персональных данных и их защите» (статья 12, пункт 2) требует хранить персональные данные в базе на территории Казахстана. Поэтому до работы с реальными покупателями мы перенесём базу и сервер к провайдеру в Казахстане. Данных о покупателях мы собираем минимум: имя и телефон нужны только для выдачи заказа и в прогноз ИИ не попадают.": "SaqtaFood currently runs as a demo: the server (Render) and the database (Neon) are located in Frankfurt, Germany. Kazakhstan's Law on Personal Data and Its Protection (Article 12, paragraph 2) requires personal data to be stored in a database located in Kazakhstan. Before working with real buyers we will move the database and server to a hosting provider in Kazakhstan. We collect as little buyer data as possible: a name and phone number are needed only to hand over an order and never enter the AI forecast.",
+  "Сервер и база данных сейчас находятся во Франкфурте (Германия). До работы с реальными покупателями переносим их в Казахстан, как требует закон о персональных данных.": "The server and database are currently located in Frankfurt, Germany. Before working with real buyers we are moving them to Kazakhstan, as the personal data law requires.",
+  "Пробуждение сервера": "Server waking up",
+  "Прошло {0} с · пробуем снова автоматически": "{0} s passed · retrying automatically"
 }

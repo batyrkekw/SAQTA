@@ -44,5 +44,6 @@ describe("AI transparency", () => {
       expect(screen.getByRole("heading", { name })).toBeInTheDocument();
     }
     expect(screen.getByText(/ИИ точнее на 29%/)).toBeInTheDocument();
+    expect(screen.getByText(/Франкфурте \(Германия\).*переносим их в Казахстан/)).toBeInTheDocument();
   });
 });
