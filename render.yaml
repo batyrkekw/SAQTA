@@ -30,6 +30,9 @@ services:
         sync: false
       - key: BILLING_TEST_MODE
         value: "true"
+      # Demo payments without money (works only while TipTop keys are empty). Turn off for real sales.
+      - key: BILLING_SIMULATOR
+        value: "true"
       - key: SELLER_NAME
         sync: false
       - key: SELLER_BIN

@@ -54,9 +54,10 @@ TipTop Pay card widget + invoice for ИП/ТОО; `BILLING_SIMULATOR` only in te
   demo live or video ≤ 60 s.
 
 ## Open tasks (priority order)
-1. Demo data: extend `backend/app/seed.py` demo history from 42 to ~120 days with a weekly pattern so the ridge
-   model is eligible and the results screen shows the AI comparison in the demo.
-2. Deploy: Render (backend, Neon DB, `BILLING_SIMULATOR=true`, `CORS_ORIGINS` = Vercel URL) and Vercel
+1. Done 22.11: demo history is 150 days (`app/demo_history.py`: weekday rhythm, trend, paydays 10/25, KZ holidays)
+   in both `seed.py` and `showcase.py` (the prod demo bakery); tests seed 42 days for speed.
+   Display font is Geologica (Unbounded lacked Kazakh letters); check with `scripts/check_kazakh_glyphs.py`.
+2. Deploy (step-by-step in `docs/DEPLOYMENT.md`): Render (backend, Neon DB, `BILLING_SIMULATOR=true`, `CORS_ORIGINS` = Vercel URL) and Vercel
    (`NEXT_PUBLIC_API_URL`, production branch `saqta_001`). Check the live site end to end.
 3. Documents in `docs/competition/`: AI card (2 pages), Lean Canvas, 3+ competitors, pitch deck text (12 slides),
    scripts for the 3-min video pitch and 2-min demo video, likely jury questions with answers for the pupils.

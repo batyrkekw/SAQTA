@@ -31,3 +31,5 @@ data/private/
 *.xls
 .DS_Store
 Thumbs.db
+# Playwright MCP snapshots and logs
+.playwright-mcp/
