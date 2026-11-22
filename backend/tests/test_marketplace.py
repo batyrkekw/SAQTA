@@ -88,7 +88,7 @@ def test_concurrent_orders_cannot_oversell_file_sqlite(tmp_path):
     Base.metadata.create_all(engine)
     factory = sessionmaker(engine, expire_on_commit=False)
     with factory() as session:
-        seed_database(session)
+        seed_database(session, days=42)
         listing = session.scalar(select(SurplusListing).where(SurplusListing.status == "active").order_by(SurplusListing.id))
         listing_id, quantity = listing.id, listing.available_quantity
         session.commit()

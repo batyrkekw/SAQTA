@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings, now_utc, today_local
 from app.db.session import Base, SessionLocal
+from app.demo_history import DEMO_DAYS, demand_factor
 from app.models import ApplicationSettings, Bakery, BakeryLocation, InventorySnapshot, Order, OrderItem, Product, ProductionRecord, SalesRecord, SurplusListing, WasteRecord
 from app.schemas import ListingCreate, OrderCreate, OrderLine
 from app.services.marketplace import create_listing, create_order, transition_order
@@ -21,10 +22,10 @@ PRODUCTS = [
 ]
 
 
-def seed_database(db: Session, reset=False, empty=False):
+def seed_database(db: Session, reset=False, empty=False, days=DEMO_DAYS):
     existing = db.scalar(select(Bakery))
     if existing and not reset:
-        return {"products": len(list(db.scalars(select(Product)))), "days": 42, "message": "Данные уже существуют; используйте --reset в демо-режиме"}
+        return {"products": len(list(db.scalars(select(Product)))), "days": days, "message": "Данные уже существуют; используйте --reset в демо-режиме"}
     if reset:
         if get_settings().workspace_mode != "demo":
             raise ValueError("Reset is allowed only with WORKSPACE_MODE=demo")
@@ -61,16 +62,18 @@ def seed_database(db: Session, reset=False, empty=False):
     for location_index, location in enumerate(locations):
         for product_index, product in enumerate(products):
             current_stock = 0
-            for offset in range(42):
-                day = anchor - timedelta(days=41 - offset)
+            last = days - 1
+            for offset in range(days):
+                day = anchor - timedelta(days=last - offset)
+                calendar = demand_factor(day) * (1 + 0.0012 * offset)
                 weekend = 1.23 if day.weekday() >= 5 else 1.0
                 factor = weekend if product_index != 1 else (0.9 if day.weekday() >= 5 else 1.1)
-                demand = round(PRODUCTS[product_index][-1] * factor * (1 if location_index == 0 else 0.76) + rng.randint(-7, 7))
-                production = demand + rng.randint(5, 16) + (18 if offset == 41 else 0)
+                demand = round(PRODUCTS[product_index][-1] * factor * calendar * (1 if location_index == 0 else 0.76) + rng.randint(-7, 7))
+                production = demand + rng.randint(5, 16) + (18 if offset == last else 0)
                 regular_sales = max(1, demand)
                 save_sales = 2 if offset % 7 == 3 and product_index < 2 and location_index == 0 else 0
                 remaining = production - regular_sales - save_sales
-                waste = remaining if offset < 41 else 2
+                waste = remaining if offset < last else 2
                 db.add(ProductionRecord(product_id=product.id, location_id=location.id, date=day, quantity=production))
                 db.add(SalesRecord(product_id=product.id, location_id=location.id, date=day, quantity=regular_sales, unit_price_kzt=product.price_kzt, source="regular"))
                 if waste:
@@ -110,7 +113,7 @@ def seed_database(db: Session, reset=False, empty=False):
         elif index == 2:
             transition_order(db, order.id, "cancel")
     db.flush()
-    return {"products": len(products), "days": 42}
+    return {"products": len(products), "days": days}
 
 
 def main():

@@ -23,6 +23,7 @@ from sqlalchemy import select
 
 from app.core.config import get_settings, today_local
 from app.db.session import SessionLocal
+from app.demo_history import DEMO_DAYS, demand_factor
 from app.main import app
 from app.models import AuthUser
 
@@ -51,14 +52,16 @@ def window(kind, tz):
     return start, end, end.replace(hour=23, minute=59) if end.date() == now.date() else end + timedelta(hours=6)
 
 
-def history_csv(days=56, seed=2026):
+def history_csv(days=DEMO_DAYS, seed=2026):
+    """Synthetic daily history: weekday rhythm, slow growth, paydays, KZ holidays and noise."""
     rng = random.Random(seed)
     rows = ["date,product,sold,produced,remaining"]
     for back in range(days, 0, -1):
         day = today_local() - timedelta(days=back)
+        trend = 1 + 0.0012 * (days - back)
         for name, *_rest in PRODUCTS:
             base = next(p[4] for p in PRODUCTS if p[0] == name)[day.weekday()]
-            sold = max(0, round(base * rng.uniform(.86, 1.14)))
+            sold = max(0, round(base * trend * demand_factor(day) * rng.uniform(.88, 1.12)))
             produced = sold + rng.choice([0, 1, 2, 3, 4, 5, 6, 8])
             rows.append(f"{day},{name},{sold},{produced},{produced - sold}")
     return "\n".join(rows).encode()

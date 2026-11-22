@@ -32,7 +32,8 @@ def database(monkeypatch):
     Base.metadata.create_all(engine)
     factory = sessionmaker(engine, expire_on_commit=False)
     with factory() as session:
-        seed_database(session)
+        # A short synthetic history keeps the suite fast; tests/test_demo_history.py covers the full demo.
+        seed_database(session, days=42)
         session.commit()
     yield factory
     engine.dispose()

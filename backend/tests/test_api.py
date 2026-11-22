@@ -5,6 +5,7 @@ from sqlalchemy import select, update
 
 from app.core.config import get_settings, today_local
 from app.models import ApplicationSettings, Product
+from app.demo_history import DEMO_DAYS
 from app.seed import seed_database
 
 
@@ -131,7 +132,7 @@ def test_settings_and_reset_confirmation(client):
     assert client.patch("/api/settings", json={"safety_buffer_percent": 101}).status_code == 422
     assert client.post("/api/demo/reset", json={"confirm": "yes"}).status_code == 422
     response = client.post("/api/demo/reset", json={"confirm": "RESET SAQTA DEMO"})
-    assert response.status_code == 200 and response.json()["days"] == 42
+    assert response.status_code == 200 and response.json()["days"] == DEMO_DAYS
     assert len(client.get("/api/products").json()) == 5
 
 

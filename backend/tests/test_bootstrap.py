@@ -2,6 +2,7 @@ import pytest
 from sqlalchemy import func, select
 from sqlalchemy.orm import sessionmaker
 
+from app.demo_history import DEMO_DAYS
 from app.bootstrap import initialize_demo
 from app.core.config import get_settings
 from app.db.session import Base, build_engine
@@ -35,11 +36,11 @@ def test_automatic_seed_is_disabled_by_default(blank_database, monkeypatch):
 
 def test_automatic_seed_initializes_empty_demo(blank_database, auto_seed_enabled):
     with blank_database() as db:
-        assert initialize_demo(db) == {"products": 5, "days": 42}
+        assert initialize_demo(db) == {"products": 5, "days": DEMO_DAYS}
         db.commit()
     with blank_database() as db:
         assert db.scalar(select(func.count()).select_from(Product)) == 5
-        assert db.scalar(select(func.count()).select_from(ProductionRecord)) == 42 * 5 * 2
+        assert db.scalar(select(func.count()).select_from(ProductionRecord)) == DEMO_DAYS * 5 * 2
         assert db.scalar(select(ApplicationSettings.workspace_mode)) == "demo"
 
 

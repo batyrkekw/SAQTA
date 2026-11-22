@@ -11,6 +11,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 
+from app.demo_history import DEMO_DAYS
 from app.core.config import today_local
 from app.db.session import Base, build_engine
 from app.models import ApplicationSettings, ImportBatch, ImportFingerprint, InventorySnapshot, Product, ProductionRecord
@@ -230,7 +231,7 @@ def test_confirmed_demo_reset_handles_import_audit_foreign_keys(client, database
     with database() as db:
         assert db.scalar(select(func.count()).select_from(ImportFingerprint)) == 1
     restored = client.post("/api/demo/reset", json={"confirm": "RESET SAQTA DEMO"})
-    assert restored.status_code == 200 and restored.json()["days"] == 42
+    assert restored.status_code == 200 and restored.json()["days"] == DEMO_DAYS
     with database() as db:
         assert db.scalar(select(func.count()).select_from(ImportFingerprint)) == 0
         assert db.scalar(select(func.count()).select_from(ImportBatch)) == 0
@@ -261,7 +262,7 @@ def test_concurrent_imports_cannot_duplicate_semantic_rows(tmp_path, monkeypatch
     Base.metadata.create_all(engine)
     factory = sessionmaker(engine, expire_on_commit=False)
     with factory() as db:
-        seed_database(db)
+        seed_database(db, days=42)
         db.commit()
         before = balance(db)
         token = preview_import(db, csv_data(row()), "same.csv", options())["preview_token"]
