@@ -4,7 +4,7 @@ import { WorkspaceLayout } from '@/components/workspace-layout';
 import { WakeBanner } from '@/components/wake-banner';
 import type { Metadata,Viewport } from 'next';
 import '@fontsource-variable/onest';
-import '@fontsource-variable/unbounded';
+import '@fontsource-variable/geologica';
 import './globals.css';
 import '@/components/product-theme.css';
 

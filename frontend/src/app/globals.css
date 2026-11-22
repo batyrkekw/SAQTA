@@ -8,7 +8,7 @@
   --color-graphite: #202622;
   --color-muted: #5d6b62;
   --font-sans: 'Onest Variable', 'Segoe UI', Arial, sans-serif;
-  --font-display: 'Unbounded Variable', 'Onest Variable', 'Segoe UI', sans-serif;
+  --font-display: 'Geologica Variable', 'Onest Variable', 'Segoe UI', sans-serif;
 }
 :root { color-scheme: light; }
 * { box-sizing: border-box; }
@@ -82,7 +82,7 @@ main { min-width: 0; }
 .hero-edition { font-size: 9px; letter-spacing: .15em; }
 .hero-caption { position: absolute; bottom: 147px; left: 28px; color: white; display: flex; flex-direction: column; }
 .hero-caption > span:first-child { font-size: 9px; letter-spacing: .19em; margin-bottom: 5px; }
-.hero-caption > span:last-child { font-family: Georgia, serif; font-size: 34px; font-style: italic; }
+.hero-caption > span:last-child { font-family: var(--font-display); font-size: 32px; font-weight: 600; letter-spacing: -.02em; }
 .hero-insight { position: absolute; bottom: 28px; left: 24px; right: 30px; padding: 19px 17px; display: flex; gap: 13px; align-items: center; border: 1px solid #ffffff70; border-radius: 15px; color: #173e31; background: #f8faf0ed; backdrop-filter: blur(15px); transition: transform .2s; }
 .hero-insight:hover { transform: translateY(-3px); }
 .insight-icon { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border-radius: 12px; background: #d5e9b2; }

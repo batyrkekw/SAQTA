@@ -1,9 +1,9 @@
-/* Landing. Brand tokens from docs/BRAND.md; display type Unbounded, text Onest.
+/* Landing. Brand tokens from docs/BRAND.md; display type Geologica (full Kazakh Cyrillic), text Onest.
    One bold element: the bake ticket in the hero. Everything else stays quiet. */
 .page {
   --forest: #123c2f; --green: #237a57; --lime: #c7f36b; --canvas: #f7f7f2; --ink: #202622;
   --muted: #5d6b62; --line: #e2e8e1; --paper: #fffdf7;
-  --display: 'Unbounded Variable', 'Onest Variable', system-ui, sans-serif;
+  --display: 'Geologica Variable', 'Onest Variable', system-ui, sans-serif;
   background: var(--canvas); color: var(--ink); overflow: clip;
 }
 .page :global(.public-header) { background: #f7f7f2eb; border-color: #123c2f12; }

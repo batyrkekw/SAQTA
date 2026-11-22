@@ -1,6 +1,6 @@
 .inner { max-width: 1216px; margin: auto; }
 .heading { display: flex; justify-content: space-between; align-items: flex-end; gap: 30px; margin-bottom: 32px; }
-.heading h2 { font-family: 'Unbounded Variable', 'Onest Variable', sans-serif; font-size: clamp(26px,2.6vw,36px); line-height: 1.15; letter-spacing: -.025em; font-weight: 600; color: #fff; }
+.heading h2 { font-family: 'Geologica Variable', 'Onest Variable', sans-serif; font-size: clamp(26px,2.6vw,36px); line-height: 1.15; letter-spacing: -.025em; font-weight: 600; color: #fff; }
 .pricingLead { margin-top: 12px; max-width: 34em; color: #c8d7bc; font-size: 16px; line-height: 1.6; }
 .pricing { padding: 88px 32px 80px; background: #123c2f; color: #f5f5e8; }
 .billing { display: flex; padding: 5px; gap: 4px; border: 1px solid #c5d5a830; border-radius: 999px; background: #ffffff06; flex-shrink: 0; }
@@ -21,7 +21,7 @@
 .planIcon { display: grid; place-items: center; width: 43px; height: 43px; flex: 0 0 43px; border-radius: 14px; background: #173e310b; }
 .tier1 .planIcon { background: #173e3112; }
 .tier2 .planIcon { color: #e9d4a3; background: #e2cc8e14; border: 1px solid #d6c08f40; }
-.plan h3 { font-size: 26px; font-family: 'Unbounded Variable', 'Onest Variable', sans-serif; font-weight: 600; letter-spacing: -.02em; }
+.plan h3 { font-size: 26px; font-family: 'Geologica Variable', 'Onest Variable', sans-serif; font-weight: 600; letter-spacing: -.02em; }
 .planDescription { font-size: 12px; opacity: .75; line-height: 1.8; margin-top: 8px; min-height: 44px; }
 .price { display: flex; flex-wrap: wrap; align-items: baseline; gap: 7px; margin-top: 25px; }
 .price strong { font-size: clamp(28px,2.7vw,38px); font-weight: 500; letter-spacing: -.05em; white-space: nowrap; }
